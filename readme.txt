@@ -13,7 +13,9 @@ Allow posts and pages to be archived in a state where they are unpublished but n
 
 **Did you find this plugin helpful? Please consider [writing a review](https://wordpress.org/support/view/plugin-reviews/archive-post-status).**
 
-Description goes here.
+* Works with posts, pages and custom post types
+* Allows you to archive content similar to archiving email
+* Unpublish your posts and pages without having to delete them
 
 **Development of this plugin is done [on GitHub](https://github.com/fjarrett/archive-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archive-post-status/issues) there before going to the plugin forum.**
 
