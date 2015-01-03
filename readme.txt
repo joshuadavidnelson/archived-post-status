@@ -19,10 +19,6 @@ Allows posts and pages to be archived so you can unpublish content without havin
 
 **Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
 
-== Screenshots ==
-
-1. @TODO add screenshots
-
 == Changelog ==
 
 = 0.1.0 - January 5, 2015 =
