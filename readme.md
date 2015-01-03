@@ -16,11 +16,28 @@ Allows posts and pages to be archived so you can unpublish content without havin
 
 **Did you find this plugin helpful? Please consider [writing a review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
+This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
+
+* Makes a new post status available in the dropdown called "Archived"
+* Unpublish your posts and pages without having to trash them
 * Compatible with posts, pages and custom post types
-* Unpublish posts and pages without having to trash them
-* Archive your WordPress content similar to the way you archive your e-mail
 
 **Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
+
+## Frequently Asked Questions ##
+
+### Can I exclude certain post types? ###
+Yes, you can exclude the Archived status from appearing on certain post types by using the `aps_excluded_post_types` filter:
+
+<pre lang="php">
+function fjarrett_aps_excluded_post_types( $post_types ) {
+	$post_types[] = 'my_custom_post_type';
+
+	return $post_types;
+}
+add_filter( 'aps_excluded_post_types', 'fjarrett_aps_excluded_post_types', 10, 1 );
+</pre>
+
 
 ## Changelog ##
 
