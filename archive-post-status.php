@@ -68,7 +68,9 @@ add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 function aps_post_screen_js() {
 	global $post;
 
-	if ( in_array( $post->post_type, apply_filters( 'aps_excluded_post_types', array() ) ) ) {
+	$excluded = apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
+
+	if ( in_array( $post->post_type, $excluded ) ) {
 		return;
 	}
 
