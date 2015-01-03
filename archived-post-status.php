@@ -1,16 +1,16 @@
 <?php
 /**
- * Plugin Name: Archive Post Status
- * Description: Allow posts and pages to be archived in a state where they are unpublished but not deleted.
+ * Plugin Name: Archived Post Status
+ * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
  * Version: 0.1.0
  * Author: Frankie Jarrett
  * Author URI: http://frankiejarrett.com
  * License: GPLv2+
- * Text Domain: archive-post-status
+ * Text Domain: archived-post-status
  */
 
 /**
- * Register a custom post status for Archive
+ * Register a custom post status for Archived
  *
  * @action init
  *
@@ -18,12 +18,12 @@
  */
 function aps_register_archive_post_status() {
 	$args = array(
-		'label'                     => __( 'Archive', 'archive-post-status' ),
+		'label'                     => __( 'Archived', 'archived-post-status' ),
 		'public'                    => apply_filters( 'aps_status_arg_public', false ),
 		'exclude_from_search'       => apply_filters( 'aps_status_arg_exclude_from_search', true ),
 		'show_in_admin_all_list'    => apply_filters( 'aps_status_arg_show_in_admin_all_list', true ),
 		'show_in_admin_status_list' => apply_filters( 'aps_status_arg_show_in_admin_status_list', true ),
-		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archive-post-status' ),
+		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archived-post-status' ),
 	);
 
 	register_post_status( 'archive', $args );
@@ -87,8 +87,8 @@ function aps_post_screen_js() {
 					$( '#minor-publishing-actions' ).show();
 				}
 			});
-			$( '#post-status-display' ).html( '<?php esc_html_e( 'Archived', 'archive-post-status' ) ?>' );
-			$( '#post_status' ).append( '<option value="archive" selected="selected"><?php esc_html_e( 'Archived', 'archive-post-status' ) ?></option>' );
+			$( '#post-status-display' ).html( '<?php esc_html_e( 'Archived', 'archived-post-status' ) ?>' );
+			$( '#post_status' ).append( '<option value="archive" selected="selected"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
 		});
 		</script>
 		<?php
@@ -96,7 +96,7 @@ function aps_post_screen_js() {
 		?>
 		<script>
 		jQuery( document ).ready( function( $ ) {
-			$( '#post_status' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archive-post-status' ) ?></option>' );
+			$( '#post_status' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
 		});
 		</script>
 		<?php
@@ -115,7 +115,7 @@ function aps_edit_screen_js() {
 	?>
 	<script>
 	jQuery( document ).ready( function( $ ) {
-		$( 'select[name="_status"]' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archive-post-status' ) ?></option>' );
+		$( 'select[name="_status"]' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
 
 		$( '.editinline' ).on( 'click', function() {
 			var $row    = $( this ).closest( 'tr' ),
@@ -152,6 +152,6 @@ function aps_display_post_states( $post_states, $post ) {
 		return $post_states;
 	}
 
-	return array( __( 'Archived', 'archive-post-status' ) );
+	return array( __( 'Archived', 'archived-post-status' ) );
 }
 add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
