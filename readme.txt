@@ -21,8 +21,7 @@ Allow posts and pages to be archived in a state where they are unpublished but n
 
 == Screenshots ==
 
-1. Screenshot number one
-2. Screenshot number two
+1. @TODO add screenshots
 
 == Changelog ==
 
