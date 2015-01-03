@@ -23,9 +23,9 @@ This plugin allows you to archive your WordPress content similar to the way you 
 
 == Frequently Asked Questions ==
 
-= Can I exclude certain post types? =
+= Can I exclude the Archived status from appearing on certain post types? =
 
-Yes, you can exclude the Archived status from appearing on certain post types by using the `aps_excluded_post_types` filter:
+Yes, you can do this by using the `aps_excluded_post_types` filter:
 
 <pre lang="php">
 function fjarrett_aps_excluded_post_types( $post_types ) {
