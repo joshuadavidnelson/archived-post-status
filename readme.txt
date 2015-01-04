@@ -38,7 +38,7 @@ add_filter( 'aps_excluded_post_types', 'fjarrett_aps_excluded_post_types', 10, 1
 
 == Changelog ==
 
-= 0.1.0 - January 5, 2015 =
+= 0.1.0 - January 3, 2015 =
 
 * Initial release
 
