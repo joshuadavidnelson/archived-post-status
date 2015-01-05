@@ -15,7 +15,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 
 This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
 
-* Makes a new post status available in the dropdown called "Archived"
+* Makes a new post status available in the dropdown called Archived
 * Unpublish your posts and pages without having to trash them
 * Compatible with posts, pages and custom post types
 
