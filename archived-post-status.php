@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Archived Post Status
- * Description: Allows posts and pages to be archived so you can unpublish content without having to trash them.
+ * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
  * Version: 0.1.0
  * Author: Frankie Jarrett
  * Author URI: http://frankiejarrett.com
