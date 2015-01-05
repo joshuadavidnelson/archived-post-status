@@ -4,7 +4,7 @@
 Allows posts and pages to be archived so you can unpublish content without having to trash it.
 
 **Contributors:** [fjarrett](http://profiles.wordpress.org/fjarrett)  
-**Tags:** [posts](http://wordpress.org/plugins/tags/posts)  
+**Tags:** [admin](http://wordpress.org/plugins/tags/admin), [posts](http://wordpress.org/plugins/tags/posts), [pages](http://wordpress.org/plugins/tags/pages), [status](http://wordpress.org/plugins/tags/status), [workflow](http://wordpress.org/plugins/tags/workflow)  
 **Requires at least:** 3.0  
 **Tested up to:** 4.1  
 **Stable tag:** trunk (master)  

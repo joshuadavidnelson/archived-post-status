@@ -1,6 +1,6 @@
 === Archived Post Status ===
 Contributors:      fjarrett
-Tags:              posts
+Tags:              admin, posts, pages, status, workflow
 Requires at least: 3.0
 Tested up to:      4.1
 Stable tag:        trunk
