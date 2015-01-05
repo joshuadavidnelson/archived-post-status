@@ -39,6 +39,20 @@ add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 </pre>
 
 
+## Screenshots ##
+
+### Post list table screen
+
+![Post list table screen](assets/screenshot-1.png)
+
+### Quick Edit mode
+
+![Quick Edit mode](assets/screenshot-2.png)
+
+### Publish metabox controls
+
+![Publish metabox controls](assets/screenshot-3.png)
+
 ## Changelog ##
 
 ### 0.1.0 - January 4, 2015 ###

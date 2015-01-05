@@ -36,6 +36,12 @@ function my_aps_excluded_post_types( $post_types ) {
 add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 </pre>
 
+== Screenshots ==
+
+1. Post list table screen
+2. Quick Edit mode
+3. Publish metabox controls
+
 == Changelog ==
 
 = 0.1.0 - January 4, 2015 =
