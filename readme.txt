@@ -28,12 +28,12 @@ This plugin allows you to archive your WordPress content similar to the way you 
 Yes, you can do this by using the `aps_excluded_post_types` filter:
 
 <pre lang="php">
-function fjarrett_aps_excluded_post_types( $post_types ) {
+function my_aps_excluded_post_types( $post_types ) {
 	$post_types[] = 'my_custom_post_type';
 
 	return $post_types;
 }
-add_filter( 'aps_excluded_post_types', 'fjarrett_aps_excluded_post_types', 10, 1 );
+add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 </pre>
 
 == Changelog ==
