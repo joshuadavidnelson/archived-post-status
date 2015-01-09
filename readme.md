@@ -31,14 +31,14 @@ This plugin allows you to archive your WordPress content similar to the way you 
 ### Can I exclude the Archived status from appearing on certain post types? ###
 Yes, you can do this by using the `aps_excluded_post_types` filter:
 
-<pre lang="php">
+```php
 function my_aps_excluded_post_types( $post_types ) {
 	$post_types[] = 'my_custom_post_type';
 
 	return $post_types;
 }
 add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
-</pre>
+```
 
 
 ## Screenshots ##
