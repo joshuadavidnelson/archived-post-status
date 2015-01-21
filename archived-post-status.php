@@ -33,6 +33,7 @@ add_action( 'init', 'aps_register_archive_post_status' );
 /**
  * Returns TRUE if in the WP Admin, otherwise FALSE
  *
+ * @filter aps_status_arg_public
  * @filter aps_status_arg_show_in_admin_all_list
  * @filter aps_status_arg_show_in_admin_status_list
  *
@@ -41,24 +42,9 @@ add_action( 'init', 'aps_register_archive_post_status' );
 function aps_is_admin() {
 	return is_admin();
 }
+add_filter( 'aps_status_arg_public', 'aps_is_admin' );
 add_filter( 'aps_status_arg_show_in_admin_all_list', 'aps_is_admin' );
 add_filter( 'aps_status_arg_show_in_admin_status_list', 'aps_is_admin' );
-
-/**
- * Check if the current user can view archived posts on the front-end
- *
- * @filter aps_status_arg_public
- *
- * @return bool
- */
-function aps_current_user_view_cap_check() {
-	if ( current_user_can( 'edit_posts' ) ) {
-		return true;
-	}
-
-	return false;
-}
-add_filter( 'aps_status_arg_public', 'aps_current_user_view_cap_check' );
 
 /**
  * Returns TRUE if on the frontend, otherwise FALSE
@@ -88,35 +74,7 @@ function aps_post_screen_js() {
 		return;
 	}
 
-	if ( 'archive' === $post->post_status ) {
-		?>
-		<script>
-		jQuery( document ).ready( function( $ ) {
-			$( '#poststuff' )
-				.find( 'input, textarea, select' )
-				.not( '#submitdiv input' )
-				.not( '#submitdiv textarea' )
-				.not( '#submitdiv select' )
-				.prop( 'disabled', true );
-			$( '#wp-content-editor-tools' )
-				.add( '#edit-slug-buttons' )
-				.add( '#preview-action' )
-				.remove();
-			$( '#titlediv' ).css( 'padding-bottom', '20px' );
-			$( '#minor-publishing-actions' ).hide();
-			$( '.save-post-status, .cancel-post-status' ).on( 'click', function() {
-				if ( 'archive' === $( '#post_status' ).val() ) {
-					$( '#minor-publishing-actions' ).hide();
-				} else {
-					$( '#minor-publishing-actions' ).show();
-				}
-			});
-			$( '#post-status-display' ).html( '<?php esc_html_e( 'Archived', 'archived-post-status' ) ?>' );
-			$( '#post_status' ).append( '<option value="archive" selected="selected"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
-		});
-		</script>
-		<?php
-	} elseif ( 'draft' !== $post->post_status && 'pending' !== $post->post_status ) {
+	if ( 'draft' !== $post->post_status && 'pending' !== $post->post_status ) {
 		?>
 		<script>
 		jQuery( document ).ready( function( $ ) {
@@ -129,26 +87,6 @@ function aps_post_screen_js() {
 add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
 
 /**
- * Modify the TinyMCE init array to make content read-only
- *
- * @action tiny_mce_before_init
- *
- * @param array $init
- *
- * @return array
- */
-function aps_tiny_mce_before_init( $init ) {
-	global $post;
-
-	if ( 'archive' === $post->post_status ) {
-		$init['readonly'] = 1;
-	}
-
-	return $init;
-}
-add_filter( 'tiny_mce_before_init', 'aps_tiny_mce_before_init', 10, 1 );
-
-/**
  * Modify the DOM on edit screens
  *
  * @action admin_footer-edit.php
@@ -159,23 +97,89 @@ function aps_edit_screen_js() {
 	?>
 	<script>
 	jQuery( document ).ready( function( $ ) {
+		$rows = $( '#the-list tr.status-archive' );
+
+		$.each( $rows, function() {
+			disallowEditing( $( this ) );
+		});
+
 		$( 'select[name="_status"]' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
 
 		$( '.editinline' ).on( 'click', function() {
-			var $row    = $( this ).closest( 'tr' ),
-			    $option = $( '.inline-edit-row' ).find( 'select[name="_status"] option[value="archive"]' );
+			var $row        = $( this ).closest( 'tr' ),
+			    $option     = $( '.inline-edit-row' ).find( 'select[name="_status"] option[value="archive"]' ),
+			    is_archived = $row.hasClass( 'status-archive' );
+
+			$option.prop( 'selected', is_archived );
+		});
+
+		$( '.inline-edit-row' ).on( 'remove', function() {
+			var id   = $( this ).prop( 'id' ).replace( 'edit-', '' ),
+			    $row = $( '#post-' + id );
 
 			if ( $row.hasClass( 'status-archive' ) ) {
-				$option.prop( 'selected', true );
-			} else {
-				$option.prop( 'selected', false );
+				disallowEditing( $row );
 			}
 		});
+
+		function disallowEditing( $row ) {
+			var title = $row.find( '.column-title a.row-title' ).text();
+
+			$row.find( '.column-title a.row-title' ).remove();
+			$row.find( '.column-title strong' ).prepend( title );
+			$row.find( '.row-actions .edit' ).remove();
+			$row.find( '.row-actions .view' ).remove();
+			$row.find( '.row-actions .trash' ).contents().filter( function() {
+				return this.nodeType === Node.TEXT_NODE;
+			}).remove();
+		}
 	});
 	</script>
 	<?php
 }
 add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
+
+/**
+ * Prevent archived content from being edited
+ *
+ * @action load-post.php
+ *
+ * @return void
+ */
+function aps_load_post_screen() {
+	$action  = isset( $_GET['action'] ) ? $_GET['action'] : null;
+	$message = isset( $_GET['message'] ) ? absint( $_GET['message'] ) : null;
+	$post_id = isset( $_GET['post'] ) ? $_GET['post'] : null;
+	$post    = get_post( $post_id );
+
+	if (
+		! isset( $post->post_status )
+		||
+		'archive' !== $post->post_status
+	) {
+		return;
+	}
+
+	// Redirect to list table after saving as Archived
+	if ( 'edit' === $action && 1 === $message ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array( 'post_type' => $post->post_type ),
+				admin_url( 'edit.php' )
+			),
+			302
+		);
+
+		exit;
+	}
+
+	wp_die(
+		__( 'You cannot modify content that has been archived. Please change the post status to edit.', 'archived-post-status' ),
+		__( 'Archived Content', 'archived-post-status' ),
+		array( 'back_link' => true )
+	);
+}
+add_action( 'load-post.php', 'aps_load_post_screen' );
 
 /**
  * Display custom post state text next to post titles that are Archived
