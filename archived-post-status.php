@@ -33,7 +33,6 @@ add_action( 'init', 'aps_register_archive_post_status' );
 /**
  * Returns TRUE if in the WP Admin, otherwise FALSE
  *
- * @filter aps_status_arg_public
  * @filter aps_status_arg_show_in_admin_all_list
  * @filter aps_status_arg_show_in_admin_status_list
  *
@@ -42,9 +41,24 @@ add_action( 'init', 'aps_register_archive_post_status' );
 function aps_is_admin() {
 	return is_admin();
 }
-add_filter( 'aps_status_arg_public', 'aps_is_admin' );
 add_filter( 'aps_status_arg_show_in_admin_all_list', 'aps_is_admin' );
 add_filter( 'aps_status_arg_show_in_admin_status_list', 'aps_is_admin' );
+
+/**
+ * Check if the current user can view archived posts on the front-end
+ *
+ * @filter aps_status_arg_public
+ *
+ * @return bool
+ */
+function aps_current_user_view_cap_check() {
+	if ( current_user_can( 'edit_posts' ) ) {
+		return true;
+	}
+
+	return false;
+}
+add_filter( 'aps_status_arg_public', 'aps_current_user_view_cap_check' );
 
 /**
  * Returns TRUE if on the frontend, otherwise FALSE
@@ -78,8 +92,18 @@ function aps_post_screen_js() {
 		?>
 		<script>
 		jQuery( document ).ready( function( $ ) {
+			$( '#poststuff' )
+				.find( 'input, textarea, select' )
+				.not( '#submitdiv input' )
+				.not( '#submitdiv textarea' )
+				.not( '#submitdiv select' )
+				.prop( 'disabled', true );
+			$( '#wp-content-editor-tools' )
+				.add( '#edit-slug-buttons' )
+				.add( '#preview-action' )
+				.remove();
+			$( '#titlediv' ).css( 'padding-bottom', '20px' );
 			$( '#minor-publishing-actions' ).hide();
-			$( '#preview-action' ).remove();
 			$( '.save-post-status, .cancel-post-status' ).on( 'click', function() {
 				if ( 'archive' === $( '#post_status' ).val() ) {
 					$( '#minor-publishing-actions' ).hide();
@@ -103,6 +127,26 @@ function aps_post_screen_js() {
 	}
 }
 add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
+
+/**
+ * Modify the TinyMCE init array to make content read-only
+ *
+ * @action tiny_mce_before_init
+ *
+ * @param array $init
+ *
+ * @return array
+ */
+function aps_tiny_mce_before_init( $init ) {
+	global $post;
+
+	if ( 'archive' === $post->post_status ) {
+		$init['readonly'] = 1;
+	}
+
+	return $init;
+}
+add_filter( 'tiny_mce_before_init', 'aps_tiny_mce_before_init', 10, 1 );
 
 /**
  * Modify the DOM on edit screens
