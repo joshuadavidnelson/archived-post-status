@@ -4,8 +4,8 @@
 ![Banner](assets/banner-1544x500.png)
 Allows posts and pages to be archived so you can unpublish content without having to trash it.
 
-**Contributors:** [fjarrett](http://profiles.wordpress.org/fjarrett)  
-**Tags:** [admin](http://wordpress.org/plugins/tags/admin), [posts](http://wordpress.org/plugins/tags/posts), [pages](http://wordpress.org/plugins/tags/pages), [status](http://wordpress.org/plugins/tags/status), [workflow](http://wordpress.org/plugins/tags/workflow)  
+**Contributors:** [fjarrett](https://profiles.wordpress.org/fjarrett)  
+**Tags:** [admin](https://wordpress.org/plugins/tags/admin), [posts](https://wordpress.org/plugins/tags/posts), [pages](https://wordpress.org/plugins/tags/pages), [status](https://wordpress.org/plugins/tags/status), [workflow](https://wordpress.org/plugins/tags/workflow)  
 **Requires at least:** 3.0  
 **Tested up to:** 4.1  
 **Stable tag:** trunk (master)  
