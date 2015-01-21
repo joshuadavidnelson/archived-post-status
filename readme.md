@@ -28,6 +28,24 @@ This plugin allows you to archive your WordPress content similar to the way you 
 
 ## Frequently Asked Questions ##
 
+### Isn't this the same as using the Draft or Private statuses? ###
+Actually, no, they are not the same thing.
+
+The Draft status is a "pre-published" status that is reserved for content that is still being worked on. You can still make changes to content marked as Draft, and you can preview your changes.
+
+The Private status is a special kind of published status. It means the content is published, but only certain logged-in users can view it.
+
+The Archived post status, on the other hand, is meant to be a "post-published" status. Once a post has been set to Archived it can no longer be edited or viewed.
+
+Of course, you can always change the status back to Draft or Publish if you want to be able to edit its content again.
+
+### Can't I just trash old content I don't want anymore? ###
+Yes, there is nothing wong with trashing old content. And the behavior of the Archived status is very similar to that of trashing.
+
+However, WordPress automatically purges trashed posts every 7 days (by default).
+
+This is what makes the Archived post status handy. You can unpublish content without having to delete it forever.
+
 ### Can I exclude the Archived status from appearing on certain post types? ###
 Yes, you can do this by using the `aps_excluded_post_types` filter:
 
@@ -57,9 +75,14 @@ add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 
 ## Changelog ##
 
+### 0.2.0 - January 21, 2015 ###
+* Make archived content read-only
+
+Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com/pollyplummer)
+
 ### 0.1.0 - January 4, 2015 ###
 * Initial release
 
-Props [fjarrett](https://profiles.wordpress.org/fjarrett/)
+Props [fjarrett](https://github.com/fjarrett)
 
 
