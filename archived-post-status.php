@@ -174,9 +174,8 @@ function aps_load_post_screen() {
 	}
 
 	wp_die(
-		__( 'You cannot modify content that has been archived. Please change the post status to edit.', 'archived-post-status' ),
-		__( 'Archived Content', 'archived-post-status' ),
-		array( 'back_link' => true )
+		__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
+		__( 'WordPress &rsaquo; Error' )
 	);
 }
 add_action( 'load-post.php', 'aps_load_post_screen' );
