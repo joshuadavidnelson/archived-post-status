@@ -2,12 +2,38 @@
 /**
  * Plugin Name: Archived Post Status
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: Frankie Jarrett
  * Author URI: http://frankiejarrett.com
  * License: GPLv2+
  * Text Domain: archived-post-status
  */
+
+/**
+ * Translations strings placeholder function
+ * 
+ * Translation strings that are not used elsewhere but Plugin Title and Description
+ * are helt here to be picked up by Poedit. Keep these in sync with the actual plugin's
+ * title and description.
+ * 
+ * @return void
+ */
+function aps_translation_strings() {
+	__('Archived Post Status', 'archived-post-status');
+	__('Allows posts and pages to be archived so you can unpublish content without having to trash it.', 'archived-post-status');
+}
+
+/**
+ * Load plugin textdomain.
+ *
+ * @action plugins_loaded
+
+ * @return void
+ */
+function aps_load_textdomain() {
+	load_plugin_textdomain( 'archived-post-status', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' ); 
+}
+add_action( 'plugins_loaded', 'aps_load_textdomain' );
 
 /**
  * Register a custom post status for Archived
@@ -175,7 +201,7 @@ function aps_load_post_screen() {
 
 	wp_die(
 		__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
-		__( 'WordPress &rsaquo; Error' )
+		translate( 'WordPress &rsaquo; Error' )
 	);
 }
 add_action( 'load-post.php', 'aps_load_post_screen' );
