@@ -40,33 +40,17 @@ add_action( 'plugins_loaded', 'aps_i18n' );
 function aps_register_archive_post_status() {
 	$args = array(
 		'label'                     => __( 'Archived', 'archived-post-status' ),
-		'public'                    => apply_filters( 'aps_status_arg_public', false ),
+		'public'                    => apply_filters( 'aps_status_arg_public', aps_current_user_can_view() ),
 		'private'                   => apply_filters( 'aps_status_arg_private', true ),
-		'exclude_from_search'       => apply_filters( 'aps_status_arg_exclude_from_search', true ),
-		'show_in_admin_all_list'    => apply_filters( 'aps_status_arg_show_in_admin_all_list', true ),
-		'show_in_admin_status_list' => apply_filters( 'aps_status_arg_show_in_admin_status_list', true ),
+		'exclude_from_search'       => apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() ),
+		'show_in_admin_all_list'    => apply_filters( 'aps_status_arg_show_in_admin_all_list', aps_current_user_can_view() ),
+		'show_in_admin_status_list' => apply_filters( 'aps_status_arg_show_in_admin_status_list', aps_current_user_can_view() ),
 		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archived-post-status' ),
 	);
 
 	register_post_status( 'archive', $args );
 }
 add_action( 'init', 'aps_register_archive_post_status' );
-
-/**
- * Returns TRUE if in the WP Admin, otherwise FALSE
- *
- * @filter aps_status_arg_public
- * @filter aps_status_arg_show_in_admin_all_list
- * @filter aps_status_arg_show_in_admin_status_list
- *
- * @return bool
- */
-function aps_is_admin() {
-	return is_admin();
-}
-add_filter( 'aps_status_arg_public', 'aps_is_admin' );
-add_filter( 'aps_status_arg_show_in_admin_all_list', 'aps_is_admin' );
-add_filter( 'aps_status_arg_show_in_admin_status_list', 'aps_is_admin' );
 
 /**
  * Returns TRUE if on the frontend, otherwise FALSE
@@ -83,8 +67,6 @@ add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 /**
  * Returns TRUE if current user can view, otherwise FALSE
  *
- * @filter aps_status_arg_public
- *
  * @return bool
  */
 function aps_current_user_can_view() {
@@ -99,7 +81,6 @@ function aps_current_user_can_view() {
 
 	return current_user_can( $capability );
 }
-add_filter( 'aps_status_arg_public', 'aps_current_user_can_view' );
 
 /**
  * Filter archived post titles on the frontend
@@ -217,15 +198,6 @@ function aps_edit_screen_js() {
 			$row.find( '.column-title a.row-title' ).remove();
 			$row.find( '.column-title strong' ).prepend( title );
 			$row.find( '.row-actions .edit' ).remove();
-
-			<?php if ( ! aps_current_user_can_view() ) : ?>
-
-				$row.find( '.row-actions .view' ).remove();
-				$row.find( '.row-actions .trash' ).contents().filter( function() {
-					return this.nodeType === Node.TEXT_NODE;
-				}).remove();
-
-			<?php endif; ?>
 		}
 	});
 	</script>
