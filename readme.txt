@@ -79,6 +79,8 @@ add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 * Added language support for German, Spanish, French, Portuguese and Russian
 * Users with the `read_private_posts` capability can now view Archived content
 * The `aps_excluded_post_types` filter now works as expected on Edit screens
+* Automatically close comments and pings when content is archived
+* Allow mulitple post states to exist alongside Archived in edit screen
 
 Props [fjarrett](https://github.com/fjarrett)
 
