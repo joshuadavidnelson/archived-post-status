@@ -8,7 +8,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Tags:** [admin](https://wordpress.org/plugins/tags/admin), [posts](https://wordpress.org/plugins/tags/posts), [pages](https://wordpress.org/plugins/tags/pages), [status](https://wordpress.org/plugins/tags/status), [workflow](https://wordpress.org/plugins/tags/workflow)  
 **Requires at least:** 3.0  
 **Tested up to:** 4.1  
-**Stable tag:** trunk (master)  
+**Stable tag:** 0.3.0  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/fjarrett/archived-post-status.png?branch=master)](https://travis-ci.org/fjarrett/archived-post-status) 
@@ -23,6 +23,15 @@ This plugin allows you to archive your WordPress content similar to the way you 
 * Unpublish your posts and pages without having to trash them
 * Compatible with posts, pages and custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
+
+**Languages supported:**
+
+* English
+* Deutsch
+* Español
+* Français
+* Português
+* Русский
 
 **Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
 
@@ -74,6 +83,13 @@ add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 ![Publish metabox controls](assets/screenshot-3.png)
 
 ## Changelog ##
+
+### 0.3.0 - January 26, 2015 ###
+* Added language support for German, Spanish, French, Portuguese and Russian
+* Users with the `read_private_posts` capability can now view Archived content
+* The `aps_excluded_post_types` filter now works as expected on Edit screens
+
+Props [fjarrett](https://github.com/fjarrett)
 
 ### 0.2.0 - January 21, 2015 ###
 * Make archived content read-only
