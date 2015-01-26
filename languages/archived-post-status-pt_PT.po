@@ -1,0 +1,42 @@
+# Copyright (C) 2015 Archived Post Status
+# This file is distributed under the same license as the Archived Post Status package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Archived Post Status 0.3.0\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/tag/archived-post-status\n"
+"POT-Creation-Date: 2015-01-26 15:19-0600\n"
+"PO-Revision-Date: 2015-01-26 15:58-0600\n"
+"Last-Translator: Frankie Jarrett <fjarrett@gmail.com>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 1.7.3\n"
+"X-Poedit-KeywordsList: _e;__;esc_html_e;esc_html__;esc_attr_e;esc_attr_;"
+"_n_noop\n"
+"X-Poedit-Basepath: .\n"
+"Language: pt_PT\n"
+"X-Poedit-SearchPath-0: ..\n"
+
+#: ../archived-post-status.php:42 ../archived-post-status.php:124
+#: ../archived-post-status.php:154 ../archived-post-status.php:252
+msgid "Archived"
+msgstr "Arquivada"
+
+#: ../archived-post-status.php:47
+#, php-format
+msgid "Archived <span class=\"count\">(%s)</span>"
+msgstr "Arquivada <span class=\"count\">(%s)</span>"
+
+#: ../archived-post-status.php:225
+msgid ""
+"You can't edit this item because it has been Archived. Please change the "
+"post status and try again."
+msgstr ""
+"﻿Você não pode editar este artigo porque ele foi arquivado. Por favor, "
+"mude o status do post e tente novamente."
+
+#: ../archived-post-status.php:226
+msgid "WordPress &rsaquo; Error"
+msgstr "﻿WordPress &rsaquo; erro"
