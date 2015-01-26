@@ -270,3 +270,41 @@ function aps_display_post_states( $post_states, $post ) {
 	return array( __( 'Archived', 'archived-post-status' ) );
 }
 add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
+
+/**
+ * Close comments and pings when content is archived
+ *
+ * @action save_post
+ *
+ * @param int    $post_id  Post ID
+ * @param object $post     WP_Post
+ * @param bool   $update   Whether this is an existing post being updated or not
+ *
+ * @return void
+ */
+function aps_save_post( $post_id, $post, $update ) {
+	if (
+		aps_is_excluded_post_type( $post->post_type )
+		||
+		wp_is_post_revision( $post )
+	) {
+		return;
+	}
+
+	if ( 'archive' === $post->post_status ) {
+		// Unhook to prevent infinite loop
+		remove_action( 'save_post', __FUNCTION__ );
+
+		$args = array(
+			'ID'             => $post->ID,
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		);
+
+		wp_update_post( $args );
+
+		// Add hook back again
+		add_action( 'save_post', __FUNCTION__, 10, 3 );
+	}
+}
+add_action( 'save_post', 'aps_save_post', 10, 3 );
