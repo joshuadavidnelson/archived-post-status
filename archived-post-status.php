@@ -41,6 +41,7 @@ function aps_register_archive_post_status() {
 	$args = array(
 		'label'                     => __( 'Archived', 'archived-post-status' ),
 		'public'                    => apply_filters( 'aps_status_arg_public', false ),
+		'private'                   => apply_filters( 'aps_status_arg_private', true ),
 		'exclude_from_search'       => apply_filters( 'aps_status_arg_exclude_from_search', true ),
 		'show_in_admin_all_list'    => apply_filters( 'aps_status_arg_show_in_admin_all_list', true ),
 		'show_in_admin_status_list' => apply_filters( 'aps_status_arg_show_in_admin_status_list', true ),
@@ -78,6 +79,46 @@ function aps_is_frontend() {
 	return ! is_admin();
 }
 add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
+
+/**
+ * Returns TRUE if current user can view, otherwise FALSE
+ *
+ * @filter aps_status_arg_public
+ *
+ * @return bool
+ */
+function aps_current_user_can_view() {
+	/**
+	 * Default capability to grant ability to view Archived content
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
+	$capability = apply_filters( 'aps_default_read_capability', 'read_private_posts' );
+
+	return current_user_can( $capability );
+}
+add_filter( 'aps_status_arg_public', 'aps_current_user_can_view' );
+
+/**
+ * Filter archived post titles on the frontend
+ *
+ * @param string $title
+ * @param int    $post_id
+ *
+ * @return string
+ */
+function aps_the_title( $title, $post_id ) {
+	$post = get_post( $post_id );
+
+	if ( ! is_admin() && 'archive' === $post->post_status ) {
+		$title = sprintf( '%s: %s', __( 'Archived', 'archived-post-status' ), $title );
+	}
+
+	return $title;
+}
+add_filter( 'the_title', 'aps_the_title', 10, 2 );
 
 /**
  * Check if a post type should NOT be using the Archived status
@@ -176,10 +217,15 @@ function aps_edit_screen_js() {
 			$row.find( '.column-title a.row-title' ).remove();
 			$row.find( '.column-title strong' ).prepend( title );
 			$row.find( '.row-actions .edit' ).remove();
-			$row.find( '.row-actions .view' ).remove();
-			$row.find( '.row-actions .trash' ).contents().filter( function() {
-				return this.nodeType === Node.TEXT_NODE;
-			}).remove();
+
+			<?php if ( ! aps_current_user_can_view() ) : ?>
+
+				$row.find( '.row-actions .view' ).remove();
+				$row.find( '.row-actions .trash' ).contents().filter( function() {
+					return this.nodeType === Node.TEXT_NODE;
+				}).remove();
+
+			<?php endif; ?>
 		}
 	});
 	</script>
