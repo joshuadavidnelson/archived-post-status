@@ -267,7 +267,7 @@ function aps_display_post_states( $post_states, $post ) {
 		return $post_states;
 	}
 
-	return array( __( 'Archived', 'archived-post-status' ) );
+	return array_merge( $post_states, array( 'archive' => __( 'Archived', 'archived-post-status' ) ) );
 }
 add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
 
