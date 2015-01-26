@@ -59,6 +59,30 @@ function aps_is_frontend() {
 add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 
 /**
+ * Check if a post type should NOT be using the Archived status
+ *
+ * @param string $post_type
+ *
+ * @return bool
+ */
+function aps_is_excluded_post_type( $post_type ) {
+	/**
+	 * Prevent the Archived status from being used on these post types
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array
+	 */
+	$excluded = apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
+
+	if ( in_array( $post_type, $excluded ) ) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * Modify the DOM on post screens
  *
  * @action admin_footer-post.php
@@ -68,9 +92,7 @@ add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 function aps_post_screen_js() {
 	global $post;
 
-	$excluded = apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
-
-	if ( in_array( $post->post_type, $excluded ) ) {
+	if ( aps_is_excluded_post_type( $post->post_type ) ) {
 		return;
 	}
 
@@ -94,6 +116,11 @@ add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
  * @return void
  */
 function aps_edit_screen_js() {
+	global $typenow;
+
+	if ( aps_is_excluded_post_type( $typenow ) ) {
+		return;
+	}
 	?>
 	<script>
 	jQuery( document ).ready( function( $ ) {
@@ -153,7 +180,7 @@ function aps_load_post_screen() {
 	$post    = get_post( $post_id );
 
 	if (
-		! isset( $post->post_status )
+		aps_is_excluded_post_type( $post->post_type )
 		||
 		'archive' !== $post->post_status
 	) {
@@ -192,6 +219,8 @@ add_action( 'load-post.php', 'aps_load_post_screen' );
  */
 function aps_display_post_states( $post_states, $post ) {
 	if (
+		aps_is_excluded_post_type( $post->post_type )
+		||
 		'archive' !== $post->post_status
 		||
 		'archive' === get_query_var( 'post_status' )
