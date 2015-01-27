@@ -2,42 +2,54 @@
 # This file is distributed under the same license as the Archived Post Status package.
 msgid ""
 msgstr ""
-"Project-Id-Version: Archived Post Status 0.3.0\n"
-"Report-Msgid-Bugs-To: http://wordpress.org/tag/archived-post-status\n"
-"POT-Creation-Date: 2015-01-26 15:19-0600\n"
-"PO-Revision-Date: 2015-01-26 15:56-0600\n"
+"Project-Id-Version: Archived Post Status/0.3.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-01-27 11:57-0600\n"
+"PO-Revision-Date: 2015-01-27 12:09-0600\n"
 "Last-Translator: Frankie Jarrett <fjarrett@gmail.com>\n"
 "Language-Team: \n"
+"Language: ru_RU\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Generator: Poedit 1.7.3\n"
-"X-Poedit-KeywordsList: _e;__;esc_html_e;esc_html__;esc_attr_e;esc_attr_;"
-"_n_noop\n"
+"X-Poedit-KeywordsList: _e;__;esc_html_e;esc_html__;esc_attr_e;esc_attr_;_n_noop\n"
 "X-Poedit-Basepath: .\n"
-"Language: ru_RU\n"
 "X-Poedit-SearchPath-0: ..\n"
 
-#: ../archived-post-status.php:42 ../archived-post-status.php:124
-#: ../archived-post-status.php:154 ../archived-post-status.php:252
+#: ../archived-post-status.php:43
+msgid "Archived Post Status"
+msgstr "Архив Статус"
+
+#: ../archived-post-status.php:44
+msgid ""
+"Allows posts and pages to be archived so you can unpublish content without having "
+"to trash it."
+msgstr ""
+
+#: ../archived-post-status.php:56 ../archived-post-status.php:111
+#: ../archived-post-status.php:160 ../archived-post-status.php:190
+#: ../archived-post-status.php:284
 msgid "Archived"
 msgstr "﻿Архив"
 
-#: ../archived-post-status.php:47
-#, php-format
+#: ../archived-post-status.php:62
+#, fuzzy, php-format
 msgid "Archived <span class=\"count\">(%s)</span>"
-msgstr "Архив <span class=\"count\">(%s)</span>"
+msgid_plural "Archived <span class=\"count\">(%s)</span>"
+msgstr[0] "Архив <span class=\"count\">(%s)</span>"
+msgstr[1] "Архив <span class=\"count\">(%s)</span>"
+msgstr[2] "Архив <span class=\"count\">(%s)</span>"
 
-#: ../archived-post-status.php:225
+#: ../archived-post-status.php:257
 msgid ""
-"You can't edit this item because it has been Archived. Please change the "
-"post status and try again."
+"You can't edit this item because it has been Archived. Please change the post "
+"status and try again."
 msgstr ""
-"﻿Этот элемент нельзя изменить, поскольку он перемещен в архив. Пожалуйста "
-"измените пост статус и повторите попытку."
+"Этот элемент нельзя изменить, поскольку он перемещен в архив. Пожалуйста, измените "
+"статус вашей публикации и повторите ещё раз."
 
-#: ../archived-post-status.php:226
-msgid "WordPress &rsaquo; Error"
-msgstr "﻿WordPress &rsaquo; ошибка"
+#~ msgid "WordPress &rsaquo; Error"
+#~ msgstr "﻿WordPress &rsaquo; ошибка"
