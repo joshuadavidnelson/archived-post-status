@@ -31,6 +31,20 @@ function aps_i18n() {
 add_action( 'plugins_loaded', 'aps_i18n' );
 
 /**
+ * Translations strings placeholder function
+ *
+ * Translation strings that are not used elsewhere but Plugin Title and Description
+ * are helt here to be picked up by Poedit. Keep these in sync with the actual plugin's
+ * title and description.
+ *
+ * @return void
+ */
+function aps_i18n_strings() {
+	__( 'Archived Post Status', 'archived-post-status' );
+	__( 'Allows posts and pages to be archived so you can unpublish content without having to trash it.', 'archived-post-status' );
+}
+
+/**
  * Register a custom post status for Archived
  *
  * @action init
@@ -241,7 +255,7 @@ function aps_load_post_screen() {
 
 	wp_die(
 		__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
-		__( 'WordPress &rsaquo; Error' )
+		translate( 'WordPress &rsaquo; Error' )
 	);
 }
 add_action( 'load-post.php', 'aps_load_post_screen' );
