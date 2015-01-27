@@ -86,14 +86,14 @@ function aps_current_user_can_view() {
  * Filter archived post titles on the frontend
  *
  * @param string $title
- * @param int    $post_id
+ * @param int    $post_id (optional)
  *
  * @return string
  */
-function aps_the_title( $title, $post_id ) {
+function aps_the_title( $title, $post_id = null ) {
 	$post = get_post( $post_id );
 
-	if ( ! is_admin() && 'archive' === $post->post_status ) {
+	if ( ! is_admin() && isset( $post->post_status ) && 'archive' === $post->post_status ) {
 		$title = sprintf( '%s: %s', __( 'Archived', 'archived-post-status' ), $title );
 	}
 
