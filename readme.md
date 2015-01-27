@@ -85,9 +85,11 @@ add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 ## Changelog ##
 
 ### 0.3.1 - January 27, 2015 ###
+* New: Added language support for Nederlands
+* Tweak: Refreshed existing language files
 * Fix: Missing argument warning on the_title filter
 
-Props [fjarrett](https://github.com/fjarrett), [htrex](https://profiles.wordpress.org/htrex/)
+Props [fjarrett](https://github.com/fjarrett), [RavanH](https://github.com/RavanH), [htrex](https://profiles.wordpress.org/htrex/)
 
 ### 0.3.0 - January 26, 2015 ###
 * New: Added language support for German, Spanish, French, Portuguese and Russian
