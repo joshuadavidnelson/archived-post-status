@@ -8,7 +8,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Tags:** [admin](https://wordpress.org/plugins/tags/admin), [posts](https://wordpress.org/plugins/tags/posts), [pages](https://wordpress.org/plugins/tags/pages), [status](https://wordpress.org/plugins/tags/status), [workflow](https://wordpress.org/plugins/tags/workflow)  
 **Requires at least:** 3.0  
 **Tested up to:** 4.1  
-**Stable tag:** 0.3.0  
+**Stable tag:** 0.3.1  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/fjarrett/archived-post-status.png?branch=master)](https://travis-ci.org/fjarrett/archived-post-status) 
@@ -84,17 +84,22 @@ add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
 
 ## Changelog ##
 
+### 0.3.1 - January 27, 2015 ###
+* Fix: Missing argument warning on the_title filter
+
+Props [fjarrett](https://github.com/fjarrett), [htrex](https://profiles.wordpress.org/htrex/)
+
 ### 0.3.0 - January 26, 2015 ###
-* Added language support for German, Spanish, French, Portuguese and Russian
-* Users with the `read_private_posts` capability can now view Archived content
-* The `aps_excluded_post_types` filter now works as expected on Edit screens
-* Automatically close comments and pings when content is archived
-* Allow mulitple post states to exist alongside Archived in edit screen
+* New: Added language support for German, Spanish, French, Portuguese and Russian
+* New: Users with the `read_private_posts` capability can now view Archived content
+* New: Automatically close comments and pings when content is archived
+* Tweak: Allow mulitple post states to exist alongside Archived in edit screen
+* Fix: The `aps_excluded_post_types` filter now works as expected on Edit screens
 
 Props [fjarrett](https://github.com/fjarrett)
 
 ### 0.2.0 - January 21, 2015 ###
-* Make archived content read-only
+* New: Make archived content read-only
 
 Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com/pollyplummer)
 
