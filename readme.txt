@@ -26,6 +26,7 @@ This plugin allows you to archive your WordPress content similar to the way you 
 * Deutsch
 * Español
 * Français
+* Nederlands
 * Português
 * Русский
 
