@@ -34,6 +34,68 @@ This plugin allows you to archive your WordPress content similar to the way you 
 
 == Frequently Asked Questions ==
 
+= Where are the options for this plugin? =
+
+This plugin does not have a settings page. Simply put, I don't like bloating my plugins with a bunch of options.
+
+Instead, I try to develop functionality using the 80/20 principle so that for 80% of use cases you all you need to do is activate the plugin and it "just works".
+
+For the other 20% of you who want things to behave differently there are numerous hooks available in the plugin so you can customize default behaviors.
+
+Many of those hooks are listed below in this FAQ.
+
+= Why are Archived posts appearing on the front-end? =
+
+This is most likely because you are viewing your site while being logged in as an Editor or Administrator.
+
+By default, any user with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability will see Archived posts appear on the front-end of your site.
+
+You can change the default read capability by adding this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+function my_aps_default_read_capability( $capability ) {
+	$capability = 'read';
+
+	return $capability;
+}
+add_filter( 'aps_default_read_capability', 'my_aps_default_read_capability' );
+</pre>
+
+= Can I make Archived posts appear on the front-end for all users? =
+
+Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+add_filter( 'aps_status_arg_public', '__return_true' );
+add_filter( 'aps_status_arg_private', '__return_false' );
+add_filter( 'aps_status_arg_exclude_from_search', '__return_false' );
+</pre>
+
+= Can I make Archived posts hidden from the "All" list in the WP Admin, similar to Trashed posts? =
+
+Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+add_filter( 'aps_status_arg_public', '__return_false' );
+add_filter( 'aps_status_arg_private', '__return_false' );
+add_filter( 'aps_status_arg_show_in_admin_all_list', '__return_false' );
+</pre>
+
+Please note that there is a [bug in core](https://core.trac.wordpress.org/ticket/24415) that requires public and private to be set to false in order for the `aps_status_arg_show_in_admin_all_list` to also be false. There are many bugs in core surrounding registering custom post statuses, so if something doesn't work the way you want on the first try be prepared to do some digging through trac :-)
+
+= Can I exclude the Archived status from appearing on certain post types? =
+
+Yes, simply add this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+function my_aps_excluded_post_types( $post_types ) {
+	$post_types[] = 'my_custom_post_type';
+
+	return $post_types;
+}
+add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
+</pre>
+
 = Isn't this the same as using the Draft or Private statuses? =
 
 Actually, no, they are not the same thing.
@@ -53,19 +115,6 @@ Yes, there is nothing wong with trashing old content. And the behavior of the Ar
 However, WordPress automatically purges trashed posts every 7 days (by default).
 
 This is what makes the Archived post status handy. You can unpublish content without having to delete it forever.
-
-= Can I exclude the Archived status from appearing on certain post types? =
-
-Yes, you can do this by using the `aps_excluded_post_types` filter:
-
-<pre lang="php">
-function my_aps_excluded_post_types( $post_types ) {
-	$post_types[] = 'my_custom_post_type';
-
-	return $post_types;
-}
-add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types', 10, 1 );
-</pre>
 
 == Screenshots ==
 
