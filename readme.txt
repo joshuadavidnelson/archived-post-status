@@ -11,7 +11,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 
 == Description ==
 
-**Did you find this plugin helpful? Please consider [writing a review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
+**Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
 This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
 
