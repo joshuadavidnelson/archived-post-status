@@ -133,7 +133,7 @@ This is what makes the Archived post status handy. You can unpublish content wit
 ### 0.3.2 - March 25, 2015 ###
 * Fix: Non-object warnings when `$post` is null ([#6](https://github.com/fjarrett/archived-post-status/issues/6))
 
-Props [fjarrett](https://github.com/fjarrett)
+Props [fjarrett](https://github.com/fjarrett), [stevethemechanic](https://github.com/stevethemechanic), [edwin-yard](https://profiles.wordpress.org/edwin-yard/)
 
 ### 0.3.1 - January 27, 2015 ###
 * New: Added language support for Nederlands
