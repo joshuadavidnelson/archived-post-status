@@ -131,14 +131,14 @@ This is what makes the Archived post status handy. You can unpublish content wit
 ## Changelog ##
 
 ### 0.3.2 - March 25, 2015 ###
-* Fix: Non-object warnings when $post is null
+* Fix: Non-object warnings when `$post` is null ([#6](https://github.com/fjarrett/archived-post-status/issues/6))
 
 Props [fjarrett](https://github.com/fjarrett)
 
 ### 0.3.1 - January 27, 2015 ###
 * New: Added language support for Nederlands
 * Tweak: Refreshed existing language files
-* Fix: Missing argument warning on the_title filter
+* Fix: Missing argument warning on `the_title` filter
 
 Props [fjarrett](https://github.com/fjarrett), [RavanH](https://github.com/RavanH), [htrex](https://profiles.wordpress.org/htrex/)
 
