@@ -3,7 +3,7 @@ Contributors:      fjarrett
 Tags:              admin, posts, pages, status, workflow
 Requires at least: 3.6
 Tested up to:      4.1
-Stable tag:        0.3.1
+Stable tag:        0.3.2
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -123,6 +123,12 @@ This is what makes the Archived post status handy. You can unpublish content wit
 3. Publish metabox controls
 
 == Changelog ==
+
+= 0.3.2 - March 25, 2015 =
+
+* Fix: Non-object warnings when $post is null
+
+Props [fjarrett](https://github.com/fjarrett)
 
 = 0.3.1 - January 27, 2015 =
 
