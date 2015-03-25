@@ -233,6 +233,8 @@ function aps_load_post_screen() {
 	$post    = get_post( $post_id );
 
 	if (
+		is_null( $post )
+		||
 		aps_is_excluded_post_type( $post->post_type )
 		||
 		'archive' !== $post->post_status
