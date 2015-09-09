@@ -1,0 +1,23 @@
+# Grunt aliases
+---
+# Checktextdomain and makepot task(s)
+'build:i18n':
+- 'checktextdomain'
+- 'makepot'
+- 'newer:potomo'
+# Makepot and push it on Transifex task(s).
+tx-push:
+- 'makepot'
+- 'exec:txpush_s'
+# Pull from Transifex and create .mo task(s).
+tx-pull:
+- 'exec:txpull'
+- 'newer:potomo'
+# Build everything
+build:
+- 'clean'
+- 'copy'
+- 'compress'
+# Default task
+default:
+- 'makepot'
