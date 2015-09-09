@@ -7,6 +7,7 @@
  * Author URI: http://frankiejarrett.com
  * License: GPLv2+
  * Text Domain: archived-post-status
+ * Languages: languages
  */
 
 /**
