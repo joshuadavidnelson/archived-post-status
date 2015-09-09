@@ -1,0 +1,8 @@
+[main]
+host = https://www.transifex.com
+
+[archived-post-status.archived-post-status]
+file_filter = languages/archived-post-status-<lang>.po
+source_file = languages/archived-post-status.pot
+source_lang = en_US
+type = PO
