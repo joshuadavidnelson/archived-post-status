@@ -3,53 +3,51 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Archived Post Status/0.3.1\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-01-27 11:57-0600\n"
-"PO-Revision-Date: 2015-06-06 04:50+0100\n"
-"Last-Translator: Gahapati <gahapati@gmail.com>\n"
+"Report-Msgid-Bugs-To: http://wp-translations.org/\n"
+"POT-Creation-Date: 2015-09-09 14:43:09+00:00\n"
+"PO-Revision-Date: 2015-01-27 12:03-0600\n"
+"Last-Translator: Frankie Jarrett <fjarrett@gmail.com>\n"
 "Language-Team: \n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 1.8.1\n"
-"X-Poedit-KeywordsList: _e;__;esc_html_e;esc_html__;esc_attr_e;esc_attr_;_n_noop\n"
+"X-Generator: Poedit 1.7.3\n"
+"X-Poedit-KeywordsList: _e;__;esc_html_e;esc_html__;esc_attr_e;esc_attr_;"
+"_n_noop\n"
 "X-Poedit-Basepath: .\n"
 "X-Poedit-SearchPath-0: ..\n"
 
-#: ../archived-post-status.php:43
-msgid "Archived Post Status"
-msgstr "Beitragsstatus Archiviert"
-
-#: ../archived-post-status.php:44
+#. Description of the plugin/theme
 msgid ""
-"Allows posts and pages to be archived so you can unpublish content without having "
-"to trash it."
+"Allows posts and pages to be archived so you can unpublish content without "
+"having to trash it."
 msgstr ""
-"Ermöglicht, Beiträge und Seiten zu archivieren, so daß diese zurückgezogen werden "
-"können, ohne sie zu löschen."
 
-#: ../archived-post-status.php:56 ../archived-post-status.php:111
-#: ../archived-post-status.php:160 ../archived-post-status.php:190
-#: ../archived-post-status.php:284
+#: archived-post-status.php:57 archived-post-status.php:112
+#: archived-post-status.php:161 archived-post-status.php:191
+#: archived-post-status.php:287
 msgid "Archived"
 msgstr "﻿Archiviert"
 
-#: ../archived-post-status.php:62
-#, php-format
+#: archived-post-status.php:63
+#, fuzzy
 msgid "Archived <span class=\"count\">(%s)</span>"
 msgid_plural "Archived <span class=\"count\">(%s)</span>"
 msgstr[0] "Archiviert <span class=\"count\">(%s)</span>"
 msgstr[1] "Archiviert <span class=\"count\">(%s)</span>"
 
-#: ../archived-post-status.php:257
+#: archived-post-status.php:260
 msgid ""
-"You can't edit this item because it has been Archived. Please change the post "
-"status and try again."
+"You can't edit this item because it has been Archived. Please change the "
+"post status and try again."
 msgstr ""
-"Sie können diesen Eintrag nicht bearbeiten, weil er archiviert wurde. Bitte den "
-"Status ändern und erneut versuchen."
+"Sie können diese Inhalte nicht ändern, weil es archiviert wurde. Bitte "
+"ändern Sie das status und erneut versuchen."
+
+#~ msgid "Archived Post Status"
+#~ msgstr "Archivierte Beitrag Stand"
 
 #~ msgid "WordPress &rsaquo; Error"
 #~ msgstr "WordPress &rsaquo; Fehler"
