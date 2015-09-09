@@ -23,12 +23,14 @@ This plugin allows you to archive your WordPress content similar to the way you 
 **Languages supported:**
 
 * English
-* Deutsch
-* Español
-* Français
-* Nederlands
-* Português
-* Русский
+* Nederlands (Dutch),
+* Français (French (France)),
+* Deutsch (German),
+* Português do Brasil (Portuguese (Brazil)),
+* Русский (Russian),
+* Español (Spanish (Spain)),
+
+**Translations of this plugin is handle by the folks over at [WP-Translations](https://www.transifex.com/wp-translations/archived-post-status/). You're most welcome to join in and make it avalaible in your own language.**
 
 **Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
 
