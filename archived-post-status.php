@@ -120,7 +120,13 @@ function aps_the_title( $title, $post_id = null ) {
 
 	$post = get_post( $post_id );
 
-	if ( ! is_admin() && isset( $post->post_status ) && 'archive' === $post->post_status ) {
+	if (
+		! is_admin()
+		&&
+		isset( $post->post_status )
+		&&
+		'archive' === $post->post_status
+	) {
 
 		$title = sprintf( '%s: %s', __( 'Archived', 'archived-post-status' ), $title );
 
@@ -200,7 +206,9 @@ function aps_edit_screen_js() {
 	global $typenow;
 
 	if ( aps_is_excluded_post_type( $typenow ) ) {
+
 		return;
+
 	}
 
 	?>
