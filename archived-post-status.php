@@ -253,11 +253,7 @@ add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
  */
 function aps_load_post_screen() {
 
-	$action = isset( $_GET['action'] ) ? $_GET['action'] : null;
-
-	$message = isset( $_GET['message'] ) ? absint( $_GET['message'] ) : null;
-
-	$post_id = isset( $_GET['post'] ) ? $_GET['post'] : null;
+	$post_id = (int) filter_input( INPUT_GET, 'post', FILTER_SANITIZE_NUMBER_INT );
 
 	$post = get_post( $post_id );
 
@@ -272,6 +268,10 @@ function aps_load_post_screen() {
 		return;
 
 	}
+
+	$action = filter_input( INPUT_GET, 'action', FILTER_SANITIZE_STRING );
+
+	$message = (int) filter_input( INPUT_GET, 'message', FILTER_SANITIZE_NUMBER_INT );
 
 	// Redirect to list table after saving as Archived
 	if ( 'edit' === $action && 1 === $message ) {
