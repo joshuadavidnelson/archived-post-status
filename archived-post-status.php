@@ -59,11 +59,11 @@ function aps_register_archive_post_status() {
 
 	$args = array(
 		'label'                     => __( 'Archived', 'archived-post-status' ),
-		'public'                    => apply_filters( 'aps_status_arg_public', aps_current_user_can_view() ),
-		'private'                   => apply_filters( 'aps_status_arg_private', true ),
-		'exclude_from_search'       => apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() ),
-		'show_in_admin_all_list'    => apply_filters( 'aps_status_arg_show_in_admin_all_list', aps_current_user_can_view() ),
-		'show_in_admin_status_list' => apply_filters( 'aps_status_arg_show_in_admin_status_list', aps_current_user_can_view() ),
+		'public'                    => (bool) apply_filters( 'aps_status_arg_public', aps_current_user_can_view() ),
+		'private'                   => (bool) apply_filters( 'aps_status_arg_private', true ),
+		'exclude_from_search'       => (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() ),
+		'show_in_admin_all_list'    => (bool) apply_filters( 'aps_status_arg_show_in_admin_all_list', aps_current_user_can_view() ),
+		'show_in_admin_status_list' => (bool) apply_filters( 'aps_status_arg_show_in_admin_status_list', aps_current_user_can_view() ),
 		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archived-post-status' ),
 	);
 
@@ -102,7 +102,7 @@ function aps_current_user_can_view() {
 	 *
 	 * @return string
 	 */
-	$capability = apply_filters( 'aps_default_read_capability', 'read_private_posts' );
+	$capability = (string) apply_filters( 'aps_default_read_capability', 'read_private_posts' );
 
 	return current_user_can( $capability );
 
@@ -147,7 +147,7 @@ function aps_is_excluded_post_type( $post_type ) {
 	 *
 	 * @return array
 	 */
-	$excluded = apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
+	$excluded = (array) apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
 
 	if ( in_array( $post_type, $excluded ) ) {
 
