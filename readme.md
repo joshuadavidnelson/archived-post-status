@@ -7,11 +7,11 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Contributors:** [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Tags:** [admin](https://wordpress.org/plugins/tags/admin), [posts](https://wordpress.org/plugins/tags/posts), [pages](https://wordpress.org/plugins/tags/pages), [status](https://wordpress.org/plugins/tags/status), [workflow](https://wordpress.org/plugins/tags/workflow)  
 **Requires at least:** 3.6  
-**Tested up to:** 4.3  
-**Stable tag:** 0.3.3  
+**Tested up to:** 4.4  
+**Stable tag:** 0.3.4  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
-[![Build Status](https://travis-ci.org/fjarrett/archived-post-status.png?branch=master)](https://travis-ci.org/fjarrett/archived-post-status) 
+[![Build Status](https://travis-ci.org/fjarrett/archived-post-status.svg?branch=master)](https://travis-ci.org/fjarrett/archived-post-status) 
 
 ## Description ##
 
@@ -129,6 +129,12 @@ This is what makes the Archived post status handy. You can unpublish content wit
 ![Publish metabox controls](assets/screenshot-3.png)
 
 ## Changelog ##
+
+### 0.3.4 - December 14, 2015 ###
+* New: Indicate support for WordPress 4.4
+* Fix: Broken title when post format icon is present ([#9](https://github.com/fjarrett/archived-post-status/pull/9))
+
+Props [fjarrett](https://github.com/fjarrett), [brandbrilliance](https://github.com/brandbrilliance)
 
 ### 0.3.3 - September 12, 2015 ###
 * New: Indicate support for WordPress 4.3
