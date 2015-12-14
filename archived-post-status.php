@@ -242,8 +242,7 @@ function aps_edit_screen_js() {
 		function disallowEditing( $row ) {
 			var title = $row.find( '.column-title a.row-title' ).text();
 
-			$row.find( '.column-title a.row-title' ).remove();
-			$row.find( '.column-title strong' ).prepend( title );
+			$row.find( '.column-title a.row-title' ).replaceWith( title );
 			$row.find( '.row-actions .edit' ).remove();
 		}
 	});
