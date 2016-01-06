@@ -33,6 +33,7 @@ This plugin allows you to archive your WordPress content similar to the way you 
 * Nederlands
 * Português
 * Русский
+* Czech
 
 **Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
 
