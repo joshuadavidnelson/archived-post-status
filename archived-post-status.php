@@ -105,20 +105,20 @@ function aps_current_user_can_view() {
 }
 
 /**
- * Check if editing Archived content is allowed.
+ * Check if Archived content is read-only.
  *
  * @return bool
  */
-function aps_is_editing_allowed() {
+function aps_is_read_only() {
 
 	/**
-	 * Archived content is not editable by default.
+	 * Archived content is read-only by default.
 	 *
 	 * @since 0.3.5
 	 *
 	 * @return bool
 	 */
-	return (bool) apply_filters( 'aps_is_editing_allowed', false );
+	return (bool) apply_filters( 'aps_is_read_only', true );
 
 }
 
@@ -222,7 +222,7 @@ function aps_edit_screen_js() {
 	?>
 	<script>
 	jQuery( document ).ready( function( $ ) {
-	<?php if ( ! aps_is_editing_allowed() ) : ?>
+	<?php if ( aps_is_read_only() ) : ?>
 		$rows = $( '#the-list tr.status-archive' );
 
 		$.each( $rows, function() {
@@ -240,7 +240,7 @@ function aps_edit_screen_js() {
 			$option.prop( 'selected', is_archived );
 		} );
 
-	<?php if ( ! aps_is_editing_allowed() ) : ?>
+	<?php if ( aps_is_read_only() ) : ?>
 		$( '.inline-edit-row' ).on( 'remove', function() {
 			var id   = $( this ).prop( 'id' ).replace( 'edit-', '' ),
 			    $row = $( '#post-' + id );
@@ -271,7 +271,7 @@ add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
  */
 function aps_load_post_screen() {
 
-	if ( aps_is_editing_allowed() ) {
+	if ( ! aps_is_read_only() ) {
 
 		return;
 
