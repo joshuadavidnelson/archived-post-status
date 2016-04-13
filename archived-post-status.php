@@ -194,6 +194,17 @@ function aps_post_screen_js() {
 		<script>
 		jQuery( document ).ready( function( $ ) {
 			$( '#post_status' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
+		} );
+		</script>
+		<?php
+
+	}
+
+	if ( 'archive' === $post->post_status ) {
+
+		?>
+		<script>
+		jQuery( document ).ready( function( $ ) {
 			$( '#post-status-display' ).text( '<?php esc_html_e( 'Archived', 'archived-post-status' ) ?>' );
 		} );
 		</script>
