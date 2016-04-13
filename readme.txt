@@ -1,7 +1,7 @@
 === Archived Post Status ===
 Contributors:      fjarrett
 Tags:              admin, posts, pages, status, workflow
-Requires at least: 3.6
+Requires at least: 3.8
 Tested up to:      4.5
 Stable tag:        0.3.6
 License:           GPLv2 or later
