@@ -3,7 +3,7 @@ Contributors:      fjarrett
 Tags:              admin, posts, pages, status, workflow
 Requires at least: 3.6
 Tested up to:      4.5
-Stable tag:        0.3.5
+Stable tag:        0.3.6
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -124,6 +124,12 @@ This is what makes the Archived post status handy. You can unpublish content wit
 3. Publish metabox controls.
 
 == Changelog ==
+
+= 0.3.6 - April 13, 2016 =
+
+* Fix: Bug causing Archived status label to always appear on edit screen.
+
+Props [fjarrett](https://github.com/fjarrett)
 
 = 0.3.5 - April 13, 2016 =
 
