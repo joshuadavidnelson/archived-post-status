@@ -112,6 +112,24 @@ function aps_current_user_can_view() {
 }
 
 /**
+ * Whether editing archived posts is allowed
+ *
+ * @return bool
+ */
+function aps_is_editing_allowed() {
+
+	/**
+	 * Archived posts are not editable by default
+	 *
+	 * @since 0.3.5
+	 *
+	 * @return bool
+	 */
+	return (bool) apply_filters( 'aps_is_editing_allowed', false );
+
+}
+
+/**
  * Filter archived post titles on the frontend
  *
  * @param string $title
@@ -189,6 +207,7 @@ function aps_post_screen_js() {
 		<script>
 		jQuery( document ).ready( function( $ ) {
 			$( '#post_status' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
+			$( '#post-status-display' ).text( '<?php esc_html_e( 'Archived', 'archived-post-status' ) ?>' );
 		});
 		</script>
 		<?php
@@ -217,11 +236,13 @@ function aps_edit_screen_js() {
 	?>
 	<script>
 	jQuery( document ).ready( function( $ ) {
+	<?php if ( ! aps_is_editing_allowed() ) : ?>
 		$rows = $( '#the-list tr.status-archive' );
 
 		$.each( $rows, function() {
 			disallowEditing( $( this ) );
 		});
+	<?php endif; ?>
 
 		$( 'select[name="_status"]' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
 
@@ -233,6 +254,7 @@ function aps_edit_screen_js() {
 			$option.prop( 'selected', is_archived );
 		});
 
+	<?php if ( ! aps_is_editing_allowed() ) : ?>
 		$( '.inline-edit-row' ).on( 'remove', function() {
 			var id   = $( this ).prop( 'id' ).replace( 'edit-', '' ),
 			    $row = $( '#post-' + id );
@@ -248,6 +270,7 @@ function aps_edit_screen_js() {
 			$row.find( '.column-title a.row-title' ).replaceWith( title );
 			$row.find( '.row-actions .edit' ).remove();
 		}
+	<?php endif; ?>
 	});
 	</script>
 	<?php
@@ -262,6 +285,12 @@ add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
  * @action load-post.php
  */
 function aps_load_post_screen() {
+
+	if ( aps_is_editing_allowed() ) {
+
+		return;
+
+	}
 
 	$post_id = (int) filter_input( INPUT_GET, 'post', FILTER_SANITIZE_NUMBER_INT );
 
