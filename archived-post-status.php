@@ -4,7 +4,7 @@
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
  * Version: 0.3.6
  * Author: Frankie Jarrett
- * Author URI: http://frankiejarrett.com
+ * Author URI: https://frankiejarrett.com
  * Text Domain: archived-post-status
  * License: GPL-2.0
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
