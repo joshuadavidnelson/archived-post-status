@@ -2,8 +2,8 @@
 Contributors:      fjarrett
 Tags:              admin, posts, pages, status, workflow
 Requires at least: 3.8
-Tested up to:      4.6
-Stable tag:        0.3.6
+Tested up to:      4.7
+Stable tag:        0.3.7
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -124,6 +124,10 @@ This is what makes the Archived post status handy. You can unpublish content wit
 3. Publish metabox controls.
 
 == Changelog ==
+
+= 0.3.7 - December 23, 2016 =
+
+* Tweak: Indicate support for WordPress 4.7.
 
 = 0.3.6 - April 13, 2016 =
 

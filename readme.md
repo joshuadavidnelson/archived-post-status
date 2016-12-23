@@ -7,8 +7,8 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Contributors:** [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Tags:** [admin](https://wordpress.org/plugins/tags/admin), [posts](https://wordpress.org/plugins/tags/posts), [pages](https://wordpress.org/plugins/tags/pages), [status](https://wordpress.org/plugins/tags/status), [workflow](https://wordpress.org/plugins/tags/workflow)  
 **Requires at least:** 3.8  
-**Tested up to:** 4.6  
-**Stable tag:** 0.3.6  
+**Tested up to:** 4.7  
+**Stable tag:** 0.3.7  
 **License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/fjarrett/archived-post-status.svg?branch=master)](https://travis-ci.org/fjarrett/archived-post-status) 
@@ -130,6 +130,9 @@ This is what makes the Archived post status handy. You can unpublish content wit
 ![Publish metabox controls.](assets/screenshot-3.png)
 
 ## Changelog ##
+
+### 0.3.7 - December 23, 2016 ###
+* Tweak: Indicate support for WordPress 4.7.
 
 ### 0.3.6 - April 13, 2016 ###
 * Fix: Bug causing Archived status label to always appear on edit screen.
