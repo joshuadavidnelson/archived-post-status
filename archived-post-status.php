@@ -27,7 +27,6 @@ define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN )
 function aps_i18n() {
 
 	load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
-
 }
 add_action( 'plugins_loaded', 'aps_i18n' );
 
@@ -46,7 +45,6 @@ function aps_i18n_strings() {
 
 	// translators: The plugin description.
 	__( 'Allows posts and pages to be archived so you can unpublish content without having to trash it.', 'archived-post-status' );
-
 }
 
 /**
@@ -69,7 +67,6 @@ function aps_register_archive_post_status() {
 	);
 
 	register_post_status( 'archive', $args );
-
 }
 add_action( 'init', 'aps_register_archive_post_status' );
 
@@ -83,7 +80,6 @@ add_action( 'init', 'aps_register_archive_post_status' );
 function aps_is_frontend() {
 
 	return ! is_admin();
-
 }
 add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 
@@ -104,7 +100,6 @@ function aps_current_user_can_view() {
 	$capability = (string) apply_filters( 'aps_default_read_capability', 'read_private_posts' );
 
 	return current_user_can( $capability );
-
 }
 
 /**
@@ -122,7 +117,6 @@ function aps_is_read_only() {
 	 * @return bool
 	 */
 	return (bool) apply_filters( 'aps_is_read_only', true );
-
 }
 
 /**
@@ -151,7 +145,6 @@ function aps_the_title( $title, $post_id = null ) {
 	}
 
 	return $title;
-
 }
 add_filter( 'the_title', 'aps_the_title', 10, 2 );
 
@@ -173,8 +166,7 @@ function aps_is_excluded_post_type( $post_type ) {
 	 */
 	$excluded = (array) apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
 
-	return in_array( $post_type, $excluded );
-
+	return in_array( $post_type, $excluded, true );
 }
 
 /**
@@ -197,7 +189,7 @@ function aps_post_screen_js() {
 		?>
 		<script>
 		jQuery( document ).ready( function( $ ) {
-			$( '#post_status' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
+			$( '#post_status' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ); ?></option>' );
 		} );
 		</script>
 		<?php
@@ -209,13 +201,12 @@ function aps_post_screen_js() {
 		?>
 		<script>
 		jQuery( document ).ready( function( $ ) {
-			$( '#post-status-display' ).text( '<?php esc_html_e( 'Archived', 'archived-post-status' ) ?>' );
+			$( '#post-status-display' ).text( '<?php esc_html_e( 'Archived', 'archived-post-status' ); ?>' );
 		} );
 		</script>
 		<?php
 
 	}
-
 }
 add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
 
@@ -245,12 +236,12 @@ function aps_edit_screen_js() {
 		} );
 	<?php endif; ?>
 
-		$( 'select[name="_status"]' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ) ?></option>' );
+		$( 'select[name="_status"]' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ); ?></option>' );
 
 		$( '.editinline' ).on( 'click', function() {
 			var $row        = $( this ).closest( 'tr' ),
-			    $option     = $( '.inline-edit-row' ).find( 'select[name="_status"] option[value="archive"]' ),
-			    is_archived = $row.hasClass( 'status-archive' );
+				$option     = $( '.inline-edit-row' ).find( 'select[name="_status"] option[value="archive"]' ),
+				is_archived = $row.hasClass( 'status-archive' );
 
 			$option.prop( 'selected', is_archived );
 		} );
@@ -258,7 +249,7 @@ function aps_edit_screen_js() {
 	<?php if ( aps_is_read_only() ) : ?>
 		$( '.inline-edit-row' ).on( 'remove', function() {
 			var id   = $( this ).prop( 'id' ).replace( 'edit-', '' ),
-			    $row = $( '#post-' + id );
+				$row = $( '#post-' + id );
 
 			if ( $row.hasClass( 'status-archive' ) ) {
 				disallowEditing( $row );
@@ -275,7 +266,6 @@ function aps_edit_screen_js() {
 	} );
 	</script>
 	<?php
-
 }
 add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
 
@@ -329,9 +319,8 @@ function aps_load_post_screen() {
 	// translators: Error message when trying to edit an Archived post.
 	wp_die(
 		__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
-		translate( 'WordPress &rsaquo; Error' )
+		__( 'WordPress &rsaquo; Error' )
 	);
-
 }
 add_action( 'load-post.php', 'aps_load_post_screen' );
 
@@ -366,7 +355,6 @@ function aps_display_post_states( $post_states, $post ) {
 			'archive' => __( 'Archived', 'archived-post-status' ),
 		)
 	);
-
 }
 add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
 
@@ -406,8 +394,6 @@ function aps_save_post( $post_id, $post, $update ) {
 
 		// Add hook back again
 		add_action( 'save_post', __FUNCTION__, 10, 3 );
-
 	}
-
 }
 add_action( 'save_post', 'aps_save_post', 10, 3 );
