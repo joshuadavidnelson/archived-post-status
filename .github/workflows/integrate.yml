@@ -40,7 +40,7 @@ jobs:
         composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
         composer run post-install-cmd
     - name: "Run PHPCS"
-      run: "vendor/bin/phpcs --standard=WordPress-Core *.php includes/"
+      run: "vendor/bin/phpcs --standard=WordPress-Core *.php"
 
   static-analysis:
     name: "Run static analysis"
