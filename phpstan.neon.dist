@@ -7,4 +7,4 @@ parameters:
         # Filtered value can return a bool, so this error is incorrect.
         - '#^Else branch is unreachable because ternary operator condition is always true\.$#'
     paths:
-        - .
+        - ./
