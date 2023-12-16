@@ -122,7 +122,7 @@ This is what makes the Archived post status handy. You can unpublish content wit
 
 = 0.3.8 - December 15, 2023 =
 
-Ownership of this plugin is being transfered to [Joshua David Nelson](https://profiles.wordpress.org/joshuadnelson/). A huge thank you to @fjarrett for his work on this plugin to this point. More info to come soon, keep an eye on the [Github Repository](https://github.com/joshuadavidnelson/archived-post-status/)!
+Ownership of this plugin is being transferred to [Joshua David Nelson](https://profiles.wordpress.org/joshuadnelson/). A huge thank you to @fjarrett for his work on this plugin to this point. More info to come soon, keep an eye on the [Github Repository](https://github.com/joshuadavidnelson/archived-post-status/)!
 
 This update includes:
 - Tested up to WordPress 6.4.2
