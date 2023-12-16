@@ -129,3 +129,30 @@ This is what makes the Archived post status handy. You can unpublish content wit
 ### Publish metabox controls.
 
 ![Publish metabox controls.](.wordpress-org/screenshot-3.png)
+
+## Contributing
+
+All contributions are welcomed and considered, please refer to [contributing.md](contributing.md).
+
+### Pull requests
+All pull requests should be directed at the `develop` branch, and will be reviewed prior to merging. No pull requests will be merged with failing tests, but it's okay if you don't initially pass tests. Please create a draft pull request for proof of concept code or changes you'd like to have input on prior to review.
+
+Please make on a branch specific to a single issue or feature. For instance, if you are suggest a solution to an issue, please create fork with a branch like `issue-894`. Or if you are proposing a new feature, create a fork with the branch name indicating the feature like `feature-example-bananas`
+
+All improvements are merged into `develop` and then queued up for release before being merged into `stable`. Releases are deployed via github actions to wordpress.org on tagging a new release.
+
+### Main Branches
+
+The `stable` branch is reserved for releases and intended to be a mirror of the official current release, or `trunk` on wordpress.org.
+
+The `develop` branch is the most current working branch. _Please direct all pull requests to the `develop` branch_
+
+### Local Development
+
+**Requirements:**
+- Docker
+- Node Package Manager (npm)
+
+This repo contains the files needed to boot up a local development environment using [wp-env](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/).
+
+Run `npm install` and the `npm run env:start` to boot up a local environment. 
