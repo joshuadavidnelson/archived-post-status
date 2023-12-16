@@ -41,7 +41,10 @@ add_action( 'plugins_loaded', 'aps_i18n' );
  */
 function aps_i18n_strings() {
 
+	// translators: The plugin title.
 	__( 'Archived Post Status', 'archived-post-status' );
+
+	// translators: The plugin description.
 	__( 'Allows posts and pages to be archived so you can unpublish content without having to trash it.', 'archived-post-status' );
 
 }
@@ -54,12 +57,14 @@ function aps_i18n_strings() {
 function aps_register_archive_post_status() {
 
 	$args = array(
+		// translators: The post status label for Archived posts.
 		'label'                     => __( 'Archived', 'archived-post-status' ),
 		'public'                    => (bool) apply_filters( 'aps_status_arg_public', aps_current_user_can_view() ),
 		'private'                   => (bool) apply_filters( 'aps_status_arg_private', true ),
 		'exclude_from_search'       => (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() ),
 		'show_in_admin_all_list'    => (bool) apply_filters( 'aps_status_arg_show_in_admin_all_list', aps_current_user_can_view() ),
 		'show_in_admin_status_list' => (bool) apply_filters( 'aps_status_arg_show_in_admin_status_list', aps_current_user_can_view() ),
+		// translators: The post status label count for Archived posts.
 		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archived-post-status' ),
 	);
 
@@ -140,7 +145,8 @@ function aps_the_title( $title, $post_id = null ) {
 		'archive' === $post->post_status
 	) {
 
-		$title = sprintf( '%s: %s', __( 'Archived', 'archived-post-status' ), $title );
+		// translators: The post title prefix for archived posts.
+		$title = sprintf( '%1$s: %2$s', __( 'Archived', 'archived-post-status' ), $title );
 
 	}
 
@@ -320,6 +326,7 @@ function aps_load_post_screen() {
 
 	}
 
+	// translators: Error message when trying to edit an Archived post.
 	wp_die(
 		__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
 		translate( 'WordPress &rsaquo; Error' )
@@ -355,6 +362,7 @@ function aps_display_post_states( $post_states, $post ) {
 	return array_merge(
 		$post_states,
 		array(
+			// translators: The post status label for Archived posts.
 			'archive' => __( 'Archived', 'archived-post-status' ),
 		)
 	);
