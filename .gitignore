@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+*.sql
+*.tar.gz
+*.zip
+node_modules
+dist
+vendor
+*.cache

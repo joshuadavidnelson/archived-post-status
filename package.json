@@ -1,0 +1,21 @@
+{
+	"name": "archived-post-status",
+	"version": "0.3.8",
+	"description": "A WordPress plugin that allows posts and pages to be archived so you can unpublish content without having to trash it.",
+	"author": "Joshua David Nelson",
+	"license": "GPL-2.0-or-later",
+	"homepage": "https://archivedpoststat.us/",
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:joshuadavidnelson/archived-post-status.git"
+	},
+	"scripts": {
+		"env": "wp-env",
+		"env:start": "wp-env start",
+		"env:stop": "wp-env stop"
+	},
+	"devDependencies": {
+		"@types/node": "^18.0.0",
+		"@wordpress/env": "^5.0.0"
+	}
+}
