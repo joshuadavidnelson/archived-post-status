@@ -37,7 +37,6 @@ jobs:
       with:
         add-paths: |
           *.php
-          includes/
         branch: "cs-fixer"
         commit-message: "Fix CS"
         title: "Fix Coding Standards violations"
