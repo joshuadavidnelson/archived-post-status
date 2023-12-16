@@ -1,7 +1,7 @@
 === Archived Post Status ===
 Contributors:      joshuadnelson
 Tags:              admin, posts, pages, status, workflow
-Requires at least: 3.8
+Requires at least: 5.3
 Requires PHP:      7.4
 Tested up to:      6.4.2
 Stable tag:        0.3.8
