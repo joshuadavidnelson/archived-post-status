@@ -1,9 +1,10 @@
 === Archived Post Status ===
-Contributors:      fjarrett
+Contributors:      joshuadnelson
 Tags:              admin, posts, pages, status, workflow
 Requires at least: 3.8
-Tested up to:      4.7
-Stable tag:        0.3.7
+Requires PHP:      7.4
+Tested up to:      6.4.2
+Stable tag:        0.3.8
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,19 +32,13 @@ This plugin allows you to archive your WordPress content similar to the way you 
 * Português
 * Русский
 
-**Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
+**Development of this plugin is done [on GitHub](https://github.com/joshuadavidnelson/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/joshuadavidnelson/archived-post-status/issues) there before going to the plugin forum.**
 
 == Frequently Asked Questions ==
 
 = Where are the options for this plugin? =
 
-This plugin does not have a settings page. Simply put, I don't like bloating my plugins with a bunch of options.
-
-Instead, I try to develop functionality using the 80/20 principle so that for 80% of use cases you all you need to do is activate the plugin and it "just works".
-
-For the other 20% of you who want things to behave differently there are numerous hooks available in the plugin so you can customize default behaviors.
-
-Many of those hooks are listed below in this FAQ.
+This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ.
 
 = Why are Archived posts appearing on the front-end? =
 
@@ -124,6 +119,18 @@ This is what makes the Archived post status handy. You can unpublish content wit
 3. Publish metabox controls.
 
 == Changelog ==
+
+= 0.3.8 - December 15, 2023 =
+
+Ownership of this plugin is being transfered to [Joshua David Nelson](https://profiles.wordpress.org/joshuadnelson/). A huge thank you to @fjarrett for his work on this plugin to this point. More info to come soon, keep an eye on the [Github Repository](https://github.com/joshuadavidnelson/archived-post-status/)!
+
+This update includes:
+- Tested up to WordPress 6.4.2
+- Added minimum PHP of 7.4
+- Bumped minimum WordPress to 5.3
+- Added Github actions for deployment to WP repo
+- Updated contributors in readmes
+- Added PHPStan and PHPCS Github actions
 
 = 0.3.7 - December 23, 2016 =
 
