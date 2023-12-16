@@ -2,9 +2,5 @@ includes:
     - vendor/szepeviktor/phpstan-wordpress/extension.neon
 parameters:
     level: 5
-    inferPrivatePropertyTypeFromConstructor: true
-    ignoreErrors:
-        # Filtered value can return a bool, so this error is incorrect.
-        - '#^Else branch is unreachable because ternary operator condition is always true\.$#'
     paths:
-        - ./
+        - /src
