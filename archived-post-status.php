@@ -2,20 +2,18 @@
 /**
  * Plugin Name: Archived Post Status
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
- * Version: 0.3.7
- * Author: Frankie Jarrett
- * Author URI: https://frankiejarrett.com
+ * Version: 0.3.8
+ * Author: Joshua David Nelson
+ * Author URI: https://joshuadnelson.com
  * Text Domain: archived-post-status
  * License: GPL-2.0
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- *
- * Copyright © 2016 Frankie Jarrett. All Rights Reserved.
  */
 
 /**
  * Define plugin constants.
  */
-define( 'ARCHIVED_POST_STATUS_VERSION', '0.3.7' );
+define( 'ARCHIVED_POST_STATUS_VERSION', '0.3.8' );
 define( 'ARCHIVED_POST_STATUS_PLUGIN', plugin_basename( __FILE__ ) );
 define( 'ARCHIVED_POST_STATUS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ARCHIVED_POST_STATUS_URL', plugin_dir_url( __FILE__ ) );
