@@ -2,5 +2,11 @@ includes:
     - vendor/szepeviktor/phpstan-wordpress/extension.neon
 parameters:
     level: 5
+    inferPrivatePropertyTypeFromConstructor: true
+    scanFiles:
+        - archived-post-status.php
+        - src/archived-post-status.php
+    scanDirectories:
+        - src/
     paths:
-        - /src
+        - src/
