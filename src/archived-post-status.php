@@ -286,8 +286,8 @@ function aps_load_post_screen() {
 
 	}
 
-	$action  = filter_input( INPUT_GET, 'action', FILTER_SANITIZE_STRING );
-	$message = (int) filter_input( INPUT_GET, 'message', FILTER_SANITIZE_NUMBER_INT );
+	$action  = esc_attr( get_query_var( 'action' ) );
+	$message = absint( get_query_var( 'message' ) );
 
 	// Redirect to list table after saving as Archived
 	if ( 'edit' === $action && 1 === $message ) {
