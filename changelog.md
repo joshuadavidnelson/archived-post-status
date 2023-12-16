@@ -3,7 +3,7 @@
 
 ## 0.3.8 - December 15, 2023
 
-Ownership of this plugin is being transfered to [Joshua David Nelson](https://github.com/joshuadavidnelson/). A huge thank you to @fjarrett for his work on this plugin to this point. More info to come soon!
+Ownership of this plugin is being transferred to [Joshua David Nelson](https://github.com/joshuadavidnelson/). A huge thank you to @fjarrett for his work on this plugin to this point. More info to come soon!
 
 This update includes:
 - Tested up to WordPress 6.4.2
