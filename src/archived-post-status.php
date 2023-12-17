@@ -378,9 +378,9 @@ add_action( 'load-post.php', 'aps_load_post_screen' );
 function aps_display_post_states( $post_states, $post ) {
 
 	if ( aps_is_excluded_post_type( $post->post_type )
-			|| 'archive' !== $post->post_status
-			|| 'archive' === get_query_var( 'post_status' ) ) {
-				return $post_states;
+		|| 'archive' !== $post->post_status
+		|| 'archive' === get_query_var( 'post_status' ) ) {
+			return $post_states;
 	}
 
 	return array_merge(
@@ -405,8 +405,8 @@ add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
 function aps_save_post( $post_id, $post, $update ) {
 
 	if ( aps_is_excluded_post_type( $post->post_type )
-			|| wp_is_post_revision( $post ) ) {
-				return;
+		|| wp_is_post_revision( $post ) ) {
+			return;
 	}
 
 	if ( 'archive' === $post->post_status ) {
