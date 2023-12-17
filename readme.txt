@@ -25,6 +25,26 @@ This plugin allows you to archive your WordPress content similar to the way you 
 
 == Frequently Asked Questions ==
 
+= Isn't this the same as using the Draft or Private statuses? =
+
+Actually, no, they are not the same thing.
+
+The Draft status is a "pre-published" status that is reserved for content that is still being worked on. You can still make changes to content marked as Draft, and you can preview your changes.
+
+The Private status is a special kind of published status. It means the content is published, but only certain logged-in users can view it.
+
+The Archived post status, on the other hand, is meant to be a "post-published" status. Once a post has been set to Archived it can no longer be edited or viewed.
+
+Of course, you can always change the status back to Draft or Publish if you want to be able to edit its content again.
+
+= Can't I just trash old content I don't want anymore? =
+
+Yes, there is nothing wong with trashing old content. And the behavior of the Archived status is very similar to that of trashing.
+
+However, WordPress automatically purges trashed posts every 7 days (by default).
+
+This is what makes the Archived post status handy. You can unpublish content without having to delete it forever.
+
 = Where are the options for this plugin? =
 
 This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ.
@@ -81,25 +101,13 @@ function my_aps_excluded_post_types( $post_types ) {
 add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
 </pre>
 
-= Isn't this the same as using the Draft or Private statuses? =
+= Help! I need support =
 
-They are not the same thing.
+Please reach out on the Github Issues or in the WordPress support forums.
 
-The Draft status is a "pre-published" status that is reserved for content that is still being worked on. You can still make changes to content marked as Draft, and you can preview your changes.
+= I have a feature request =
 
-The Private status is a special kind of published status. It means the content is published, but only certain logged-in users can view it.
-
-The Archived post status, on the other hand, is meant to be a "post-published" status. Once a post has been set to Archived it can no longer be edited or viewed.
-
-Of course, you can always change the status back to Draft or Publish if you want to be able to edit its content again.
-
-= Can't I just trash old content I don't want anymore? =
-
-Yes, there is nothing wong with trashing old content. And the behavior of the Archived status is very similar to that of trashing.
-
-However, WordPress automatically purges trashed posts every 7 days (by default).
-
-This is what makes the Archived post status handy. You can unpublish content without having to delete it forever.
+Please reach out on the Github Issues or in the WordPress support forums.
 
 == Screenshots ==
 
