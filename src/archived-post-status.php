@@ -37,6 +37,27 @@ function aps_i18n_strings() {
 }
 
 /**
+ * Filter the archived string.
+ *
+ * @since 0.3.9
+ * @return string
+ */
+function aps_archived_label_string() {
+
+	// translators: The label used for the status.
+	$label = __( 'Archived', 'archived-post-status' );
+
+	/**
+	 * Filter the label used in the plugin for archived content
+	 *
+	 * @since 0.3.9
+	 * @param string $label The "Archived" label.
+	 * @return string
+	 */
+	return apply_filters( 'aps_archived_label_string', $label );
+}
+
+/**
  * Register a custom post status for Archived.
  *
  * @action init
@@ -45,7 +66,7 @@ function aps_register_archive_post_status() {
 
 	$args = array(
 		// translators: The post status label for Archived posts.
-		'label'                     => __( 'Archived', 'archived-post-status' ),
+		'label'                     => aps_archived_label_string(),
 		'public'                    => (bool) apply_filters( 'aps_status_arg_public', aps_current_user_can_view() ),
 		'private'                   => (bool) apply_filters( 'aps_status_arg_private', true ),
 		'exclude_from_search'       => (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() ),
@@ -120,17 +141,53 @@ function aps_the_title( $title, $post_id = null ) {
 
 	$post = get_post( $post_id );
 
-	if (
-		! is_admin()
-		&&
-		isset( $post->post_status )
-		&&
-		'archive' === $post->post_status
-	) {
+	if ( ! is_admin() && isset( $post->post_status )
+			&& 'archive' === $post->post_status ) {
 
-		// translators: The post title prefix for archived posts.
-		$title = sprintf( '%1$s: %2$s', __( 'Archived', 'archived-post-status' ), $title );
+		/**
+		 * Filter the label / title separator.
+		 *
+		 * Defaults to a colon.
+		 *
+		 * @since 0.3.9
+		 * @param string $label_text The label text for archived posts.
+		 * @param int    $post_id    Optionally passed, the post object.
+		 * @param string $title      Optionally passed, the post title.
+		 * @return string
+		 */
+		$sep = apply_filters( 'aps_title_separator', ':', $post_id, $title );
 
+		/**
+		 * Filter the label text for archived posts.
+		 *
+		 * @since 0.3.9
+		 * @param string $label_text The label text for archived posts.
+		 * @param int    $post_id    Optionally passed, the post object.
+		 * @param string $title      Optionally passed, the post title.
+		 * @return string
+		 */
+		$label = apply_filters( 'aps_title_label', aps_archived_label_string(), $post_id, $title );
+
+		/**
+		 * Change the location of the label text.
+		 *
+		 * @since 0.3.9
+		 * @param bool $before True to place the before the title,
+		 *                     false to place it after.
+		 * @return bool
+		 */
+		$before = (bool) apply_filters( 'aps_title_label_before', true );
+
+		// Add label to title.
+		if ( ! empty( $label ) ) {
+			if ( $before ) {
+				$label = esc_attr( $label ) . esc_attr( $sep );
+				$title = sprintf( '%1$s %2$s', $label, $title );
+			} else {
+				$label = esc_attr( $sep ) . esc_attr( $label );
+				$title = sprintf( '%1$s %2$s', $title, $label );
+			}
+		}
 	}
 
 	return $title;
