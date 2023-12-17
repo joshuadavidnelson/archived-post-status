@@ -24,11 +24,9 @@
  */
 
 /**
- * Exit if accessed directly.
+ * Exit if accessed directly, prevent direct access to this file.
  *
- * Prevent direct access to this file.
- *
- * @since 0.1.0
+ * @since 0.3.9
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	die;
