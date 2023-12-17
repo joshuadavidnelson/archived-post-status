@@ -2,11 +2,21 @@
 /**
  * The file that defines the core plugin functions
  *
- * @link       https://github.com/joshuadavidnelson/archived-post-status
- * @since      0.3.8
- * @package    ArchivedPostStatus
- * @author     Joshua Nelson <josh@joshuadnelson.com>
+ * @link    https://github.com/joshuadavidnelson/archived-post-status
+ * @since   0.3.8
+ * @package ArchivedPostStatus
+ * @author  Joshua Nelson <josh@joshuadnelson.com>
+ * @license GPL-2.0+
  */
+
+/**
+ * Exit if accessed directly, prevent direct access to this file.
+ *
+ * @since 0.3.9
+ */
+if ( ! defined( 'ABSPATH' ) ) {
+	die;
+}
 
 /**
  * Load languages.
@@ -14,7 +24,6 @@
  * @action plugins_loaded
  */
 function aps_i18n() {
-
 	load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
 }
 add_action( 'plugins_loaded', 'aps_i18n' );
@@ -88,7 +97,6 @@ add_action( 'init', 'aps_register_archive_post_status' );
  * @return bool
  */
 function aps_is_frontend() {
-
 	return ! is_admin();
 }
 add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
@@ -104,7 +112,7 @@ function aps_current_user_can_view() {
 	 * Default capability to grant ability to view Archived content.
 	 *
 	 * @since 0.3.0
-	 *
+	 * @param string $capability The user capability to view archived content.
 	 * @return string
 	 */
 	$capability = (string) apply_filters( 'aps_default_read_capability', 'read_private_posts' );
@@ -123,7 +131,7 @@ function aps_is_read_only() {
 	 * Archived content is read-only by default.
 	 *
 	 * @since 0.3.5
-	 *
+	 * @param bool $is_read_only True by default.
 	 * @return bool
 	 */
 	return (bool) apply_filters( 'aps_is_read_only', true );
@@ -207,7 +215,7 @@ function aps_is_excluded_post_type( $post_type ) {
 	 * Prevent the Archived status from being used on these post types.
 	 *
 	 * @since 0.1.0
-	 *
+	 * @param array $post_types An array of strings, the slugs for post types excluded.
 	 * @return array
 	 */
 	$excluded = (array) apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
@@ -223,11 +231,8 @@ function aps_is_excluded_post_type( $post_type ) {
 function aps_post_screen_js() {
 
 	global $post;
-
 	if ( aps_is_excluded_post_type( $post->post_type ) ) {
-
 		return;
-
 	}
 
 	if ( 'draft' !== $post->post_status && 'pending' !== $post->post_status ) {
@@ -266,9 +271,7 @@ function aps_edit_screen_js() {
 	global $typenow;
 
 	if ( aps_is_excluded_post_type( $typenow ) ) {
-
 		return;
-
 	}
 
 	?>
@@ -323,24 +326,16 @@ add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
 function aps_load_post_screen() {
 
 	if ( ! aps_is_read_only() ) {
-
 		return;
-
 	}
 
-	$post_id = (int) filter_input( INPUT_GET, 'post', FILTER_SANITIZE_NUMBER_INT );
+	$post_id = absint( get_query_var( 'post' ) );
 	$post    = get_post( $post_id );
 
-	if (
-		is_null( $post )
-		||
-		aps_is_excluded_post_type( $post->post_type )
-		||
-		'archive' !== $post->post_status
-	) {
-
-		return;
-
+	if ( is_null( $post )
+		|| aps_is_excluded_post_type( $post->post_type )
+		|| 'archive' !== $post->post_status ) {
+			return;
 	}
 
 	$action  = esc_attr( get_query_var( 'action' ) );
@@ -382,16 +377,10 @@ add_action( 'load-post.php', 'aps_load_post_screen' );
  */
 function aps_display_post_states( $post_states, $post ) {
 
-	if (
-		aps_is_excluded_post_type( $post->post_type )
-		||
-		'archive' !== $post->post_status
-		||
-		'archive' === get_query_var( 'post_status' )
-	) {
-
-		return $post_states;
-
+	if ( aps_is_excluded_post_type( $post->post_type )
+			|| 'archive' !== $post->post_status
+			|| 'archive' === get_query_var( 'post_status' ) ) {
+				return $post_states;
 	}
 
 	return array_merge(
@@ -415,14 +404,9 @@ add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
  */
 function aps_save_post( $post_id, $post, $update ) {
 
-	if (
-		aps_is_excluded_post_type( $post->post_type )
-		||
-		wp_is_post_revision( $post )
-	) {
-
-		return;
-
+	if ( aps_is_excluded_post_type( $post->post_type )
+			|| wp_is_post_revision( $post ) ) {
+				return;
 	}
 
 	if ( 'archive' === $post->post_status ) {
