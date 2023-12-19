@@ -1,6 +1,10 @@
-# Directories
 /.wordpress-org export-ignore
 /.github export-ignore
-# Files
+/tests/ export-ignore
 /.gitattributes export-ignore
 /.gitignore export-ignore
+/.distignore export-ignore
+/contributing.md export-ignore
+/phpstan.neon.dist export-ignore
+/code-of-conduct.md export-ignore
+/.wp-env.json export-ignore
