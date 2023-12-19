@@ -147,6 +147,10 @@ function aps_is_read_only() {
  */
 function aps_the_title( $title, $post_id = null ) {
 
+	if ( ! $post_id ) {
+		$post_id = get_the_ID();
+	}
+
 	$post = get_post( $post_id );
 
 	if ( ! is_admin() && isset( $post->post_status )
