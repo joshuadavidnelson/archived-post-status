@@ -14,7 +14,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Stable tag:** 0.3.8  
 **License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
 
-## Description ##
+## Description
 
 **Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
@@ -38,12 +38,33 @@ This plugin allows you to archive your WordPress content similar to the way you 
 
 **Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
 
-## Frequently Asked Questions ##
+## Frequently Asked Questions
 
-### Where are the options for this plugin? ###
-This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ.
+## Isn't this the same as using the Draft or Private statuses?
 
-### Why are Archived posts appearing on the front-end? ###
+Actually, no, they are not the same thing.
+
+The Draft status is a "pre-published" status that is reserved for content that is still being worked on. You can still make changes to content marked as Draft, and you can preview your changes.
+
+The Private status is a special kind of published status. It means the content is published, but only certain logged-in users can view it.
+
+The Archived post status, on the other hand, is meant to be a "post-published" status. Once a post has been set to Archived it can no longer be edited or viewed.
+
+Of course, you can always change the status back to Draft or Publish if you want to be able to edit its content again.
+
+## Can't I just trash old content I don't want anymore?
+
+Yes, there is nothing wong with trashing old content. And the behavior of the Archived status is very similar to that of trashing.
+
+However, WordPress automatically purges trashed posts every 7 days (by [default]()).
+
+This is what makes the Archived post status handy. You can unpublish content without having to delete it forever.
+
+### Where are the options for this plugin?
+
+This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ
+
+### Why are Archived posts appearing on the front-end?
 This is most likely because you are viewing your site while being logged in as an Editor or Administrator.
 
 By default, any user with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability will see Archived posts appear on the front-end of your site.
@@ -59,7 +80,7 @@ function my_aps_default_read_capability( $capability ) {
 add_filter( 'aps_default_read_capability', 'my_aps_default_read_capability' );
 ```
 
-### Can I make Archived posts appear on the front-end for all users? ###
+### Can I make Archived posts appear on the front-end for all users?
 Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
 ```php
@@ -68,7 +89,7 @@ add_filter( 'aps_status_arg_private', '__return_false' );
 add_filter( 'aps_status_arg_exclude_from_search', '__return_false' );
 ```
 
-### Can I make Archived posts hidden from the "All" list in the WP Admin, similar to Trashed posts? ###
+### Can I make Archived posts hidden from the "All" list in the WP Admin, similar to Trashed posts?
 Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
 ```php
@@ -79,7 +100,7 @@ add_filter( 'aps_status_arg_show_in_admin_all_list', '__return_false' );
 
 Please note that there is a [bug in core](https://core.trac.wordpress.org/ticket/24415) that requires public and private to be set to false in order for the `aps_status_arg_show_in_admin_all_list` to also be false. There are many bugs in core surrounding registering custom post statuses, so if something doesn't work the way you want on the first try be prepared to do some digging through trac :-)
 
-### Can I exclude the Archived status from appearing on certain post types? ###
+### Can I exclude the Archived status from appearing on certain post types?
 Yes, simply add this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
 ```php
@@ -91,26 +112,8 @@ function my_aps_excluded_post_types( $post_types ) {
 add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
 ```
 
-### Isn't this the same as using the Draft or Private statuses? ###
-Actually, no, they are not the same thing.
 
-The Draft status is a "pre-published" status that is reserved for content that is still being worked on. You can still make changes to content marked as Draft, and you can preview your changes.
-
-The Private status is a special kind of published status. It means the content is published, but only certain logged-in users can view it.
-
-The Archived post status, on the other hand, is meant to be a "post-published" status. Once a post has been set to Archived it can no longer be edited or viewed.
-
-Of course, you can always change the status back to Draft or Publish if you want to be able to edit its content again.
-
-### Can't I just trash old content I don't want anymore? ###
-Yes, there is nothing wong with trashing old content. And the behavior of the Archived status is very similar to that of trashing.
-
-However, WordPress automatically purges trashed posts every 7 days (by default).
-
-This is what makes the Archived post status handy. You can unpublish content without having to delete it forever.
-
-
-## Screenshots ##
+## Screenshots
 
 ### Post list table screen.
 
