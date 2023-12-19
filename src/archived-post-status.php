@@ -63,7 +63,7 @@ function aps_archived_label_string() {
 	 * @param string $label The "Archived" label.
 	 * @return string
 	 */
-	return apply_filters( 'aps_archived_label_string', $label );
+	return esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
 }
 
 /**
@@ -387,7 +387,7 @@ function aps_display_post_states( $post_states, $post ) {
 		$post_states,
 		array(
 			// translators: The post status label for Archived posts.
-			'archive' => __( 'Archived', 'archived-post-status' ),
+			'archive' => aps_archived_label_string(),
 		)
 	);
 }
