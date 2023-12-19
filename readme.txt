@@ -1,5 +1,5 @@
 === Archived Post Status ===
-Contributors:      joshuadnelson
+Contributors:      joshuadnelson, fjarrett
 Tags:              admin, posts, pages, status, workflow
 Requires at least: 5.3
 Requires PHP:      7.4
