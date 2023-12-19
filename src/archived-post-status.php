@@ -404,11 +404,26 @@ add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
  */
 function aps_save_post( $post_id, $post, $update ) {
 
-	if ( aps_is_excluded_post_type( $post->post_type )
-		|| wp_is_post_revision( $post ) ) {
+	// Bail out if running an autosave, ajax, cron, or revision.
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		return;
+	}
+	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+		return;
+	}
+	if ( wp_is_post_revision( $post_id ) ) {
+		return;
+	}
+
+	// Only posts that we're okay with
+	if ( aps_is_excluded_post_type( $post->post_type ) ) {
 			return;
 	}
 
+	// Only posts that are being Archived.
 	if ( 'archive' === $post->post_status ) {
 
 		// Unhook to prevent infinite loop
