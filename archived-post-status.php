@@ -7,7 +7,7 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link    https://github.com/joshuadavidnelson/disable-blog
+ * @link    https://github.com/joshuadavidnelson/archived-post-status
  * @since   0.3.8
  * @package ArchivedPostStatus
  *
