@@ -14,7 +14,6 @@
  * @action plugins_loaded
  */
 function aps_i18n() {
-
 	load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
 }
 add_action( 'plugins_loaded', 'aps_i18n' );
