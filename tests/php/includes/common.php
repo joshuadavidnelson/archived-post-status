@@ -41,3 +41,17 @@ function wp_cache_set( $key, $value, $group ) {
 function absint( $maybeint ) {
 	return abs( (int) $maybeint );
 }
+
+/**
+ * Mock _n_noop() function.
+ */
+function _n_noop( $singular, $plural, $domain = null ) {
+	return array(
+		0          => $singular,
+		1          => $plural,
+		'singular' => $singular,
+		'plural'   => $plural,
+		'context'  => null,
+		'domain'   => $domain,
+	);
+}
