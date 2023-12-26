@@ -6,7 +6,7 @@
 /**
  * Mock wp_cache_get() function.
  *
- * @since x.x.x
+ * @since 0.3.9
  *
  * @param string $key
  * @param string $group
@@ -19,7 +19,7 @@ function wp_cache_get( $key, $group ) {
 /**
  * Mock wp_cache_set() function.
  *
- * @since x.x.x
+ * @since 0.3.9
  *
  * @param string $key
  * @param mixed  $value
@@ -33,7 +33,7 @@ function wp_cache_set( $key, $value, $group ) {
 /**
  * Mock absint() function.
  *
- * @since x.x.x
+ * @since 0.3.9
  *
  * @param mixed $maybeint
  * @return int
