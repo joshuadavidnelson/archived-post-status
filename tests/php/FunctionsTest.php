@@ -40,7 +40,7 @@ class FunctionsTest extends TestCase {
 		// Return false, then true.
 		\WP_Mock::userFunction(
 			'is_admin', array(
-				'times'      => 2,
+				'times'           => 2,
 				'return_in_order' => array(
 					false,
 					true,
@@ -64,7 +64,7 @@ class FunctionsTest extends TestCase {
 		// Mock the current_user_can() function.
 		\WP_Mock::userFunction(
 			'current_user_can', array(
-				'times'  => 2,
+				'times'  => 1,
 				'return' => function( $capability ) {
 					return $capability === 'read_private_posts';
 				},
@@ -76,6 +76,25 @@ class FunctionsTest extends TestCase {
 
 		// Confirm the default condition is true.
 		$this->assertTrue( aps_current_user_can_view() );
+
+	}
+
+	/**
+	 * Test the aps_current_user_can_view() filter.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_current_user_can_view_filter() {
+
+		// Mock the current_user_can() function.
+		\WP_Mock::userFunction(
+			'current_user_can', array(
+				'times'  => 1,
+				'return' => function( $capability ) {
+					return $capability === 'read_private_posts';
+				},
+			)
+		);
 
 		// Pass false to the filter.
 		WP_Mock::onFilter( 'aps_default_read_capability' )
@@ -99,6 +118,15 @@ class FunctionsTest extends TestCase {
 
 		// Confirm default condition is true.
 		$this->assertTrue( aps_is_read_only() );
+
+	}
+
+	/**
+	 * Test the aps_is_read_only() function filters.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_is_read_only_filters() {
 
 		// Pass false to the filter.
 		WP_Mock::onFilter( 'aps_is_read_only' )
@@ -156,6 +184,15 @@ class FunctionsTest extends TestCase {
 		// Confirm default condition is true.
 		$this->assertTrue( aps_is_excluded_post_type( 'attachment' ) );
 		$this->assertFalse( aps_is_excluded_post_type( 'post' ) );
+
+	}
+
+	/**
+	 * Test the aps_is_excluded_post_type() function filters.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_is_excluded_post_type_filters() {
 
 		// Pass false to the filter.
 		WP_Mock::onFilter( 'aps_excluded_post_types' )
