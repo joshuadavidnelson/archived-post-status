@@ -4,7 +4,7 @@
 ## 0.3.9 - 
 - Fix deprecated php warning on `filter_input`, using native WP functions for escaping & getting query var.
 - Add `aps_archived_label_string` filter to modify the "Archived" string used for the label.
-- Add `aps_title_separator` and `aps_title_label` to filter the post title prefix and separator, defaults to 'Archived' with a `:` separator. Disable the title prefix entirely by using `add_filter( 'aps_title_prefix', '__return_false' );` in your functions.php file or custom plugin file. Closes #21
+- Add `aps_title_separator` and `aps_title_label` to filter the post title prefix and separator, defaults to 'Archived' with a `:` separator. Disable the title label entirely by using `add_filter( 'aps_title_prefix', '__return_false' );` in your `functions.php` file or custom plugin file. Closes #21
 - Added `aps_title_label_before` filter, defaults to `true` - pass `false` to have the label appear after the title instead of before it. This change along with the label string filter above closes #31
 - Add PHPUnit tests & github actions.
 - Update some comments and documentation, readmes, etc
