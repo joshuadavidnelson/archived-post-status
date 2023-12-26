@@ -6,6 +6,7 @@
 - Add `aps_archived_label_string` filter to modify the "Archived" string used for the label.
 - Add `aps_title_separator` and `aps_title_label` to filter the post title prefix and separator, defaults to 'Archived' with a `:` separator. Disable the title prefix entirely by using `add_filter( 'aps_title_prefix', '__return_false' );` in your functions.php file or custom plugin file. Closes #21
 - Added `aps_title_label_before` filter, defaults to `true` - pass `false` to have the label appear after the title instead of before it. This change along with the label string filter above closes #31
+- Add PHPUnit tests & github actions.
 - Update some comments and documentation, readmes, etc
 
 ## 0.3.8 - December 15, 2023
@@ -14,11 +15,11 @@ Ownership of this plugin is being transferred to [Joshua David Nelson](https://g
 
 This update includes:
 - Tested up to WordPress 6.4.2
-- Added minimum PHP of 7.4
-- Bumped minimum WordPress to 5.3
-- Added Github actions for deployment to WP repo
-- Updated contributors in readmes
-- Added PHPStan and PHPCS Github actions
+- Add minimum PHP of 7.4
+- Bump minimum WordPress to 5.3
+- Add Github actions for deployment to WP repo
+- Update contributors in readmes
+- Add PHPStan and PHPCS Github actions
 
 ## 0.3.7 - December 23, 2016
 * Tweak: Indicate support for WordPress 4.7.

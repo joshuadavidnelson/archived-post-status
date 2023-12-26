@@ -62,7 +62,7 @@ This is what makes the Archived post status handy. You can unpublish content wit
 
 ### Where are the options for this plugin?
 
-This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ
+This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ.
 
 ### Why are Archived posts appearing on the front-end?
 This is most likely because you are viewing your site while being logged in as an Editor or Administrator.
@@ -111,6 +111,17 @@ function my_aps_excluded_post_types( $post_types ) {
 }
 add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
 ```
+
+### My archived posts have disappeared when I deactivate the plugin!
+
+Don't worry, your content is not __gone__ it's just __inaccessible__. Unfortunately, using a custom post status like `archive` is only going to work while the plugin is active.
+
+If you have archived content and deativate or delete this plugin, that content will disappear from __view__. You're content is in the database - WordPress just no longer recognizes the `post_status` because this plugin is not there to set this post status up. 
+
+If you no longer need the plugin but want to retain your archived content:
+1. (Re)activate this plugin
+2. Switch all the archived posts/pages/cpts to a native post status, like 'draft' or 'publish'
+3. THEN deactivate/delete the plugin.
 
 
 ## Screenshots

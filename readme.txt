@@ -101,6 +101,17 @@ function my_aps_excluded_post_types( $post_types ) {
 add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
 </pre>
 
+= My archived posts have disappeared when I deactivate the plugin! =
+
+Don't worry, your content is not __gone__ it's just __inaccessible__. Unfortunately, using a custom post status like `archive` is only going to work while the plugin is active.
+
+If you have archived content and deativate or delete this plugin, that content will disappear from __view__. You're content is in the database - WordPress just no longer recognizes the `post_status` because this plugin is not there to set this post status up.
+
+If you no longer need the plugin but want to retain your archived content:
+1. (Re)activate this plugin
+2. Switch all the archived posts/pages/cpts to a native post status, like 'draft' or 'publish'
+3. Then deactivate/delete the plugin.
+
 = Help! I need support =
 
 Please reach out on the Github Issues or in the WordPress support forums.
@@ -116,6 +127,14 @@ Please reach out on the Github Issues or in the WordPress support forums.
 3. Publish metabox controls.
 
 == Changelog ==
+
+= 0.3.9 =
+- Fix deprecated php warning on `filter_input`, using native WP functions for escaping & getting query var.
+- Add `aps_archived_label_string` filter to modify the "Archived" string used for the label.
+- Add `aps_title_separator` and `aps_title_label` to filter the post title prefix and separator, defaults to 'Archived' with a `:` separator. Disable the title prefix entirely by using `add_filter( 'aps_title_prefix', '__return_false' );` in your functions.php file or custom plugin file. Closes #21
+- Added `aps_title_label_before` filter, defaults to `true` - pass `false` to have the label appear after the title instead of before it. This change along with the label string filter above closes #31
+- Add PHPUnit tests & github actions.
+- Update some comments and documentation, readmes, etc
 
 = 0.3.8 - December 15, 2023 =
 
@@ -195,3 +214,18 @@ Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com
 * Initial release.
 
 Props [fjarrett](https://github.com/fjarrett)
+
+== Upgrade Notice ==
+
+= 0.3.9 =
+
+- Fix deprecated php warning on `filter_input`.
+- Add filters for label and title string & separator, see changelog.
+
+= 0.3.8 =
+
+- Tested up to WordPress 6.4.2
+- Add minimum PHP of 7.4
+- Bump minimum WordPress to 5.3
+- Add Github actions for deployment & coding standards
+- Update contributors in readmes
