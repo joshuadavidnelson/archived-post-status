@@ -1,4 +1,4 @@
-=== Archived Post Status ===
+=== Archive Content with Archived Post Status ===
 Contributors:      joshuadnelson, fjarrett
 Tags:              admin, posts, pages, status, workflow
 Requires at least: 5.3
@@ -8,11 +8,9 @@ Stable tag:        0.3.8
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
-Allows posts and pages to be archived so you can unpublish content without having to trash it.
+Use an "Archived" status to unpublish content without having to trash it.
 
 == Description ==
-
-**Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
 This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
 
@@ -21,16 +19,7 @@ This plugin allows you to archive your WordPress content similar to the way you 
 * Compatible with posts, pages and custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
 
-**Languages supported:**
-
-* English
-* Čeština
-* Deutsch
-* Español
-* Français
-* Nederlands
-* Português
-* Русский
+**Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
 **Development of this plugin is done [on GitHub](https://github.com/joshuadavidnelson/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/joshuadavidnelson/archived-post-status/issues) there before going to the plugin forum.**
 
@@ -42,9 +31,9 @@ This plugin does not have a settings page. However, there are numerous hooks ava
 
 = Why are Archived posts appearing on the front-end? =
 
-This is most likely because you are viewing your site while being logged in as an Editor or Administrator.
+Archived content is by default viewable for users with the any user with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability.
 
-By default, any user with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability will see Archived posts appear on the front-end of your site.
+This means if you are viewing your site while being logged in as an Editor or Administrator, you will see the archived content. However, lower user roles and non-logged-in users will not see the archived content.
 
 You can change the default read capability by adding this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
@@ -59,7 +48,7 @@ add_filter( 'aps_default_read_capability', 'my_aps_default_read_capability' );
 
 = Can I make Archived posts appear on the front-end for all users? =
 
-Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+Add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
 <pre lang="php">
 add_filter( 'aps_status_arg_public', '__return_true' );
@@ -69,7 +58,7 @@ add_filter( 'aps_status_arg_exclude_from_search', '__return_false' );
 
 = Can I make Archived posts hidden from the "All" list in the WP Admin, similar to Trashed posts? =
 
-Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+Add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
 <pre lang="php">
 add_filter( 'aps_status_arg_public', '__return_false' );
@@ -81,7 +70,7 @@ Please note that there is a [bug in core](https://core.trac.wordpress.org/ticket
 
 = Can I exclude the Archived status from appearing on certain post types? =
 
-Yes, simply add this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+Add this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
 <pre lang="php">
 function my_aps_excluded_post_types( $post_types ) {
@@ -94,7 +83,7 @@ add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
 
 = Isn't this the same as using the Draft or Private statuses? =
 
-Actually, no, they are not the same thing.
+They are not the same thing.
 
 The Draft status is a "pre-published" status that is reserved for content that is still being worked on. You can still make changes to content marked as Draft, and you can preview your changes.
 
