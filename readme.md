@@ -41,13 +41,7 @@ This plugin allows you to archive your WordPress content similar to the way you 
 ## Frequently Asked Questions ##
 
 ### Where are the options for this plugin? ###
-This plugin does not have a settings page. Simply put, I don't like bloating my plugins with a bunch of options.
-
-Instead, I try to develop functionality using the 80/20 principle so that for 80% of use cases you all you need to do is activate the plugin and it "just works".
-
-For the other 20% of you who want things to behave differently there are numerous hooks available in the plugin so you can customize default behaviors.
-
-Many of those hooks are listed below in this FAQ.
+This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ.
 
 ### Why are Archived posts appearing on the front-end? ###
 This is most likely because you are viewing your site while being logged in as an Editor or Administrator.
