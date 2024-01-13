@@ -14,9 +14,9 @@ Use an "Archived" status to unpublish content without having to trash it.
 
 This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
 
-* Makes a new post status available in the dropdown called Archived
+* Makes a new post status available in the dropdown called "Archived"
 * Unpublish your posts and pages without having to trash them
-* Compatible with posts, pages and custom post types
+* Compatible with posts, pages, and custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
 
 **Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
