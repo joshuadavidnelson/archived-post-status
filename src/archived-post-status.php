@@ -203,7 +203,6 @@ function aps_the_title( $title, $post_id = null ) {
 			// Add the strings to the title.
 			$title = $before ? implode( '', $safe_strings ) . $title : $title . implode( '', array_reverse( $safe_strings ) );
 
-			print( $title );
 		}
 	}
 
