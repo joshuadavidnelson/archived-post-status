@@ -19,6 +19,8 @@ This plugin allows you to archive your WordPress content similar to the way you 
 * Compatible with posts, pages, and custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
 
+**[Over 13](https://translate.wordpress.org/projects/wp-plugins/archived-post-status/)** languages supported
+
 **Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
 **Development of this plugin is done [on GitHub](https://github.com/joshuadavidnelson/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/joshuadavidnelson/archived-post-status/issues) there before going to the plugin forum.**

@@ -9,14 +9,13 @@ Allows posts and pages to be archived so you can unpublish content without havin
 
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Tags:** [admin](https://wordpress.org/plugins/tags/admin), [posts](https://wordpress.org/plugins/tags/posts), [pages](https://wordpress.org/plugins/tags/pages), [status](https://wordpress.org/plugins/tags/status), [workflow](https://wordpress.org/plugins/tags/workflow)  
-**Requires at least:** 5.3  
+**Minimum PHP version supported:** 7.4
+**Minimum WP Version supported:** 5.3  
 **Tested up to:** 6.4.2  
-**Stable tag:** 0.3.8  
+**Stable tag:** 0.3.9  
 **License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
 
 ## Description
-
-**Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
 This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
 
@@ -25,22 +24,17 @@ This plugin allows you to archive your WordPress content similar to the way you 
 * Compatible with posts, pages and custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
 
-**Languages supported:**
+**[Over 13](https://translate.wordpress.org/projects/wp-plugins/archived-post-status/)** languages supported
 
-* English
-* Čeština
-* Deutsch
-* Español
-* Français
-* Nederlands
-* Português
-* Русский
+**Pull requests welcome, please follow [these guidelines](/code-of-conduct.md).**
 
-**Development of this plugin is done [on GitHub](https://github.com/fjarrett/archived-post-status). Pull requests welcome. Please see [issues reported](https://github.com/fjarrett/archived-post-status/issues) there before going to the plugin forum.**
+**Please see [issues reported](https://github.com/joshuadavidnelson/archived-post-status/issues) there before going to the plugin forum.**
+
+**Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
 ## Frequently Asked Questions
 
-## Isn't this the same as using the Draft or Private statuses?
+### Isn't this the same as using the Draft or Private statuses?
 
 Actually, no, they are not the same thing.
 
@@ -52,7 +46,7 @@ The Archived post status, on the other hand, is meant to be a "post-published" s
 
 Of course, you can always change the status back to Draft or Publish if you want to be able to edit its content again.
 
-## Can't I just trash old content I don't want anymore?
+### Can't I just trash old content I don't want anymore?
 
 Yes, there is nothing wong with trashing old content. And the behavior of the Archived status is very similar to that of trashing.
 
