@@ -165,7 +165,7 @@ function aps_the_title( $title, $post_id = null ) {
 		 * @param string $title      Optionally passed, the post title.
 		 * @return string
 		 */
-		$label = (string) apply_filters( 'aps_title_label', aps_archived_label_string(), $post_id );
+		$label = (string) apply_filters( 'aps_title_label', aps_archived_label_string(), $post_id, $title );
 
 		/**
 		 * Change the location of the label text.
