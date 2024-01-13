@@ -63,7 +63,7 @@ function aps_archived_label_string() {
 	 * @param string $label The "Archived" label.
 	 * @return string
 	 */
-	return esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
+	return (string) esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
 }
 
 /**
@@ -157,19 +157,6 @@ function aps_the_title( $title, $post_id = null ) {
 			&& 'archive' === $post->post_status ) {
 
 		/**
-		 * Filter the label / title separator.
-		 *
-		 * Defaults to a colon.
-		 *
-		 * @since 0.3.9
-		 * @param string $label_text The label text for archived posts.
-		 * @param int    $post_id    Optionally passed, the post object.
-		 * @param string $title      Optionally passed, the post title.
-		 * @return string
-		 */
-		$sep = apply_filters( 'aps_title_separator', ':', $post_id, $title );
-
-		/**
 		 * Filter the label text for archived posts.
 		 *
 		 * @since 0.3.9
@@ -178,27 +165,45 @@ function aps_the_title( $title, $post_id = null ) {
 		 * @param string $title      Optionally passed, the post title.
 		 * @return string
 		 */
-		$label = apply_filters( 'aps_title_label', aps_archived_label_string(), $post_id, $title );
+		$label = (string) apply_filters( 'aps_title_label', aps_archived_label_string(), $post_id );
 
 		/**
 		 * Change the location of the label text.
 		 *
 		 * @since 0.3.9
-		 * @param bool $before True to place the before the title,
-		 *                     false to place it after.
+		 * @param bool $before  True to place the before the title,
+		 *                      false to place it after.
+		 * @param int  $post_id Optionally passed, the post object.
 		 * @return bool
 		 */
-		$before = (bool) apply_filters( 'aps_title_label_before', true );
+		$before = (bool) apply_filters( 'aps_title_label_before', true, $post_id );
+
+		// Set the separator.
+		$sep = ( true === $before ) ? ': ' : ' - ';
+
+		/**
+		 * Filter the separator used between the label and title.
+		 *
+		 * Defaults to a colon where before is true, and a dash where
+		 * before is false. Includes spaces as needed.
+		 *
+		 * @since 0.3.9
+		 * @param string $label_text The label text for archived posts.
+		 * @param int    $post_id    Optionally passed, the post object.
+		 * @return string
+		 */
+		$sep = (string) apply_filters( 'aps_title_separator', $sep, $post_id );
 
 		// Add label to title.
 		if ( ! empty( $label ) ) {
-			if ( $before ) {
-				$label = esc_attr( $label ) . esc_attr( $sep );
-				$title = sprintf( '%1$s %2$s', $label, $title );
-			} else {
-				$label = esc_attr( $sep ) . esc_attr( $label );
-				$title = sprintf( '%1$s %2$s', $title, $label );
-			}
+
+			// Sanitize the strings.
+			$safe_strings = array_filter( [ $label, $sep ], 'esc_attr' );
+
+			// Add the strings to the title.
+			$title = $before ? implode( '', $safe_strings ) . $title : $title . implode( '', array_reverse( $safe_strings ) );
+
+			print( $title );
 		}
 	}
 
@@ -374,8 +379,8 @@ add_action( 'load-post.php', 'aps_load_post_screen' );
  *
  * @filter display_post_states
  *
- * @param  array   $post_states
- * @param  WP_Post $post
+ * @param array   $post_states
+ * @param WP_Post $post
  *
  * @return array
  */
