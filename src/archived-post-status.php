@@ -198,7 +198,7 @@ function aps_the_title( $title, $post_id = null ) {
 		if ( ! empty( $label ) ) {
 
 			// Sanitize the strings.
-			$safe_strings = array_filter( [ $label, $sep ], 'esc_attr' );
+			$safe_strings = array_filter( array( $label, $sep ), 'esc_attr' );
 
 			// Add the strings to the title.
 			$title = $before ? implode( '', $safe_strings ) . $title : $title . implode( '', array_reverse( $safe_strings ) );
