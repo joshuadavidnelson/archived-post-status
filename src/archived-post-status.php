@@ -5,7 +5,6 @@
  * @link    https://github.com/joshuadavidnelson/archived-post-status
  * @since   0.3.8
  * @package ArchivedPostStatus
- * @author  Joshua Nelson <josh@joshuadnelson.com>
  * @license GPL-2.0+
  */
 
