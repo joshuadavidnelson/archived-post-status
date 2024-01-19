@@ -30,6 +30,42 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
+	 * Test the aps_post_status_slug() function.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_post_status_slug() {
+
+		$string = 'archive';
+
+		// Confirm the filter is applied.
+		\WP_Mock::expectFilter( 'aps_post_status_slug', $string );
+
+		// Confirm default condition is true.
+		$this->assertEquals( $string, aps_post_status_slug() );
+
+	}
+
+	/**
+	 * Test the aps_is_excluded_post_type() function filters.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_post_status_slug_filter() {
+
+		$string = 'resolve';
+
+		// Pass false to the filter.
+		WP_Mock::onFilter( 'aps_post_status_slug' )
+			->with( 'archive' )
+			->reply( $string );
+
+		// Confirm the filter is applied.
+		$this->assertEquals( $string, aps_post_status_slug() );
+
+	}
+
+	/**
 	 * Test the aps_is_frontend() function.
 	 *
 	 * @since 0.3.9
@@ -192,7 +228,7 @@ class FunctionsTest extends TestCase {
 	 *
 	 * @since 0.3.9
 	 */
-	public function test_aps_is_excluded_post_type_filters() {
+	public function test_aps_is_excluded_post_type_filter() {
 
 		// Pass false to the filter.
 		WP_Mock::onFilter( 'aps_excluded_post_types' )

@@ -67,6 +67,26 @@ function aps_archived_label_string() {
 }
 
 /**
+ * The slug used for the Archived post status.
+ *
+ * @since 0.3.9
+ * @return string
+ */
+function aps_post_status_slug() {
+
+	/**
+	 * Filter the slug used for the Archived post status.
+	 *
+	 * @since 0.3.9
+	 * @param string $slug The slug for the post status.
+	 * @return string
+	 */
+	$slug = (string) apply_filters( 'aps_post_status_slug', 'archive' );
+
+	return empty( esc_attr( $slug ) ) ? 'archive' : esc_attr( $slug );
+}
+
+/**
  * Register a custom post status for Archived.
  *
  * @action init
@@ -85,7 +105,9 @@ function aps_register_archive_post_status() {
 		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archived-post-status' ),
 	);
 
-	register_post_status( 'archive', $args );
+	$slug = aps_post_status_slug();
+
+	register_post_status( $slug, $args );
 }
 add_action( 'init', 'aps_register_archive_post_status' );
 
