@@ -74,6 +74,44 @@ function my_aps_default_read_capability( $capability ) {
 add_filter( 'aps_default_read_capability', 'my_aps_default_read_capability' );
 ```
 
+### Can I change the status name?
+
+You can change the "Archived" string used for the custom status name by adding the code snippet to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+```
+add_filter( 'aps_archived_label_string', function( $label ) {
+	$label = 'Custom Label'; // replace with your custom label
+	return $label;
+});
+```
+
+This will change the label used on the admin and on the post title label (see below).
+
+### How to modify or disable the "Archived" label added to the post title
+
+This plugin automatically adds `Archived:` to the title of archived content. (Note that archived content is only viewable to logged in users with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability).
+
+You can modify the label text, the separator, whether it appears before or after the title, or completely disable it. 
+
+Follow the examples below, adding the code snippet to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins).
+
+**Remove the label**
+`add_filter( 'aps_title_label', '__return_false' );`
+
+**Place the label _after_ the title**
+`add_filter( 'aps_title_label_before', '__return_false' );`
+
+**Change the separator**
+The separator is the string that separates the "Archived" label and the post title, _including spaces_. When the label appears before the title, the separator is a colon and space `: `, if the label is placed after the title it is a dash with spaces on each side ` - `.
+
+You can customize the separator with the following filter:
+```
+add_filter( 'aps_title_separator', function( $sep ) {
+	$sep = ' ~ '; // replace with your separator
+	return $sep;
+});
+```
+
 ### Can I make Archived posts appear on the front-end for all users?
 Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
