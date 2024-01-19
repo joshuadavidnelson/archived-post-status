@@ -30,6 +30,42 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
+	 * Test the aps_archived_label_string() function.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_archived_label_string() {
+
+		$string = 'Archived';
+
+		// Confirm the filter is applied.
+		\WP_Mock::expectFilter( 'aps_archived_label_string', $string );
+
+		// Confirm default condition is true.
+		$this->assertEquals( $string, aps_archived_label_string() );
+
+	}
+
+	/**
+	 * Test the aps_is_excluded_post_type() function filters.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_archived_label_string_filter() {
+
+		$string = 'Resolved';
+
+		// Pass false to the filter.
+		WP_Mock::onFilter( 'aps_archived_label_string' )
+			->with( 'Archived' )
+			->reply( $string );
+
+		// Confirm the filter is applied.
+		$this->assertEquals( $string, aps_archived_label_string() );
+
+	}
+
+	/**
 	 * Test the aps_post_status_slug() function.
 	 *
 	 * @since 0.3.9
