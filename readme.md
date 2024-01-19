@@ -95,13 +95,16 @@ You can modify the label text, the separator, whether it appears before or after
 
 Follow the examples below, adding the code snippet to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins).
 
-**Remove the label**
+#### Remove the label
+
 `add_filter( 'aps_title_label', '__return_false' );`
 
-**Place the label _after_ the title**
+#### Place the label _after_ the title
+
 `add_filter( 'aps_title_label_before', '__return_false' );`
 
-**Change the separator**
+#### Change the separator
+
 The separator is the string that separates the "Archived" label and the post title, _including spaces_. When the label appears before the title, the separator is a colon and space `: `, if the label is placed after the title it is a dash with spaces on each side ` - `.
 
 You can customize the separator with the following filter:
