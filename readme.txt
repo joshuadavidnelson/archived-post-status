@@ -83,12 +83,12 @@ add_filter( 'aps_status_arg_exclude_from_search', '__return_false' );
 
 You can change the post status name, the "Archived" string, by adding the code snippet to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
 
-```
+<pre lang="php">
 add_filter( 'aps_archived_label_string', function( $label ) {
 	$label = 'Custom Label'; // replace with your custom label
 	return $label;
 });
-```
+</pre>
 
 This will change the name used in the admin and on the post title label (see below).
 
@@ -113,12 +113,13 @@ Follow the examples below, adding the code snippet to your theme's `functions.ph
 The separator is the string between the "Archived" label and the post title, _including spaces_. When the label appears before the title, the separator is a colon and space `: `, if the label is placed after the title it is a dash with spaces on each side ` - `.
 
 You can customize the separator with the following filter:
-```
+
+<pre lang="php">
 add_filter( 'aps_title_separator', function( $sep ) {
 	$sep = ' ~ '; // replace with your separator
 	return $sep;
 });
-```
+</pre>
 
 = Can I make Archived posts hidden from the "All" list in the WP Admin, similar to Trashed posts? =
 
