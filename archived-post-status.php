@@ -7,7 +7,7 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link    https://github.com/joshuadavidnelson/disable-blog
+ * @link    https://github.com/joshuadavidnelson/archived-post-status
  * @since   0.3.8
  * @package ArchivedPostStatus
  *
@@ -24,11 +24,9 @@
  */
 
 /**
- * Exit if accessed directly.
+ * Exit if accessed directly, prevent direct access to this file.
  *
- * Prevent direct access to this file.
- *
- * @since 0.1.0
+ * @since 0.3.9
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	die;

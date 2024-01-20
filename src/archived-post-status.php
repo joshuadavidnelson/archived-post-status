@@ -2,11 +2,20 @@
 /**
  * The file that defines the core plugin functions
  *
- * @link       https://github.com/joshuadavidnelson/archived-post-status
- * @since      0.3.8
- * @package    ArchivedPostStatus
- * @author     Joshua Nelson <josh@joshuadnelson.com>
+ * @link    https://github.com/joshuadavidnelson/archived-post-status
+ * @since   0.3.8
+ * @package ArchivedPostStatus
+ * @license GPL-2.0+
  */
+
+/**
+ * Exit if accessed directly, prevent direct access to this file.
+ *
+ * @since 0.3.9
+ */
+if ( ! defined( 'ABSPATH' ) ) {
+	die;
+}
 
 /**
  * Load languages.
@@ -14,7 +23,6 @@
  * @action plugins_loaded
  */
 function aps_i18n() {
-
 	load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
 }
 add_action( 'plugins_loaded', 'aps_i18n' );
@@ -37,6 +45,47 @@ function aps_i18n_strings() {
 }
 
 /**
+ * Filter the archived string.
+ *
+ * @since 0.3.9
+ * @return string
+ */
+function aps_archived_label_string() {
+
+	// translators: The label used for the status.
+	$label = __( 'Archived', 'archived-post-status' );
+
+	/**
+	 * Filter the label used in the plugin for archived content
+	 *
+	 * @since 0.3.9
+	 * @param string $label The "Archived" label.
+	 * @return string
+	 */
+	return (string) esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
+}
+
+/**
+ * The slug used for the Archived post status.
+ *
+ * @since 0.3.9
+ * @return string
+ */
+function aps_post_status_slug() {
+
+	/**
+	 * Filter the slug used for the Archived post status.
+	 *
+	 * @since 0.3.9
+	 * @param string $slug The slug for the post status.
+	 * @return string
+	 */
+	$slug = (string) apply_filters( 'aps_post_status_slug', 'archive' );
+
+	return empty( esc_attr( $slug ) ) ? 'archive' : esc_attr( $slug );
+}
+
+/**
  * Register a custom post status for Archived.
  *
  * @action init
@@ -45,7 +94,7 @@ function aps_register_archive_post_status() {
 
 	$args = array(
 		// translators: The post status label for Archived posts.
-		'label'                     => __( 'Archived', 'archived-post-status' ),
+		'label'                     => aps_archived_label_string(),
 		'public'                    => (bool) apply_filters( 'aps_status_arg_public', aps_current_user_can_view() ),
 		'private'                   => (bool) apply_filters( 'aps_status_arg_private', true ),
 		'exclude_from_search'       => (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() ),
@@ -55,7 +104,9 @@ function aps_register_archive_post_status() {
 		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archived-post-status' ),
 	);
 
-	register_post_status( 'archive', $args );
+	$slug = aps_post_status_slug();
+
+	register_post_status( $slug, $args );
 }
 add_action( 'init', 'aps_register_archive_post_status' );
 
@@ -67,7 +118,6 @@ add_action( 'init', 'aps_register_archive_post_status' );
  * @return bool
  */
 function aps_is_frontend() {
-
 	return ! is_admin();
 }
 add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
@@ -83,7 +133,7 @@ function aps_current_user_can_view() {
 	 * Default capability to grant ability to view Archived content.
 	 *
 	 * @since 0.3.0
-	 *
+	 * @param string $capability The user capability to view archived content.
 	 * @return string
 	 */
 	$capability = (string) apply_filters( 'aps_default_read_capability', 'read_private_posts' );
@@ -102,7 +152,7 @@ function aps_is_read_only() {
 	 * Archived content is read-only by default.
 	 *
 	 * @since 0.3.5
-	 *
+	 * @param bool $is_read_only True by default.
 	 * @return bool
 	 */
 	return (bool) apply_filters( 'aps_is_read_only', true );
@@ -118,19 +168,63 @@ function aps_is_read_only() {
  */
 function aps_the_title( $title, $post_id = null ) {
 
+	if ( ! $post_id ) {
+		$post_id = get_the_ID();
+	}
+
 	$post = get_post( $post_id );
 
-	if (
-		! is_admin()
-		&&
-		isset( $post->post_status )
-		&&
-		'archive' === $post->post_status
-	) {
+	if ( ! is_admin() && isset( $post->post_status )
+			&& 'archive' === $post->post_status ) {
 
-		// translators: The post title prefix for archived posts.
-		$title = sprintf( '%1$s: %2$s', __( 'Archived', 'archived-post-status' ), $title );
+		/**
+		 * Filter the label text for archived posts.
+		 *
+		 * @since 0.3.9
+		 * @param string $label_text The label text for archived posts.
+		 * @param int    $post_id    Optionally passed, the post object.
+		 * @param string $title      Optionally passed, the post title.
+		 * @return string
+		 */
+		$label = (string) apply_filters( 'aps_title_label', aps_archived_label_string(), $post_id, $title );
 
+		/**
+		 * Change the location of the label text.
+		 *
+		 * @since 0.3.9
+		 * @param bool $before  True to place the before the title,
+		 *                      false to place it after.
+		 * @param int  $post_id Optionally passed, the post object.
+		 * @return bool
+		 */
+		$before = (bool) apply_filters( 'aps_title_label_before', true, $post_id );
+
+		// Set the separator.
+		$sep = ( true === $before ) ? ': ' : ' - ';
+
+		/**
+		 * Filter the separator used between the label and title.
+		 *
+		 * Defaults to a colon where before is true, and a dash where
+		 * before is false. Includes spaces as needed.
+		 *
+		 * @since 0.3.9
+		 * @param string $label_text The label text for archived posts.
+		 * @param int    $post_id    Optionally passed, the post object.
+		 * @return string
+		 */
+		$sep = (string) apply_filters( 'aps_title_separator', $sep, $post_id );
+
+		// Add label to title.
+		if ( ! empty( $label ) ) {
+
+			// Sanitize the strings.
+			$safe_strings = array_filter( array( $label, $sep ), 'esc_attr' );
+
+			// Add the strings to the title.
+			$title = $before ? implode( '', $safe_strings ) . $title : $title . implode( '', array_reverse( $safe_strings ) );
+
+		}
 	}
 
 	return $title;
@@ -150,7 +244,7 @@ function aps_is_excluded_post_type( $post_type ) {
 	 * Prevent the Archived status from being used on these post types.
 	 *
 	 * @since 0.1.0
-	 *
+	 * @param array $post_types An array of strings, the slugs for post types excluded.
 	 * @return array
 	 */
 	$excluded = (array) apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
@@ -166,11 +260,8 @@ function aps_is_excluded_post_type( $post_type ) {
 function aps_post_screen_js() {
 
 	global $post;
-
 	if ( aps_is_excluded_post_type( $post->post_type ) ) {
-
 		return;
-
 	}
 
 	if ( 'draft' !== $post->post_status && 'pending' !== $post->post_status ) {
@@ -209,9 +300,7 @@ function aps_edit_screen_js() {
 	global $typenow;
 
 	if ( aps_is_excluded_post_type( $typenow ) ) {
-
 		return;
-
 	}
 
 	?>
@@ -266,28 +355,20 @@ add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
 function aps_load_post_screen() {
 
 	if ( ! aps_is_read_only() ) {
-
 		return;
-
 	}
 
-	$post_id = (int) filter_input( INPUT_GET, 'post', FILTER_SANITIZE_NUMBER_INT );
+	$post_id = absint( get_query_var( 'post' ) );
 	$post    = get_post( $post_id );
 
-	if (
-		is_null( $post )
-		||
-		aps_is_excluded_post_type( $post->post_type )
-		||
-		'archive' !== $post->post_status
-	) {
-
-		return;
-
+	if ( is_null( $post )
+		|| aps_is_excluded_post_type( $post->post_type )
+		|| 'archive' !== $post->post_status ) {
+			return;
 	}
 
-	$action  = filter_input( INPUT_GET, 'action', FILTER_SANITIZE_STRING );
-	$message = (int) filter_input( INPUT_GET, 'message', FILTER_SANITIZE_NUMBER_INT );
+	$action  = esc_attr( get_query_var( 'action' ) );
+	$message = absint( get_query_var( 'message' ) );
 
 	// Redirect to list table after saving as Archived
 	if ( 'edit' === $action && 1 === $message ) {
@@ -318,30 +399,24 @@ add_action( 'load-post.php', 'aps_load_post_screen' );
  *
  * @filter display_post_states
  *
- * @param  array   $post_states
- * @param  WP_Post $post
+ * @param array   $post_states
+ * @param WP_Post $post
  *
  * @return array
  */
 function aps_display_post_states( $post_states, $post ) {
 
-	if (
-		aps_is_excluded_post_type( $post->post_type )
-		||
-		'archive' !== $post->post_status
-		||
-		'archive' === get_query_var( 'post_status' )
-	) {
-
-		return $post_states;
-
+	if ( aps_is_excluded_post_type( $post->post_type )
+		|| 'archive' !== $post->post_status
+		|| 'archive' === get_query_var( 'post_status' ) ) {
+			return $post_states;
 	}
 
 	return array_merge(
 		$post_states,
 		array(
 			// translators: The post status label for Archived posts.
-			'archive' => __( 'Archived', 'archived-post-status' ),
+			'archive' => aps_archived_label_string(),
 		)
 	);
 }
@@ -358,16 +433,26 @@ add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
  */
 function aps_save_post( $post_id, $post, $update ) {
 
-	if (
-		aps_is_excluded_post_type( $post->post_type )
-		||
-		wp_is_post_revision( $post )
-	) {
-
+	// Bail out if running an autosave, ajax, cron, or revision.
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 		return;
-
+	}
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		return;
+	}
+	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+		return;
+	}
+	if ( wp_is_post_revision( $post_id ) ) {
+		return;
 	}
 
+	// Only posts that we're okay with
+	if ( aps_is_excluded_post_type( $post->post_type ) ) {
+			return;
+	}
+
+	// Only posts that are being Archived.
 	if ( 'archive' === $post->post_status ) {
 
 		// Unhook to prevent infinite loop
