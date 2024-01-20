@@ -15,10 +15,10 @@ Use an "Archived" status to unpublish content without having to trash it.
 This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
 
 * Unpublish your posts and pages without having to trash them
-* Archives content, making it hidden from public view
-* Compatible with posts, pages and call public ustom post types
+* Archive content is hidden from public view
+* Compatible with posts, pages, and public custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
-* Easily extended (see walkthroughs below)
+* Easily extended (see below)
 
 **[Over 13](https://translate.wordpress.org/projects/wp-plugins/archived-post-status/)** languages supported
 
