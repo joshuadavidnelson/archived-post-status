@@ -8,13 +8,13 @@
  * that starts the plugin.
  *
  * @link    https://github.com/joshuadavidnelson/archived-post-status
- * @since   0.3.8
+ * @since   0.3.9
  * @package ArchivedPostStatus
  *
  * @wordpress-plugin
  * Plugin Name: Archived Post Status
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
- * Version:     0.3.8
+ * Version:     0.3.9
  * Author:      Joshua David Nelson
  * Author URI:  https://joshuadnelson.com
  * Text Domain: archived-post-status
