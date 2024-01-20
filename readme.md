@@ -10,7 +10,7 @@
 Allows posts and pages to be archived so you can unpublish content without having to trash it.
 
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
-**Minimum PHP version supported:** 7.4
+**Minimum PHP version supported:** 7.4  
 **Minimum WP Version supported:** 5.3  
 **Tested up to:** 6.4.2  
 **Stable tag:** 0.3.9  
