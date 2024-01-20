@@ -1,7 +1,10 @@
 # Archived Post Status Changelog
 ---
 
-## 0.3.9 - 
+## 0.3.9.1 - January 19, 2024
+- Fixing version numbers in files, missing from 0.3.9 release.
+
+## 0.3.9 - January 19, 2024
 - Fix deprecated php warning on `filter_input`, using native WP functions for escaping & getting query var. Fixes another issue, where archived posts couldn't be trashed (Closes #35)
 - Add `aps_archived_label_string` filter to modify the "Archived" string used for the label.
 - Add `aps_title_separator` and `aps_title_label` to filter the post title prefix and separator, defaults to 'Archived' with a `:` separator. Disable the title label entirely by using `add_filter( 'aps_title_prefix', '__return_false' );` in your `functions.php` file or custom plugin file. Closes #21

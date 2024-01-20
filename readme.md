@@ -13,7 +13,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Minimum PHP version supported:** 7.4  
 **Minimum WP Version supported:** 5.3  
 **Tested up to:** 6.4.2  
-**Stable tag:** 0.3.9  
+**Stable tag:** 0.3.9.1  
 **License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
 
 ## Description
