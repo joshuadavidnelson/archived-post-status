@@ -1,6 +1,6 @@
 === Archive Content with Archived Post Status ===
 Contributors:      joshuadnelson, fjarrett
-Tags:              admin, posts, pages, status, workflow
+Tags:              archive, archived, post status, archive post, admin, status, workflow
 Requires at least: 5.3
 Requires PHP:      7.4
 Tested up to:      6.4.2

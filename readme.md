@@ -10,7 +10,6 @@
 Allows posts and pages to be archived so you can unpublish content without having to trash it.
 
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
-**Tags:** [admin](https://wordpress.org/plugins/tags/admin), [posts](https://wordpress.org/plugins/tags/posts), [pages](https://wordpress.org/plugins/tags/pages), [status](https://wordpress.org/plugins/tags/status), [workflow](https://wordpress.org/plugins/tags/workflow)  
 **Minimum PHP version supported:** 7.4
 **Minimum WP Version supported:** 5.3  
 **Tested up to:** 6.4.2  
