@@ -44,4 +44,21 @@ define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN )
 /**
  * The core plugin class that is used to define everything.
  */
-require ARCHIVED_POST_STATUS_DIR . '/src/archived-post-status.php';
+require ARCHIVED_POST_STATUS_DIR . '/src/Plugin.php';
+
+/**
+ * Begins execution of the plugin.
+ *
+ * Since everything within the plugin is registered via hooks,
+ * then kicking off the plugin from this point in the file does
+ * not affect the page life cycle.
+ *
+ * @since 0.3.9
+ */
+function run_archived_post_status() {
+	$plugin = new ArchivedPostStatus\Plugin( ARCHIVED_POST_STATUS_PLUGIN, ARCHIVED_POST_STATUS_VERSION );
+	$plugin->run();
+}
+add_action( 'plugins_loaded', 'run_archived_post_status', 10, 0 );
+
+

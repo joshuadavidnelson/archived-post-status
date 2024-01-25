@@ -1,31 +1,13 @@
 <?php
 /**
- * The file that defines the core plugin functions
- *
- * @link    https://github.com/joshuadavidnelson/archived-post-status
- * @since   0.3.8
- * @package ArchivedPostStatus
- * @license GPL-2.0+
- */
-
-/**
- * Exit if accessed directly, prevent direct access to this file.
+ * Functions.
  *
  * @since 0.3.9
+ * @package ArchivedPostStatus
  */
-if ( ! defined( 'ABSPATH' ) ) {
-	die;
-}
 
-/**
- * Load languages.
- *
- * @action plugins_loaded
- */
-function aps_i18n() {
-	load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
-}
-add_action( 'plugins_loaded', 'aps_i18n' );
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; }
 
 /**
  * Translations strings placeholder function.
@@ -62,27 +44,7 @@ function aps_archived_label_string() {
 	 * @param string $label The "Archived" label.
 	 * @return string
 	 */
-	return (string) esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
-}
-
-/**
- * The slug used for the Archived post status.
- *
- * @since 0.3.9
- * @return string
- */
-function aps_post_status_slug() {
-
-	/**
-	 * Filter the slug used for the Archived post status.
-	 *
-	 * @since 0.3.9
-	 * @param string $slug The slug for the post status.
-	 * @return string
-	 */
-	$slug = (string) apply_filters( 'aps_post_status_slug', 'archive' );
-
-	return empty( esc_attr( $slug ) ) ? 'archive' : esc_attr( $slug );
+	return esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
 }
 
 /**
@@ -92,23 +54,99 @@ function aps_post_status_slug() {
  */
 function aps_register_archive_post_status() {
 
+	/**
+	 * Filter the public status parameter.
+	 *
+	 * @since 0.4.0
+	 * @param bool $public True to make the status public, false to make it private.
+	 *                     Defaults to true if the current user can view archived content.
+	 * @return bool
+	 */
+	$public = (bool) apply_filters( 'aps_status_arg_public', aps_current_user_can_view() );
+
+	/**
+	 * Filter the post types that can use the Archived post status.
+	 *
+	 * @since 0.4.0
+	 * @param array $post_types An array of post type slugs.
+	 * @return array
+	 */
+	$post_types = (array) apply_filters( 'aps_status_arg_post_type', array( 'post', 'page' ) );
+
+	/**
+	 * Filter the private status parameter.
+	 *
+	 * @since 0.4.0
+	 * @param bool $private True to make the status private, false to make it public.
+	 *                      Defaults to true if the current user can't view archived content.
+	 * @return bool
+	 */
+	$private = (bool) apply_filters( 'aps_status_arg_private', true );
+
+	/**
+	 * Filter the exclude from search status parameter.
+	 *
+	 * @since 0.4.0
+	 * @param bool $exclude True to exclude archived content from search,
+	 *                      false to include it.
+	 *                      Defaults to true if the current user can't view archived content.
+	 * @return bool
+	 */
+	$exclude_from_search = (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() );
+
+	/**
+	 * Filter the show in admin all list status parameter.
+	 *
+	 * @since 0.4.0
+	 * @param bool $show True to show archived content in the
+	 *                   admin all list, false to hide it.
+	 *                   Defaults to true if the current user can view archived content.
+	 * @return bool
+	 */
+	$show_in_admin_all_list = (bool) apply_filters( 'aps_status_arg_show_in_admin_all_list', aps_current_user_can_view() );
+
+	/**
+	 * Filter the show in admin status list status parameter.
+	 *
+	 * @since 0.4.0
+	 * @param bool $show True to show archived content in the
+	 *                   admin status list, false to hide it.
+	 *                   Defaults to true if the current user can view archived content.
+	 * @return bool
+	 */
+	$show_in_admin_status_list = (bool) apply_filters( 'aps_status_arg_show_in_admin_status_list', aps_current_user_can_view() );
+
+	/**
+	 * Filter the hicon used for the Archived post status.
+	 *
+	 * @since 0.4.0
+	 * @param string $icon The dashicon name.
+	 * @return string
+	 */
+	$icon = (string) apply_filters( 'aps_status_arg_dashicon', 'dashicons-archive' );
+
+	// Set the args for the post status.
 	$args = array(
 		// translators: The post status label for Archived posts.
 		'label'                     => aps_archived_label_string(),
-		'public'                    => (bool) apply_filters( 'aps_status_arg_public', aps_current_user_can_view() ),
-		'private'                   => (bool) apply_filters( 'aps_status_arg_private', true ),
-		'exclude_from_search'       => (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() ),
-		'show_in_admin_all_list'    => (bool) apply_filters( 'aps_status_arg_show_in_admin_all_list', aps_current_user_can_view() ),
-		'show_in_admin_status_list' => (bool) apply_filters( 'aps_status_arg_show_in_admin_status_list', aps_current_user_can_view() ),
-		// translators: The post status label count for Archived posts.
-		'label_count'               => _n_noop( 'Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'archived-post-status' ),
+		'public'                    => $public,
+		'post_type'                 => $post_types,
+		'private'                   => $private,
+		'exclude_from_search'       => $exclude_from_search,
+		'show_in_admin_all_list'    => $show_in_admin_all_list,
+		'show_in_admin_status_list' => $show_in_admin_status_list,
+		'dashicons'                 => $icon,
+		// translators: %s: Number of Archived posts.
+		'label_count'               => _n_noop(
+			'Archived <span class="count">(%s)</span>',
+			'Archived <span class="count">(%s)</span>',
+			'archived-post-status'
+		),
 	);
 
-	$slug = aps_post_status_slug();
-
-	register_post_status( $slug, $args );
+	// Regiester the post status.
+	register_post_status( 'archive', $args );
 }
-add_action( 'init', 'aps_register_archive_post_status' );
 
 /**
  * Check if we are on the frontend.
@@ -120,7 +158,6 @@ add_action( 'init', 'aps_register_archive_post_status' );
 function aps_is_frontend() {
 	return ! is_admin();
 }
-add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 
 /**
  * Check if the current user can view Archived content.
@@ -168,17 +205,22 @@ function aps_is_read_only() {
  */
 function aps_the_title( $title, $post_id = null ) {
 
+	// Get the post id.
 	if ( ! $post_id ) {
 		$post_id = get_the_ID();
 	}
 
+	// Get the post object.
 	$post = get_post( $post_id );
 
+	// Only filter on the frontend, for archived posts.
 	if ( ! is_admin() && isset( $post->post_status )
-			&& 'archive' === $post->post_status ) {
+		&& 'archive' === $post->post_status ) {
 
 		/**
-		 * Filter the label text for archived posts.
+		 * Filter the label / title separator.
+		 *
+		 * Defaults to a colon.
 		 *
 		 * @since 0.3.9
 		 * @param string $label_text The label text for archived posts.
@@ -209,8 +251,8 @@ function aps_the_title( $title, $post_id = null ) {
 		 * before is false. Includes spaces as needed.
 		 *
 		 * @since 0.3.9
-		 * @param string $label_text The label text for archived posts.
-		 * @param int    $post_id    Optionally passed, the post object.
+		 * @param string $sep     The separator string.
+		 * @param int    $post_id Optionally passed, the post object.
 		 * @return string
 		 */
 		$sep = (string) apply_filters( 'aps_title_separator', $sep, $post_id );
@@ -223,13 +265,11 @@ function aps_the_title( $title, $post_id = null ) {
 
 			// Add the strings to the title.
 			$title = $before ? implode( '', $safe_strings ) . $title : $title . implode( '', array_reverse( $safe_strings ) );
-
 		}
 	}
 
 	return $title;
 }
-add_filter( 'the_title', 'aps_the_title', 10, 2 );
 
 /**
  * Check if a post type should NOT be using the Archived status.
@@ -288,7 +328,6 @@ function aps_post_screen_js() {
 
 	}
 }
-add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
 
 /**
  * Modify the DOM on edit screens.
@@ -345,7 +384,6 @@ function aps_edit_screen_js() {
 	</script>
 	<?php
 }
-add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
 
 /**
  * Prevent Archived content from being edited.
@@ -392,15 +430,14 @@ function aps_load_post_screen() {
 		__( 'WordPress &rsaquo; Error' )
 	);
 }
-add_action( 'load-post.php', 'aps_load_post_screen' );
 
 /**
  * Display custom post state text next to post titles that are Archived.
  *
  * @filter display_post_states
  *
- * @param array   $post_states
- * @param WP_Post $post
+ * @param  array   $post_states
+ * @param  WP_Post $post
  *
  * @return array
  */
@@ -420,7 +457,6 @@ function aps_display_post_states( $post_states, $post ) {
 		)
 	);
 }
-add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
 
 /**
  * Close comments and pings when content is Archived.
@@ -470,4 +506,3 @@ function aps_save_post( $post_id, $post, $update ) {
 		add_action( 'save_post', __FUNCTION__, 10, 3 );
 	}
 }
-add_action( 'save_post', 'aps_save_post', 10, 3 );
