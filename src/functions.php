@@ -506,3 +506,45 @@ function aps_save_post( $post_id, $post, $update ) {
 		add_action( 'save_post', __FUNCTION__, 10, 3 );
 	}
 }
+
+/**
+ * Check that the current user can archive content.
+ *
+ * @since 0.4.0
+ * @param int $post_id
+ * @return bool
+ */
+function aps_current_user_can_archive( $post_id = 0 ) {
+
+	/**
+	 * Default capability to grant ability to archive content.
+	 *
+	 * @since 0.3.0
+	 * @param string $capability The user capability to archive content.
+	 * @return string
+	 */
+	$capability = (string) apply_filters( 'aps_default_archive_capability', 'edit_others_posts', $post_id );
+
+	return current_user_can( $capability, $post_id );
+}
+
+/**
+ * Check that the current user can unarchive content.
+ *
+ * @since 0.4.0
+ * @param int $post_id
+ * @return bool
+ */
+function aps_current_user_can_unarchive( $post_id = 0 ) {
+
+	/**
+	 * Default capability to grant ability to unarchive content.
+	 *
+	 * @since 0.4.0
+	 * @param string $capability The user capability to unarchive content.
+	 * @return string
+	 */
+	$capability = (string) apply_filters( 'aps_default_unarchive_capability', 'edit_others_posts', $post_id );
+
+	return current_user_can( $capability, $post_id );
+}
