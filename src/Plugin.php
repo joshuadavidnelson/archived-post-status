@@ -112,6 +112,11 @@ class Plugin {
 		 * File with common functions.
 		 */
 		require_once $dir . '/functions.php';
+
+		/**
+		 * The base class for all features.
+		 */
+		require_once $dir . '/Feature.php';
 	}
 
 	/**
