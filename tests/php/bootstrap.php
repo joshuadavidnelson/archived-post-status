@@ -16,4 +16,4 @@ require_once __DIR__ . '/includes/common.php';
 require_once __DIR__ . '/includes/TestCase.php';
 
 // Load plugin files.
-require_once PLUGIN_PATH . '/src/archived-post-status.php';
+require_once PLUGIN_PATH . '/src/functions.php';
