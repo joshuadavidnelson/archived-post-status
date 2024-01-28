@@ -11,14 +11,8 @@
 
 namespace ArchivedPostStatus;
 
-/**
- * Exit if accessed directly, prevent direct access to this file.
- *
- * @since 0.4.0
- */
-if ( ! defined( 'ABSPATH' ) ) {
-	die;
-}
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; }
 
 /**
  * The core plugin class.
