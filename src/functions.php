@@ -58,30 +58,34 @@ function aps_register_archive_post_status() {
 	 * Filter the public status parameter.
 	 *
 	 * @since 0.4.0
-	 * @param bool $public True to make the status public, false to make it private.
+	 * @param bool $public True to make the status public,
+	 *                     false to make it private.
 	 *                     Defaults to true if the current user can view archived content.
 	 * @return bool
 	 */
-	$public = (bool) apply_filters( 'aps_status_arg_public', aps_current_user_can_view() );
-
-	/**
-	 * Filter the post types that can use the Archived post status.
-	 *
-	 * @since 0.4.0
-	 * @param array $post_types An array of post type slugs.
-	 * @return array
-	 */
-	$post_types = (array) apply_filters( 'aps_status_arg_post_type', array( 'post', 'page' ) );
+	$public = (bool) apply_filters( 'aps_status_arg_public', ! is_admin() && aps_current_user_can_view() );
 
 	/**
 	 * Filter the private status parameter.
 	 *
 	 * @since 0.4.0
-	 * @param bool $private True to make the status private, false to make it public.
-	 *                      Defaults to true if the current user can't view archived content.
+	 * @param bool $private True to make the status private,
+	 *                      false to make it public.
+	 *                      Defaults to true if the current
+	 *                      user can't view archived content.
 	 * @return bool
 	 */
-	$private = (bool) apply_filters( 'aps_status_arg_private', true );
+	$private = (bool) apply_filters( 'aps_status_arg_private', ! is_admin() );
+
+	/**
+	 * Filter the protected status parameter.
+	 *
+	 * @since 0.4.0
+	 * @param bool $protected True to make the status protected,
+	 *                        defaults to false.
+	 * @return bool
+	 */
+	$protected = (bool) apply_filters( 'aps_status_arg_protected', false );
 
 	/**
 	 * Filter the exclude from search status parameter.
@@ -89,7 +93,8 @@ function aps_register_archive_post_status() {
 	 * @since 0.4.0
 	 * @param bool $exclude True to exclude archived content from search,
 	 *                      false to include it.
-	 *                      Defaults to true if the current user can't view archived content.
+	 *                      Defaults to true if the current
+	 *                      user can't view archived content.
 	 * @return bool
 	 */
 	$exclude_from_search = (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() );
@@ -103,7 +108,7 @@ function aps_register_archive_post_status() {
 	 *                   Defaults to true if the current user can view archived content.
 	 * @return bool
 	 */
-	$show_in_admin_all_list = (bool) apply_filters( 'aps_status_arg_show_in_admin_all_list', aps_current_user_can_view() );
+	$show_in_admin_all_list = (bool) apply_filters( 'aps_status_arg_show_in_admin_all_list', false );
 
 	/**
 	 * Filter the show in admin status list status parameter.
@@ -129,9 +134,10 @@ function aps_register_archive_post_status() {
 	$args = array(
 		// translators: The post status label for Archived posts.
 		'label'                     => aps_archived_label_string(),
+		'post_type'                 => aps_get_supported_post_types(),
 		'public'                    => $public,
-		'post_type'                 => $post_types,
 		'private'                   => $private,
+		'protected'                 => $protected,
 		'exclude_from_search'       => $exclude_from_search,
 		'show_in_admin_all_list'    => $show_in_admin_all_list,
 		'show_in_admin_status_list' => $show_in_admin_status_list,
