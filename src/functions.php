@@ -459,7 +459,7 @@ function aps_save_post( $post_id, $post, $update ) {
 
 	// Only posts that we're okay with
 	if ( aps_is_excluded_post_type( $post->post_type ) ) {
-			return;
+		return;
 	}
 
 	// Only posts that are being Archived.
@@ -493,7 +493,7 @@ function aps_current_user_can_archive( $post_id = 0 ) {
 	/**
 	 * Default capability to grant ability to archive content.
 	 *
-	 * @since 0.3.0
+	 * @since 0.4.0
 	 * @param string $capability The user capability to archive content.
 	 * @return string
 	 */
