@@ -45,6 +45,11 @@ class Plugin {
 	 */
 	protected $version;
 
+	protected $features = array(
+		'PostActions',
+		'BulkEdit',
+	);
+
 	/**
 	 * Define the core functionality of the plugin.
 	 *
@@ -108,9 +113,17 @@ class Plugin {
 		require_once $dir . '/functions.php';
 
 		/**
-		 * The base class for all features.
+		 * Abstract class for features.
 		 */
 		require_once $dir . '/Feature.php';
+
+		// Load the plugin feature classes.
+		foreach ( $this->features as $feature ) {
+			$filepath = $dir . '/' . $feature . '.php';
+			if ( file_exists( $filepath ) ) {
+				require_once $filepath;
+			}
+		}
 	}
 
 	/**
@@ -146,9 +159,13 @@ class Plugin {
 		add_action( 'admin_enqueue_scripts', 'aps_edit_screen_js' );
 		add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
 
-		//add a column for the archive date
-		add_filter( 'page_row_actions', 'aps_post_row_actions', 10, 2 );
-		add_filter( 'post_row_actions', 'aps_post_row_actions', 10, 2 );
+		// Add plugin features.
+		foreach ( $this->features as $feature ) {
+			$class = __NAMESPACE__ . '\\' . $feature;
+			$feature = new $class();
+			$feature->init();
+		}
+
 	}
 
 	/**
