@@ -168,9 +168,11 @@ function aps_is_frontend() {
 /**
  * Check if the current user can view Archived content.
  *
+ * @since 0.4.0
+ * @param int $post_id Optional. The post ID to check against.
  * @return bool
  */
-function aps_current_user_can_view() {
+function aps_current_user_can_view( $post_id = 0 ) {
 
 	/**
 	 * Default capability to grant ability to view Archived content.
@@ -179,9 +181,9 @@ function aps_current_user_can_view() {
 	 * @param string $capability The user capability to view archived content.
 	 * @return string
 	 */
-	$capability = (string) apply_filters( 'aps_default_read_capability', 'read_private_posts' );
+	$capability = (string) apply_filters( 'aps_default_read_capability', 'read_private_posts', $post_id );
 
-	return current_user_can( $capability );
+	return current_user_can( $capability, $post_id );
 }
 
 /**
