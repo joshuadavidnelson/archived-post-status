@@ -330,59 +330,25 @@ function aps_post_screen_js() {
 }
 
 /**
- * Modify the DOM on edit screens.
+ * Enqueue the edit screen javascript.
  *
- * @action admin_footer-edit.php
+ * @since 0.4.0
+ * @action admin_enqueue_scripts
+ * @param string $hook The current admin page.
+ * @return void
  */
-function aps_edit_screen_js() {
+function aps_edit_screen_js( $hook ) {
 
 	global $typenow;
-
-	if ( aps_is_excluded_post_type( $typenow ) ) {
-		return;
+	if ( aps_is_excluded_post_type( $typenow )
+		|| ! aps_is_read_only()
+		|| 'edit.php' !== $hook ) {
+			return;
 	}
 
-	?>
-	<script>
-	jQuery( document ).ready( function( $ ) {
-	<?php if ( aps_is_read_only() ) : ?>
-		$rows = $( '#the-list tr.status-archive' );
+	$src = ARCHIVED_POST_STATUS_URL . 'assets/js/edit-screen.js';
+	wp_enqueue_script( 'aps-edit-screen', $src, array( 'jquery' ), ARCHIVED_POST_STATUS_VERSION );
 
-		$.each( $rows, function() {
-			disallowEditing( $( this ) );
-		} );
-	<?php endif; ?>
-
-		$( 'select[name="_status"]' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ); ?></option>' );
-
-		$( '.editinline' ).on( 'click', function() {
-			var $row        = $( this ).closest( 'tr' ),
-				$option     = $( '.inline-edit-row' ).find( 'select[name="_status"] option[value="archive"]' ),
-				is_archived = $row.hasClass( 'status-archive' );
-
-			$option.prop( 'selected', is_archived );
-		} );
-
-	<?php if ( aps_is_read_only() ) : ?>
-		$( '.inline-edit-row' ).on( 'remove', function() {
-			var id   = $( this ).prop( 'id' ).replace( 'edit-', '' ),
-				$row = $( '#post-' + id );
-
-			if ( $row.hasClass( 'status-archive' ) ) {
-				disallowEditing( $row );
-			}
-		} );
-
-		function disallowEditing( $row ) {
-			var title = $row.find( '.column-title a.row-title' ).text();
-
-			$row.find( '.column-title a.row-title' ).replaceWith( title );
-			$row.find( '.row-actions .edit' ).remove();
-		}
-	<?php endif; ?>
-	} );
-	</script>
-	<?php
 }
 
 /**

@@ -142,8 +142,8 @@ class Plugin {
 		// Prevent Archived content from being edited.
 		add_action( 'load-post.php', 'aps_load_post_screen' );
 
-		// Modify the DOM on edit screens.
-		add_action( 'admin_footer-edit.php', 'aps_edit_screen_js' );
+		// Add quick edit option for archive post status.
+		add_action( 'admin_enqueue_scripts', 'aps_edit_screen_js' );
 		add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
 
 		//add a column for the archive date
