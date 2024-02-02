@@ -48,6 +48,7 @@ class Plugin {
 	protected $features = array(
 		'PostActions',
 		'BulkEdit',
+		'ArchivedTitle',
 	);
 
 	/**
@@ -174,9 +175,6 @@ class Plugin {
 	 * @since 0.4.0
 	 */
 	public function define_public_hooks() {
-
-		// Add the label to the title.
-		add_filter( 'the_title', 'aps_the_title', 10, 2 );
 
 		// Exclude archived posts from search results.
 		add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
