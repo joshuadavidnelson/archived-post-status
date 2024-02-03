@@ -23,14 +23,8 @@
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
-/**
- * Exit if accessed directly, prevent direct access to this file.
- *
- * @since 0.3.9
- */
-if ( ! defined( 'ABSPATH' ) ) {
-	die;
-}
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; }
 
 /**
  * Define plugin constants.
@@ -60,5 +54,4 @@ function run_archived_post_status() {
 	$plugin->run();
 }
 add_action( 'plugins_loaded', 'run_archived_post_status', 10, 0 );
-
 

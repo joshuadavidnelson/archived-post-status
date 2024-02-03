@@ -10,6 +10,7 @@ namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
 if ( ! defined( 'ABSPATH' ) ) { die; }
+
 /**
  * Abstract class for features.
  *
