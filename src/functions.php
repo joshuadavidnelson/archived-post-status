@@ -225,43 +225,6 @@ function aps_is_excluded_post_type( $post_type ) {
 }
 
 /**
- * Modify the DOM on post screens.
- *
- * @action admin_footer-post.php
- */
-function aps_post_screen_js() {
-
-	global $post;
-	if ( aps_is_excluded_post_type( $post->post_type ) ) {
-		return;
-	}
-
-	if ( 'draft' !== $post->post_status && 'pending' !== $post->post_status ) {
-
-		?>
-		<script>
-		jQuery( document ).ready( function( $ ) {
-			$( '#post_status' ).append( '<option value="archive"><?php esc_html_e( 'Archived', 'archived-post-status' ); ?></option>' );
-		} );
-		</script>
-		<?php
-
-	}
-
-	if ( 'archive' === $post->post_status ) {
-
-		?>
-		<script>
-		jQuery( document ).ready( function( $ ) {
-			$( '#post-status-display' ).text( '<?php esc_html_e( 'Archived', 'archived-post-status' ); ?>' );
-		} );
-		</script>
-		<?php
-
-	}
-}
-
-/**
  * Enqueue the edit screen javascript.
  *
  * @since 0.4.0
