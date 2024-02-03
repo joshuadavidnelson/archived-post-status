@@ -86,8 +86,7 @@ class Plugin {
 
 		$this->load_dependencies();
 		$this->set_locale();
-		$this->define_admin_hooks();
-		$this->define_public_hooks();
+		$this->define_hooks();
 
 		/**
 		 * Fires when the plugin is loaded, after all other plugins have been loaded.
@@ -138,11 +137,11 @@ class Plugin {
 	}
 
 	/**
-	 * Hook into the admin.
+	 * Hooks!
 	 *
 	 * @since 0.4.0
 	 */
-	public function define_admin_hooks() {
+	public function define_hooks() {
 
 		// Add the archive post status.
 		add_action( 'init', 'aps_register_archive_post_status' );
@@ -158,7 +157,12 @@ class Plugin {
 
 		// Add quick edit option for archive post status.
 		add_action( 'admin_enqueue_scripts', 'aps_edit_screen_js' );
-		add_action( 'admin_footer-post.php', 'aps_post_screen_js' );
+
+		// Clear the page settings on archive.
+		add_action( 'aps_archive_post', '_aps_reset_page_settings' );
+
+		// Exclude archived posts from search results.
+		add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 
 		// Add plugin features.
 		foreach ( $this->features as $feature ) {
@@ -167,17 +171,6 @@ class Plugin {
 			$feature->init();
 		}
 
-	}
-
-	/**
-	 * Hook into the public side of the site.
-	 *
-	 * @since 0.4.0
-	 */
-	public function define_public_hooks() {
-
-		// Exclude archived posts from search results.
-		add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
 	}
 
 	/**
