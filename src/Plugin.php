@@ -46,7 +46,7 @@ class Plugin {
 	protected $version;
 
 	protected $features = array(
-		'PostActions',
+		'RowActions',
 		'BulkEdit',
 		'ArchivedTitle',
 	);

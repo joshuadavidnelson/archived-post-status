@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; }
  *
  * @since 0.4.0
  */
-class PostActions extends Feature {
+class RowActions extends Feature {
 
 	/**
 	 * The name of the feature.
@@ -24,7 +24,7 @@ class PostActions extends Feature {
 	 * @since 0.4.0
 	 * @var   string
 	 */
-	protected $name = 'post_actions';
+	protected $name = 'row_actions';
 
 	/**
 	 * Register the feature.
@@ -35,8 +35,11 @@ class PostActions extends Feature {
 	public function register() {
 
 		// add the actions to the inline post actions.
-		add_filter( 'page_row_actions', array( $this, 'post_row_actions' ), 10, 2 );
-		add_filter( 'post_row_actions', array( $this, 'post_row_actions' ), 10, 2 );
+
+		$post_types = aps_get_supported_post_types();
+		foreach ( $post_types as $post_type ) {
+			add_filter( $post_type . '_row_actions', array( $this, 'row_actions' ), 10, 2 );
+		}
 
 		// The archive post action.
 		add_action( 'post_action_archive', array( $this,'post_action_archive' ) );
@@ -55,7 +58,7 @@ class PostActions extends Feature {
 	 * @param  WP_Post $post
 	 * @return array
 	 */
-	function post_row_actions( $actions, $post ) {
+	function row_actions( $actions, $post ) {
 
 		if ( \aps_is_excluded_post_type( $post->post_type ) ) {
 			return $actions;
@@ -94,6 +97,8 @@ class PostActions extends Feature {
 
 	/**
 	 * Do the 'archive' post action.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/post_action_action/
 	 *
 	 * @since 0.4.0
 	 * @param int    $post_id The post ID.
