@@ -97,7 +97,7 @@ function aps_register_archive_post_status() {
 	 *                      user can't view archived content.
 	 * @return bool
 	 */
-	$exclude_from_search = (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! aps_current_user_can_view() );
+	$exclude_from_search = (bool) apply_filters( 'aps_status_arg_exclude_from_search', ! ( is_admin() && aps_current_user_can_view() ) );
 
 	/**
 	 * Filter the show in admin all list status parameter.
@@ -152,17 +152,6 @@ function aps_register_archive_post_status() {
 
 	// Regiester the post status.
 	register_post_status( 'archive', $args );
-}
-
-/**
- * Check if we are on the frontend.
- *
- * @filter aps_status_arg_exclude_from_search
- *
- * @return bool
- */
-function aps_is_frontend() {
-	return ! is_admin();
 }
 
 /**

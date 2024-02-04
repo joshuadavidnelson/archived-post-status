@@ -161,9 +161,6 @@ class Plugin {
 		// Clear the page settings on archive.
 		add_action( 'aps_archive_post', '_aps_reset_page_settings' );
 
-		// Exclude archived posts from search results.
-		add_filter( 'aps_status_arg_exclude_from_search', 'aps_is_frontend' );
-
 		// Add plugin features.
 		foreach ( $this->features as $feature ) {
 			$class = __NAMESPACE__ . '\\' . $feature;
