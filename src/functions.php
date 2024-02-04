@@ -398,3 +398,36 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
 
 	return current_user_can( $capability, $post_id );
 }
+
+/**
+ * Reset page settings when a page is archived.
+ *
+ * Marked as a private function, not to be used outside of the plugin.
+ *
+ * @since 0.4.0
+ * @param int $post_id
+ * @return void
+ */
+function _aps_reset_page_settings( $post_id ) {
+	$post = get_post( $post_id );
+
+	if ( 'page' === $post->post_type ) {
+		/*
+		 * If the page is defined in option page_on_front,
+		 * post_for_posts, or page_for_privacy_policy,
+		 * adjust the corresponding options.
+		 */
+		if ( get_option( 'page_on_front' ) == $post->ID ) {
+			update_option( 'show_on_front', 'posts' );
+			update_option( 'page_on_front', 0 );
+		}
+		if ( get_option( 'page_for_posts' ) == $post->ID ) {
+			update_option( 'page_for_posts', 0 );
+		}
+		if ( get_option( 'wp_page_for_privacy_policy' ) == $post->ID ) {
+			update_option( 'wp_page_for_privacy_policy', 0 );
+		}
+	}
+
+	unstick_post( $post->ID );
+}
