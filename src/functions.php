@@ -431,3 +431,169 @@ function _aps_reset_page_settings( $post_id ) {
 
 	unstick_post( $post->ID );
 }
+
+/**
+ * Archive a post.
+ *
+ * Modeled after the core `wp_trash_post()` function.
+ *
+ * @see https://developer.wordpress.org/reference/functions/wp_trash_post/
+ *
+ * @since 0.4.0
+ * @param int $post_id
+ * @return bool|WP_Post
+ */
+function aps_archive_post( $post_id = 0 ) {
+
+	$post = get_post( $post_id );
+	if ( ! $post ) {
+		return $post;
+	}
+
+	if ( 'archive' === $post->post_status ) {
+		return false;
+	}
+
+	$previous_status = $post->post_status;
+
+	/**
+	 * Filters whether a post archiving should take place.
+	 *
+	 * @since 0.4.0
+	 * @param bool|null $archive           Whether to go forward with archiving.
+	 * @param WP_Post   $post            Post object.
+	 * @param string    $previous_status The status of the post about to be archived.
+	 */
+	$check = apply_filters( 'pre_archive_post', null, $post, $previous_status );
+
+	if ( null !== $check ) {
+		return $check;
+	}
+
+	/**
+	 * Fires before a post is archived.
+	 *
+	 * @since 0.4.0
+	 * @param int    $post_id         Post ID.
+	 * @param string $previous_status The status of the post about to be archived.
+	 */
+	do_action( 'aps_archive_post', $post_id, $previous_status );
+
+	add_post_meta( $post_id, '_aps_archive_meta_status', $previous_status );
+	add_post_meta( $post_id, '_aps_archive_meta_time', time() );
+
+	$post_archived = wp_update_post(
+		array(
+			'ID'          => $post_id,
+			'post_status' => 'archive',
+		)
+	);
+
+	if ( ! $post_archived ) {
+		return false;
+	}
+
+	/**
+	 * Fires after a post is archived.
+	 *
+	 * @since 0.4.0
+	 * @param int    $post_id         Post ID.
+	 * @param string $previous_status The status of the post at the point where it was archived.
+	 */
+	do_action( 'archived_post', $post_id, $previous_status );
+
+	return $post;
+}
+
+/**
+ * Unarchive a post.
+ *
+ * Modeled after the core `wp_untrash_post()` function.
+ *
+ * @see https://developer.wordpress.org/reference/functions/wp_untrash_post/
+ *
+ * @since 0.4.0
+ * @param int $post_id
+ * @return bool|WP_Post
+ */
+function aps_unarchive_post( $post_id = 0 ) {
+
+	$post = get_post( $post_id );
+	if ( ! $post ) {
+		return $post;
+	}
+
+	if ( 'archive' !== $post->post_status ) {
+		return false;
+	}
+
+	$previous_status = get_post_meta( $post_id, '_aps_archive_meta_status', true );
+
+	/**
+	 * Filters whether a post unarchiving should take place.
+	 *
+	 * @since 0.4.0
+	 * @param bool|null $unarchive       Whether to go forward with unarchiving.
+	 * @param WP_Post   $post            Post object.
+	 * @param string    $previous_status The status of the post about to be unarchived.
+	 */
+	$check = apply_filters( 'pre_unarchive_post', null, $post, $previous_status );
+	if ( null !== $check ) {
+		return $check;
+	}
+
+	/**
+	 * Fires before a post is unarchived.
+	 *
+	 * @since 0.4.0
+	 * @param int    $post_id         Post ID.
+	 * @param string $previous_status The status of the post about to be unarchived.
+	 */
+	do_action( 'aps_unarchive_post', $post_id, $previous_status );
+
+	$new_status = $previous_status;
+
+	/**
+	 * Filters the status that a post gets assigned when it is restored from the archive.
+	 *
+	 * By default posts that are restored will be assigned a status of 'public'.
+	 * Return the value of `$previous_status` in order to assign the status that
+	 * the post had before it was archived. The `aps_unarchive_post_set_previous_status()`
+	 * function is available for this.
+	 *
+	 * Prior to WordPress 5.6.0, restored posts were always assigned their original status.
+	 *
+	 * @since 5.6.0
+	 *
+	 * @param string $new_status      The new status of the post being restored.
+	 * @param int    $post_id         The ID of the post being restored.
+	 * @param string $previous_status The status of the post at the point where it was archived.
+	 */
+	$post_status = apply_filters( 'aps_unarchive_post_status', $new_status, $post_id, $previous_status );
+
+	delete_post_meta( $post_id, '_aps_archive_meta_status' );
+	delete_post_meta( $post_id, '_aps_archive_meta_time' );
+
+	$post_unarchived = wp_update_post(
+		array(
+			'ID'          => $post_id,
+			'post_status' => $post_status,
+		)
+	);
+
+	if ( ! $post_unarchived ) {
+		return false;
+	}
+
+	/**
+	 * Fires after a post is unarchived.
+	 *
+	 * @since 0.4.0
+	 * @param int    $post_id         Post ID.
+	 * @param string $previous_status The status of the post at the point where it was unarchived.
+	 */
+	do_action( 'unarchived_post', $post_id, $previous_status );
+
+	return $post;
+}
+
