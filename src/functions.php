@@ -728,3 +728,17 @@ function aps_unarchive_post( $post_id = 0 ) {
 	return $post;
 }
 
+/**
+ * Helper function to set the unarchive post status to the previous status.
+ *
+ * Modeled on wp_untrash_post_set_previous_status().
+ *
+ * @see https://developer.wordpress.org/reference/functions/wp_untrash_post_set_previous_status/
+ *
+ * @since 0.4.0
+ * @param int $post_id Optional. Post ID. Default is the global `$post`.
+ * @return bool
+ */
+function aps_unarchive_post_set_previous_status( $new_status, $post_id, $previous_status ) {
+	return $previous_status;
+}
