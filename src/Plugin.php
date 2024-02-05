@@ -49,6 +49,7 @@ class Plugin {
 		'RowActions',
 		'BulkEdit',
 		'AdminMessages',
+		'CLI',
 		'ArchivedTitle',
 	);
 
