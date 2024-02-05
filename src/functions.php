@@ -48,6 +48,42 @@ function aps_archived_label_string() {
 }
 
 /**
+ * Get the post types that can use the Archived post status.
+ *
+ * @since 0.4.0
+ * @return array
+ */
+function aps_get_supported_post_types() {
+
+	// Get all public post types.
+	$public_post_types = get_post_types( array( 'public' => true ) );
+
+	// Filter out excluded post types
+	$excluded = array_filter( $public_post_types, 'aps_is_excluded_post_type' );
+	$supported_post_types = array_diff( $public_post_types, $excluded );
+
+	/**
+	 * Filter the post types that can use the Archived post status.
+	 *
+	 * @since 0.4.0
+	 * @param array $post_types An array of post type slugs.
+	 * @return array
+	 */
+	return (array) apply_filters( 'aps_get_supported_post_types', $supported_post_types );
+}
+
+/**
+ * Check if a post type is supported by the Archived post status.
+ *
+ * @since 0.4.0
+ * @param  string $post_type
+ * @return bool
+ */
+function aps_is_supported_post_type( $post_type ) {
+	return in_array( $post_type, aps_get_supported_post_types(), true );
+}
+
+/**
  * Register a custom post status for Archived.
  *
  * @action init
