@@ -433,6 +433,137 @@ function _aps_reset_page_settings( $post_id ) {
 }
 
 /**
+ * Get the link to un/archive a post.
+ *
+ * Modled after the core `get_delete_post_link()` function.
+ *
+ * @see https://developer.wordpress.org/reference/functions/get_delete_post_link/
+ *
+ * @since 0.4.0
+ * @param int    $post_id Optional. Post ID. Default is the global `$post`.
+ * @param string $context Optional. The context. Default is 'display'.
+ * @param string $action  Optional. The action. Default is 'archive'.
+ * @return void|string
+ */
+function aps_get_archive_post_link( $post = 0, $context = 'display', $action = 'archive' ) {
+
+	$post = get_post( $post );
+	if ( ! $post ) {
+		return;
+	}
+
+	$post_type_object = get_post_type_object( $post->post_type );
+	if ( ! $post_type_object
+		|| aps_is_excluded_post_type( $post->post_type ) ) {
+			return;
+	}
+
+	if ( ! aps_current_user_can_archive( $post->ID ) ) {
+		return;
+	}
+
+	if ( ! in_array( $action, [ 'archive', 'unarchive' ], true ) ) {
+		$action = 'archive';
+	} else {
+		$action = sanitize_key( $action );
+	}
+
+	$link = add_query_arg( 'action', $action, admin_url( sprintf( $post_type_object->_edit_link, $post->ID ) ) );
+
+	/**
+	 * Filters the post un/archive link.
+	 *
+	 * @since 0.4.0
+	 * @param string $link    The un/archive link.
+	 * @param int    $post_id Post ID.
+	 * @param string $context The link context. If set to 'display' then ampersands
+	 *                        are encoded.
+	 */
+	return apply_filters( "aps_get_{$action}_post_link", wp_nonce_url( $link, _aps_nonce_key( $action, $post->ID ) ), $post->ID, $context );
+}
+
+/**
+ * Get the link to unarchive a post.
+ *
+ * @since 0.4.0
+ * @param int    $post_id Optional. Post ID. Default is the global `$post`.
+ * @param string $context Optional. The context. Default is 'display'.
+ * @return void|string
+ */
+function aps_get_unarchive_post_link( $post = 0, $context = 'display' ) {
+	return aps_get_archive_post_link( $post, $context, 'unarchive' );
+}
+
+/**
+ * The custom nonce key for the un/archive actions.
+ *
+ * @param string $action
+ * @param integer $post_id
+ * @return void
+ */
+function _aps_nonce_key( $action = 'archive', $post_id = 0 ) {
+
+	$post_id = absint( $post_id ) ?: get_the_id();
+
+	return esc_attr( $action . '-' . $post_id );
+}
+
+/**
+ * Get the link to an archived post.
+ *
+ * Modled after the core `get_preview_post_link()` function.
+ *
+ * @see https://developer.wordpress.org/reference/functions/get_preview_post_link/
+ *
+ * @uses is_post_status_viewable()  -- TODO: may need to filter this response.
+ *
+ * @since 0.4.0
+ * @param int|WP_Post $post         Optional. Post ID or `WP_Post` object. Defaults to global `$post`.
+ * @param array       $query_args   Optional. Array of additional query args to be appended to the link.
+ *                                  Default empty array.
+ * @param string      $archived_link Optional. Base preview link to be used if it should differ from the
+ *                                  post permalink. Default empty.
+ * @return string|null URL used for the post preview, or null if the post does not exist.
+ */
+function aps_get_archived_post_link( $post = null, $query_args = array(), $archived_link = '' ) {
+
+	// make sure we have a valid post object.
+	$post = get_post( $post );
+	if ( ! $post ) {
+		return;
+	}
+
+	// is the post status viewable?
+	if ( is_post_status_viewable( $post->post_status ) ) {
+		return get_permalink( $post );
+	}
+
+	// is the post type viewable?
+	$post_type_object = get_post_type_object( $post->post_type );
+	if ( ! $post_type_object
+		|| aps_is_excluded_post_type( $post->post_type )
+		|| is_post_type_viewable( $post_type_object ) ) {
+			return;
+	}
+
+	if ( ! $archived_link ) {
+		$archived_link = set_url_scheme( get_permalink( $post ) );
+	}
+
+	$query_args['preview'] = 'true';
+	$archived_link         = add_query_arg( $query_args, $archived_link );
+
+	/**
+	 * Filters the URL used for a archived post.
+	 *
+	 * @since 0.4.0
+	 * @param string  $archived_link URL used to view the archived post.
+	 * @param WP_Post $post          Post object.
+	 */
+	return apply_filters( 'archived_post_link', $archived_link, $post );
+}
+
+/**
  * Archive a post.
  *
  * Modeled after the core `wp_trash_post()` function.
