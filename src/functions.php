@@ -409,7 +409,7 @@ function aps_current_user_can_archive( $post_id = 0 ) {
 	 * @param string $capability The user capability to archive content.
 	 * @return string
 	 */
-	$capability = (string) apply_filters( 'aps_default_archive_capability', 'edit_others_posts', $post_id );
+	$capability = (string) apply_filters( 'aps_user_archive_capability', 'edit_others_posts', $post_id );
 
 	return current_user_can( $capability, $post_id );
 }
@@ -430,7 +430,7 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
 	 * @param string $capability The user capability to unarchive content.
 	 * @return string
 	 */
-	$capability = (string) apply_filters( 'aps_default_unarchive_capability', 'edit_others_posts', $post_id );
+	$capability = (string) apply_filters( 'aps_user_unarchive_capability', 'edit_others_posts', $post_id );
 
 	return current_user_can( $capability, $post_id );
 }
