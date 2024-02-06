@@ -12,6 +12,7 @@ namespace ArchivedPostStatus;
 if ( ! defined( 'ABSPATH' ) ) { die; }
 
 use \WP_CLI;
+use \WP_CLI\Utils;
 
 /**
  * All the functionality needed to support the "Archived Date" field.
@@ -66,6 +67,9 @@ class CLI extends Feature {
 	 * <post_id>
 	 * : The ID of the post to archive.
 	 *
+	 * [--defer-term-counting]
+	 * : Recalculate term count in batch, for a performance boost.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp post archive 123
@@ -95,6 +99,9 @@ class CLI extends Feature {
 	 *
 	 * <post_id>
 	 * : The ID of the post to unarchive.
+	 *
+	 * [--defer-term-counting]
+	 * : Recalculate term count in batch, for a performance boost.
 	 *
 	 * ## EXAMPLES
 	 *
@@ -153,10 +160,18 @@ class CLI extends Feature {
 			return [ 'error', "Post {$post_id} cannot be unarchived because it is not in the archive." ];
 		}
 
+		if ( Utils\get_flag_value( $assoc_args, 'defer-term-counting' ) ) {
+			wp_defer_term_counting( true );
+		}
+
 		// Perform the action.
 		$function = "aps_{$action}_post";
 		if ( ! call_user_func( $function, $post_id ) ) {
 			return [ 'error', "Failed to {$action} post {$post_id}." ];
+		}
+
+		if ( Utils\get_flag_value( $assoc_args, 'defer-term-counting' ) ) {
+			wp_defer_term_counting( false );
 		}
 
 		// Return the success message.
