@@ -64,7 +64,7 @@ class RowActions extends Feature {
 			return $actions;
 		}
 
-		if ( $post->post_status == "publish"
+		if ( in_array( $post->post_status, _aps_get_archivable_statuses(), true )
 			&& aps_current_user_can_archive( $post->ID ) ) {
 
 			$actions['archive']  = '<a href="' . aps_get_archive_post_link( $post->ID ).'" title="' . esc_attr( __( 'Archive this post' , 'archived-post-status') ) . '">' . __( 'Archive', 'archived-post-status' ) . '</a>';

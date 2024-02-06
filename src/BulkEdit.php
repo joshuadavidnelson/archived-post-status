@@ -101,7 +101,8 @@ class BulkEdit extends Feature {
 		switch ( $doaction ) {
 			case 'archive':
 				$archived = 0;
-				$locked  = 0;
+				$locked   = 0;
+				$invalid  = 0;
 
 				foreach ( (array) $post_ids as $post_id ) {
 					if ( ! current_user_can( 'delete_post', $post_id ) ) {
@@ -110,6 +111,11 @@ class BulkEdit extends Feature {
 
 					if ( wp_check_post_lock( $post_id ) ) {
 						++$locked;
+						continue;
+					}
+
+					if ( ! in_array( get_post_status( $post_id ), _aps_get_archivable_statuses(), true ) ) {
+						++$invalid;
 						continue;
 					}
 
@@ -125,6 +131,7 @@ class BulkEdit extends Feature {
 						'archived' => $archived,
 						'ids'      => implode( ',', $post_ids ),
 						'locked'   => $locked,
+						'invalid'  => $invalid,
 					),
 					$sendback
 				);

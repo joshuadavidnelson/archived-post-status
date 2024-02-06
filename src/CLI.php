@@ -67,12 +67,19 @@ class CLI extends Feature {
 	 * <post_id>
 	 * : The ID of the post to archive.
 	 *
+	 * [--force]
+	 * : Skip current status check. Only core non-trashed posts can be archived.
+	 *
 	 * [--defer-term-counting]
 	 * : Recalculate term count in batch, for a performance boost.
 	 *
 	 * ## EXAMPLES
 	 *
+	 *     # Archive a post
 	 *     wp post archive 123
+	 *
+	 *     # Archive a post without checking the current status
+	 *     wp post archive 123 --force
 	 *
 	 * @since 0.4.0
 	 * @param array $args       The arguments.
@@ -158,10 +165,18 @@ class CLI extends Feature {
 			return [ 'error', "Post {$post_id} is already archived." ];
 		}
 
-		// Check that the current status can be archived, if that is the action.
-		$archivable_states = [ 'publish', 'draft', 'pending', 'future' ];
-		if ( 'archive' === $action && ! in_array( $status, $archivable_states, true ) ) {
-			return [ 'error', "Post {$post_id} cannot be archived, '{$status}' is not an archivable state." ];
+		// Force skips the check for the current status of the post.
+		$force = Utils\get_flag_value( $assoc_args, 'force', false );
+		if ( ! $force && 'archive' === $action ) {
+
+			// Get the archivable statuses.
+			// These are statuses that can be archied.
+			$archivable_statuses = _aps_get_archivable_statuses();
+
+			// Check that the current status can be archived.
+			if ( ! in_array( $status, $archivable_statuses, true ) ) {
+				return [ 'error', "Post {$post_id} cannot be archived, '{$status}' is not an archivable status." ];
+			}
 		}
 
 		// Check that the current status can be unarchived, if that is the action.

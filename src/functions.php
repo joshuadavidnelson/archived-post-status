@@ -469,6 +469,23 @@ function _aps_reset_page_settings( $post_id ) {
 }
 
 /**
+ * Get the statuses that are archivable.
+ *
+ * @since 0.4.0
+ * @return string[]
+ */
+function _aps_get_archivable_statuses() {
+
+	/**
+	 * Filter the statuses that are archivable.
+	 *
+	 * @since 0.4.0
+	 * @return string[] The statuses that are archivable.
+	 */
+	return apply_filters( 'aps_archivable_statuses', array( 'publish', 'future', 'draft', 'pending', 'private' ) );
+}
+
+/**
  * Get the link to un/archive a post.
  *
  * Modled after the core `get_delete_post_link()` function.
