@@ -30,6 +30,14 @@ class CLI extends Feature {
 	protected $name = 'cli';
 
 	/**
+	 * The maximum number of items that can be processed without a progress bar.
+	 *
+	 * @since 0.4.0
+	 * @var   int
+	 */
+	protected $count_limit = 20;
+
+	/**
 	 * Register the hooks.
 	 *
 	 * @since 0.4.0
@@ -88,10 +96,25 @@ class CLI extends Feature {
 	public function archive( $args, $assoc_args ) {
 
 		$status = 0;
+		$counting = ( count( $args ) > $this->count_limit );
+
+		if ( $counting ) {
+			$progress = Utils\make_progress_bar( "Archiving", count( $args ) );
+		}
 
 		foreach ( $args as $obj_id ) {
+
 			$result = $this->handle_action( $obj_id, $assoc_args, 'archive' );
-			$status = $this->success_or_failure( $result );
+
+			if ( $counting ) {
+				$progress->tick();
+			} else {
+				$status = $this->success_or_failure( $result );
+			}
+		}
+
+		if ( $counting ) {
+			$progress->finish();
 		}
 
 		exit( $status );
@@ -123,7 +146,12 @@ class CLI extends Feature {
 	public function unarchive( $args, $assoc_args ) {
 
 		$status = 0;
+		$counting = ( count( $args ) > $this->count_limit );
 		$new_status = Utils\get_flag_value( $assoc_args, 'status', false );
+
+		if ( $counting ) {
+			$progress = Utils\make_progress_bar( "Unarchiving", count( $args ) );
+		}
 
 		if ( $new_status ) {
 			add_filter( 'aps_unarchive_post_status', function() use ( $new_status ) {
@@ -132,8 +160,18 @@ class CLI extends Feature {
 		}
 
 		foreach ( $args as $obj_id ) {
+
 			$result = $this->handle_action( $obj_id, $assoc_args, 'unarchive' );
-			$status = $this->success_or_failure( $result );
+
+			if ( $counting ) {
+				$progress->tick();
+			} else {
+				$status = $this->success_or_failure( $result );
+			}
+		}
+
+		if ( $counting ) {
+			$progress->finish();
 		}
 
 		exit( $status );
