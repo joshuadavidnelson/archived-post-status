@@ -91,14 +91,16 @@ class CLI extends Feature {
 
 	}
 
-
 	/**
 	 * Unarchive a post.
 	 *
 	 * ## OPTIONS
 	 *
-	 * <post_id>
-	 * : The ID of the post to unarchive.
+	 * <id>...
+	 * : One or more IDs of posts to delete.
+	 *
+	 * [--status=<status>]
+	 * : Override the new status of the post(s).
 	 *
 	 * [--defer-term-counting]
 	 * : Recalculate term count in batch, for a performance boost.
@@ -114,6 +116,13 @@ class CLI extends Feature {
 	public function unarchive( $args, $assoc_args ) {
 
 		$status = 0;
+		$new_status = Utils\get_flag_value( $assoc_args, 'status', false );
+
+		if ( $new_status ) {
+			add_filter( 'aps_unarchive_post_status', function() use ( $new_status ) {
+				return $new_status;
+			} );
+		}
 
 		foreach ( $args as $obj_id ) {
 			$result = $this->handle_action( $obj_id, $assoc_args, 'unarchive' );
