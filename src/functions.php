@@ -260,7 +260,7 @@ function aps_is_excluded_post_type( $post_type ) {
 function aps_edit_screen_js( $hook ) {
 
 	global $typenow;
-	if ( aps_is_excluded_post_type( $typenow )
+	if ( ! aps_is_supported_post_type( $typenow )
 		|| ! aps_is_read_only()
 		|| 'edit.php' !== $hook ) {
 			return;
@@ -286,7 +286,7 @@ function aps_load_post_screen() {
 	$post    = get_post( $post_id );
 
 	if ( is_null( $post )
-		|| aps_is_excluded_post_type( $post->post_type )
+		|| ! aps_is_supported_post_type( $post->post_type )
 		|| 'archive' !== $post->post_status ) {
 			return;
 	}
@@ -329,7 +329,7 @@ function aps_load_post_screen() {
  */
 function aps_display_post_states( $post_states, $post ) {
 
-	if ( aps_is_excluded_post_type( $post->post_type )
+	if ( ! aps_is_supported_post_type( $post->post_type )
 		|| 'archive' !== $post->post_status
 		|| 'archive' === get_query_var( 'post_status' ) ) {
 			return $post_states;
@@ -507,7 +507,7 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
 
 	$post_type_object = get_post_type_object( $post->post_type );
 	if ( ! $post_type_object
-		|| aps_is_excluded_post_type( $post->post_type ) ) {
+		|| ! aps_is_supported_post_type( $post->post_type ) ) {
 			return;
 	}
 
@@ -594,7 +594,7 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
 	// is the post type viewable?
 	$post_type_object = get_post_type_object( $post->post_type );
 	if ( ! $post_type_object
-		|| aps_is_excluded_post_type( $post->post_type )
+		|| ! aps_is_supported_post_type( $post->post_type )
 		|| is_post_type_viewable( $post_type_object ) ) {
 			return;
 	}

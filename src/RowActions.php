@@ -60,7 +60,7 @@ class RowActions extends Feature {
 	 */
 	function row_actions( $actions, $post ) {
 
-		if ( \aps_is_excluded_post_type( $post->post_type ) ) {
+		if ( ! aps_is_supported_post_type( $post->post_type ) ) {
 			return $actions;
 		}
 
