@@ -105,7 +105,7 @@ class BulkEdit extends Feature {
 				$invalid  = 0;
 
 				foreach ( (array) $post_ids as $post_id ) {
-					if ( ! current_user_can( 'delete_post', $post_id ) ) {
+					if ( ! aps_current_user_can_archive( $post_id ) ) {
 						wp_die( __( 'Sorry, you are not allowed to move this item to the Archive.' ) );
 					}
 
