@@ -76,7 +76,7 @@ class CLI extends Feature {
 	 * : The ID of the post to archive.
 	 *
 	 * [--force]
-	 * : Skip current status check. Only core non-trashed posts can be archived.
+	 * : Only supported public post types with core non-trashed statuses can be archived. Use this flag to skip current status check.
 	 *
 	 * [--defer-term-counting]
 	 * : Recalculate term count in batch, for a performance boost.
