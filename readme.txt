@@ -12,13 +12,30 @@ Use an "Archived" status to unpublish content without having to trash it.
 
 == Description ==
 
-This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
+This plugin allows you to archive your WordPress content.
+
+WordPress supports a publishing workflow by marking content with a post status:
+* 3 for pre-published states: _draft_, _pending_, and _future_. These are editable and pre-viewable, not yet ready for public view.
+* 2 types of published statuses: _publish_ and _private_. These are editable and viewable to the public or specific users.
+* 1 non-published status: _trash_. Trashed content is not editable or viewable and [automatically deleted](https://codex.wordpress.org/Trash_status#Default_Days_before_Permanently_Deleted) after 30 days.
+
+The one thing missing here is a status for content that is _viewable_ but **not** editable.
+
+=== Introducing the Archive ===
+
+The 'archive' status marks content to a _post-published state, viewable to some but no longer edited. Examples might include:
+
+* an out-of-date walkthrough
+* a review of a discontinued product
+* a rough draft replaced with a final version
+* an old, time-specific post that is now irrelevant
+
+Whatever the reason, incorporating the 'Archive' status can be a useful addition to your WordPress editing workflow.
 
 * Unpublish your posts and pages without having to trash them
-* Archive content is hidden from public view
 * Compatible with posts, pages, and public custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
-* Easily extended (see below)
+* Archive content is hidden from public view, only users with Editor or higher roles can see archived content.
 
 **[Over 13](https://translate.wordpress.org/projects/wp-plugins/archived-post-status/)** languages supported
 
