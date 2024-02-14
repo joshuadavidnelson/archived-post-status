@@ -54,6 +54,81 @@ This plugin does not have a settings page. However, there are numerous hooks ava
 
 = Why are Archived posts appearing on the front-end? =
 
+This is most likely because you are viewing your site while being logged in as an Editor or Administrator.
+
+By default, any user with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability will see Archived posts appear on the front-end of your site.
+
+You can change the default read capability by adding this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+function my_aps_default_read_capability( $capability ) {
+	$capability = 'read';
+
+	return $capability;
+}
+add_filter( 'aps_default_read_capability', 'my_aps_default_read_capability' );
+</pre>
+
+= Can I make Archived posts appear on the front-end for all users? =
+
+Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+add_filter( 'aps_status_arg_public', '__return_true' );
+add_filter( 'aps_status_arg_private', '__return_false' );
+add_filter( 'aps_status_arg_exclude_from_search', '__return_false' );
+</pre>
+
+= Can I make Archived posts hidden from the "All" list in the WP Admin, similar to Trashed posts? =
+
+Yes, simply add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+add_filter( 'aps_status_arg_public', '__return_false' );
+add_filter( 'aps_status_arg_private', '__return_false' );
+add_filter( 'aps_status_arg_show_in_admin_all_list', '__return_false' );
+</pre>
+
+Please note that there is a [bug in core](https://core.trac.wordpress.org/ticket/24415) that requires public and private to be set to false in order for the `aps_status_arg_show_in_admin_all_list` to also be false. There are many bugs in core surrounding registering custom post statuses, so if something doesn't work the way you want on the first try be prepared to do some digging through trac :-)
+
+= Can I exclude the Archived status from appearing on certain post types? =
+
+Yes, simply add this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
+
+<pre lang="php">
+function my_aps_excluded_post_types( $post_types ) {
+	$post_types[] = 'my_custom_post_type';
+
+	return $post_types;
+}
+add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
+</pre>
+
+= My archived posts have disappeared when I deactivate the plugin! =
+
+Don't worry, your content is not __gone__ it's just __inaccessible__. Unfortunately, using a custom post status like `archive` is only going to work while the plugin is active.
+
+If you have archived content and deativate or delete this plugin, that content will disappear from __view__. You're content is in the database - WordPress just no longer recognizes the `post_status` because this plugin is not there to set this post status up.
+
+If you no longer need the plugin but want to retain your archived content:
+1. (Re)activate this plugin
+2. Switch all the archived posts/pages/cpts to a native post status, like 'draft' or 'publish'
+3. Then deactivate/delete the plugin.
+
+= Help! I need support =
+
+Please reach out on the Github Issues or in the WordPress support forums.
+
+= I have a feature request =
+
+Please reach out on the Github Issues or in the WordPress support forums.
+
+= Where are the options for this plugin? =
+
+This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ.
+
+= Why are Archived posts appearing on the front-end? =
+
 Archived content is by default viewable for users with the any user with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability.
 
 This means if you are viewing your site while being logged in as an Editor or Administrator, you will see the archived content. However, lower user roles and non-logged-in users will not see the archived content.
