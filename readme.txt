@@ -12,7 +12,7 @@ Use an "Archived" status to unpublish content without having to trash it.
 
 == Description ==
 
-This plugin allows you to archive your WordPress content.
+This plugin gives you the power to archive your WordPress content.
 
 WordPress supports a publishing workflow by marking content with a post status:
 * 3 for pre-published states: _draft_, _pending_, and _future_. These are editable and pre-viewable, not yet ready for public view.
