@@ -345,55 +345,6 @@ function aps_display_post_states( $post_states, $post ) {
 }
 
 /**
- * Close comments and pings when content is Archived.
- *
- * @action save_post
- *
- * @param int     $post_id
- * @param WP_Post $post
- * @param bool    $update
- */
-function aps_save_post( $post_id, $post, $update ) {
-
-	// Bail out if running an autosave, ajax, cron, or revision.
-	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-		return;
-	}
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-		return;
-	}
-	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
-		return;
-	}
-	if ( wp_is_post_revision( $post_id ) ) {
-		return;
-	}
-
-	// Only posts that we're okay with
-	if ( aps_is_excluded_post_type( $post->post_type ) ) {
-		return;
-	}
-
-	// Only posts that are being Archived.
-	if ( 'archive' === $post->post_status ) {
-
-		// Unhook to prevent infinite loop
-		remove_action( 'save_post', __FUNCTION__ );
-
-		$args = array(
-			'ID'             => $post->ID,
-			'comment_status' => 'closed',
-			'ping_status'    => 'closed',
-		);
-
-		wp_update_post( $args );
-
-		// Add hook back again
-		add_action( 'save_post', __FUNCTION__, 10, 3 );
-	}
-}
-
-/**
  * Check that the current user can archive content.
  *
  * @since 0.4.0
@@ -433,56 +384,6 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
 	$capability = (string) apply_filters( 'aps_user_unarchive_capability', 'edit_others_posts', $post_id );
 
 	return current_user_can( $capability, $post_id );
-}
-
-/**
- * Reset page settings when a page is archived.
- *
- * Marked as a private function, not to be used outside of the plugin.
- *
- * @since 0.4.0
- * @param int $post_id
- * @return void
- */
-function _aps_reset_page_settings( $post_id ) {
-	$post = get_post( $post_id );
-
-	if ( 'page' === $post->post_type ) {
-		/*
-		 * If the page is defined in option page_on_front,
-		 * post_for_posts, or page_for_privacy_policy,
-		 * adjust the corresponding options.
-		 */
-		if ( get_option( 'page_on_front' ) == $post->ID ) {
-			update_option( 'show_on_front', 'posts' );
-			update_option( 'page_on_front', 0 );
-		}
-		if ( get_option( 'page_for_posts' ) == $post->ID ) {
-			update_option( 'page_for_posts', 0 );
-		}
-		if ( get_option( 'wp_page_for_privacy_policy' ) == $post->ID ) {
-			update_option( 'wp_page_for_privacy_policy', 0 );
-		}
-	}
-
-	unstick_post( $post->ID );
-}
-
-/**
- * Get the statuses that are archivable.
- *
- * @since 0.4.0
- * @return string[]
- */
-function _aps_get_archivable_statuses() {
-
-	/**
-	 * Filter the statuses that are archivable.
-	 *
-	 * @since 0.4.0
-	 * @return string[] The statuses that are archivable.
-	 */
-	return apply_filters( 'aps_archivable_statuses', array( 'publish', 'future', 'draft', 'pending', 'private' ) );
 }
 
 /**
@@ -545,20 +446,6 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
  */
 function aps_get_unarchive_post_link( $post = 0, $context = 'display' ) {
 	return aps_get_archive_post_link( $post, $context, 'unarchive' );
-}
-
-/**
- * The custom nonce key for the un/archive actions.
- *
- * @param string $action
- * @param integer $post_id
- * @return void
- */
-function _aps_nonce_key( $action = 'archive', $post_id = 0 ) {
-
-	$post_id = absint( $post_id ) ?: get_the_id();
-
-	return esc_attr( $action . '-' . $post_id );
 }
 
 /**
@@ -794,4 +681,68 @@ function aps_unarchive_post( $post_id = 0 ) {
  */
 function aps_unarchive_post_set_previous_status( $new_status, $post_id, $previous_status ) {
 	return $previous_status;
+}
+
+/**
+ * The custom nonce key for the un/archive actions.
+ *
+ * @param string $action
+ * @param integer $post_id
+ * @return void
+ */
+function _aps_nonce_key( $action = 'archive', $post_id = 0 ) {
+
+	$post_id = absint( $post_id ) ?: get_the_id();
+
+	return esc_attr( $action . '-' . $post_id );
+}
+
+/**
+ * Get the statuses that are archivable.
+ *
+ * @since 0.4.0
+ * @return string[]
+ */
+function _aps_get_archivable_statuses() {
+
+	/**
+	 * Filter the statuses that are archivable.
+	 *
+	 * @since 0.4.0
+	 * @return string[] The statuses that are archivable.
+	 */
+	return apply_filters( 'aps_archivable_statuses', array( 'publish', 'future', 'draft', 'pending', 'private' ) );
+}
+
+/**
+ * Reset page settings when a page is archived.
+ *
+ * Marked as a private function, not to be used outside of the plugin.
+ *
+ * @since 0.4.0
+ * @param int $post_id
+ * @return void
+ */
+function _aps_reset_page_settings( $post_id ) {
+	$post = get_post( $post_id );
+
+	if ( 'page' === $post->post_type ) {
+		/*
+		 * If the page is defined in option page_on_front,
+		 * post_for_posts, or page_for_privacy_policy,
+		 * adjust the corresponding options.
+		 */
+		if ( get_option( 'page_on_front' ) == $post->ID ) {
+			update_option( 'show_on_front', 'posts' );
+			update_option( 'page_on_front', 0 );
+		}
+		if ( get_option( 'page_for_posts' ) == $post->ID ) {
+			update_option( 'page_for_posts', 0 );
+		}
+		if ( get_option( 'wp_page_for_privacy_policy' ) == $post->ID ) {
+			update_option( 'wp_page_for_privacy_policy', 0 );
+		}
+	}
+
+	unstick_post( $post->ID );
 }
