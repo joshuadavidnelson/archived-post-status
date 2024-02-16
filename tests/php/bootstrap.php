@@ -17,3 +17,5 @@ require_once __DIR__ . '/includes/TestCase.php';
 
 // Load plugin files.
 require_once PLUGIN_PATH . '/src/functions.php';
+require_once PLUGIN_PATH . '/src/Feature.php';
+require_once PLUGIN_PATH . '/src/SavePost.php';
