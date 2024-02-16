@@ -58,8 +58,19 @@ function aps_get_supported_post_types() {
 	// Get all public post types.
 	$public_post_types = get_post_types( array( 'public' => true ) );
 
-	// Filter out excluded post types
-	$excluded = array_filter( $public_post_types, 'aps_is_excluded_post_type' );
+	/**
+	 * Prevent the Archived status from being used on these post types.
+	 *
+	 * @since 0.1.0
+	 * @param array $post_types An array of strings, the slugs for post types excluded.
+	 * @return array
+	 */
+	$excluded = (array) apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
+
+	// Sanitize the filtered value.
+	$excluded = array_map( 'esc_attr', array_filter( $excluded, 'post_type_exists' ) );
+
+	// The difference is the supported post types.
 	$supported_post_types = array_diff( $public_post_types, $excluded );
 
 	/**
@@ -69,7 +80,7 @@ function aps_get_supported_post_types() {
 	 * @param array $post_types An array of post type slugs.
 	 * @return array
 	 */
-	return (array) apply_filters( 'aps_get_supported_post_types', $supported_post_types );
+	return (array) apply_filters( 'aps_supported_post_types', $supported_post_types );
 }
 
 /**
@@ -232,21 +243,14 @@ function aps_is_read_only() {
  * Check if a post type should NOT be using the Archived status.
  *
  * @param  string $post_type
- *
+ * @deprecated 0.4.0 Use ( ! aps_is_supported_post_type( $type ) ) instead.
  * @return bool
  */
 function aps_is_excluded_post_type( $post_type ) {
 
-	/**
-	 * Prevent the Archived status from being used on these post types.
-	 *
-	 * @since 0.1.0
-	 * @param array $post_types An array of strings, the slugs for post types excluded.
-	 * @return array
-	 */
-	$excluded = (array) apply_filters( 'aps_excluded_post_types', array( 'attachment' ) );
+	_deprecated_function( 'aps_is_excluded_post_type', '0.4.0', 'aps_is_supported_post_type' );
 
-	return in_array( $post_type, $excluded, true );
+	return ! aps_is_supported_post_type( $post_type );
 }
 
 /**
