@@ -49,6 +49,7 @@ class Plugin {
 		'RowActions',
 		'BulkEdit',
 		'AdminMessages',
+		'SavePost',
 		'CLI',
 		'ArchivedTitle',
 	);
@@ -147,9 +148,6 @@ class Plugin {
 
 		// Add the archive post status.
 		add_action( 'init', 'aps_register_archive_post_status' );
-
-		// Archive the post on save.
-		add_action( 'save_post', 'aps_save_post', 10, 3 );
 
 		// Add the archive post status to the post state in the admin table view.
 		add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
