@@ -55,3 +55,25 @@ function _n_noop( $singular, $plural, $domain = null ) {
 		'domain'   => $domain,
 	);
 }
+
+/**
+ * MOve sanitize_title function.
+ *
+ * @since 0.4.0
+ * @param mixed $title
+ * @return string
+ */
+function sanitize_title( $title ) {
+	return strtolower( str_replace( ' ', '-', $title ) );
+}
+
+/**
+ * Mock the post_type_exists() function.
+ *
+ * @since 0.4.0
+ * @param string $post_type
+ * @return bool
+ */
+function post_type_exists( $post_type ) {
+	return true;
+}
