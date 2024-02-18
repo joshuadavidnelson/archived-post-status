@@ -44,7 +44,7 @@ function aps_archived_label_string() {
 	 * @param string $label The "Archived" label.
 	 * @return string
 	 */
-	return esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
+	return (string) esc_attr( apply_filters( 'aps_archived_label_string', $label ) );
 }
 
 /**
@@ -437,7 +437,7 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
 	 * @param string $context The link context. If set to 'display' then ampersands
 	 *                        are encoded.
 	 */
-	return apply_filters( "aps_get_{$action}_post_link", wp_nonce_url( $link, _aps_nonce_key( $action, $post->ID ) ), $post->ID, $context );
+	return (string) esc_url( apply_filters( "aps_get_{$action}_post_link", wp_nonce_url( $link, _aps_nonce_key( $action, $post->ID ) ), $post->ID, $context ) );
 }
 
 /**
@@ -503,8 +503,9 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
 	 * @since 0.4.0
 	 * @param string  $archived_link URL used to view the archived post.
 	 * @param WP_Post $post          Post object.
+	 * @return string
 	 */
-	return apply_filters( 'archived_post_link', $archived_link, $post );
+	return (string) esc_url( apply_filters( 'archived_post_link', $archived_link, $post ) );
 }
 
 /**
@@ -535,7 +536,7 @@ function aps_archive_post( $post_id = 0 ) {
 	 * Filters whether a post archiving should take place.
 	 *
 	 * @since 0.4.0
-	 * @param bool|null $archive           Whether to go forward with archiving.
+	 * @param bool|null $archive         Whether to go forward with archiving.
 	 * @param WP_Post   $post            Post object.
 	 * @param string    $previous_status The status of the post about to be archived.
 	 */
@@ -715,7 +716,10 @@ function _aps_get_archivable_statuses() {
 	 * @since 0.4.0
 	 * @return string[] The statuses that are archivable.
 	 */
-	return apply_filters( 'aps_archivable_statuses', array( 'publish', 'future', 'draft', 'pending', 'private' ) );
+	$statuses = (array) apply_filters( 'aps_archivable_statuses', array( 'publish', 'future', 'draft', 'pending', 'private' ) );
+
+	// return a sanitized array of statuses.
+	return array_filter( array_map( 'esc_attr', $statuses ) );
 }
 
 /**
