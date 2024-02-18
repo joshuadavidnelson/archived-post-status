@@ -48,7 +48,7 @@ class Plugin {
 	protected $features = array(
 		'RowActions',
 		'BulkEdit',
-		'AdminMessages',
+		'AdminNotices',
 		'SavePost',
 		'CLI',
 		'ArchivedTitle',

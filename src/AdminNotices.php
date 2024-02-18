@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin Messages.
+ * Admin Notices.
  *
  * These appear when a user performs a bulk or row action.
  *
@@ -14,11 +14,11 @@ namespace ArchivedPostStatus;
 if ( ! defined( 'ABSPATH' ) ) { die; }
 
 /**
- * Admin Messages.
+ * Admin Notices.
  *
  * @since 0.4.0
  */
-class AdminMessages extends Feature {
+class AdminNotices extends Feature {
 
 	/**
 	 * The name of the feature.
@@ -26,7 +26,7 @@ class AdminMessages extends Feature {
 	 * @since 0.4.0
 	 * @var   string
 	 */
-	protected $name = 'admin_messages';
+	protected $name = 'admin_notices';
 
 	/**
 	 * Register the feature.
@@ -62,12 +62,12 @@ class AdminMessages extends Feature {
 			return;
 		}
 
-		$messages = array();
+		$notices = array();
 
-		// Archived Messages
+		// Archived Notices
 		if ( isset( $_REQUEST['archived'] ) ) {
 
-			$messages[] = sprintf(
+			$notices[] = sprintf(
 				_n(
 					'%s post moved to the Archive.',
 					'%s posts moved to the Archive.',
@@ -82,7 +82,7 @@ class AdminMessages extends Feature {
 
 			$ids = preg_replace( '/[^0-9,]/', '', $_REQUEST['ids'] );
 
-			$messages[] = sprintf(
+			$notices[] = sprintf(
 				'<a href="%1$s">%2$s</a>',
 				esc_url( wp_nonce_url( "edit.php?post_type=$post_type&doaction=undo&action=unarchive&ids=$ids", 'bulk-posts' ) ),
 				__( 'Undo' )
@@ -90,10 +90,10 @@ class AdminMessages extends Feature {
 
 		}
 
-		// Unarchive messages.
+		// Unarchive notices.
 		if ( isset( $_REQUEST['unarchived'] ) ) {
 
-			$messages[] = sprintf(
+			$notices[] = sprintf(
 				_n(
 					'%s post restored from the Archive.',
 					'%s posts restored from the Archive.',
@@ -110,7 +110,7 @@ class AdminMessages extends Feature {
 
 			$ids = explode( ',', $_REQUEST['ids'] );
 			if ( 1 === count( $ids ) && current_user_can( 'edit_post', $ids[0] ) ) {
-				$messages[] = sprintf(
+				$notices[] = sprintf(
 					'<a href="%1$s">%2$s</a>',
 					esc_url( get_edit_post_link( $ids[0] ) ),
 					esc_html( get_post_type_object( get_post_type( $ids[0] ) )->labels->edit_item )
@@ -119,15 +119,15 @@ class AdminMessages extends Feature {
 
 		}
 
-		// Do the messages.
-		if ( $messages ) {
+		// Do the notices.
+		if ( $notices ) {
 			$args = array(
 				'id'                 => 'message',
 				'additional_classes' => array( 'updated' ),
 				'dismissible'        => true,
 			);
 
-			wp_admin_notice( implode( ' ', $messages ), $args );
+			wp_admin_notice( implode( ' ', $notices ), $args );
 		}
 	}
 }

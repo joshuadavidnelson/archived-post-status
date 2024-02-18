@@ -30,3 +30,10 @@ phpstan.neon.dist
 README.md
 tests
 cypress.config.js
+.babelrc
+.phpcs.xml
+.phpcs.xml.dist
+*.cache
+*.log
+*.map
+*.dist
