@@ -4,7 +4,7 @@
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
- * @subpackage ClassSavePostTest
+ * @subpackage SavePostTest
  */
 
 /**
@@ -30,6 +30,7 @@ class SavePostTest extends TestCase {
 	 * Test the aps_save_post() function.
 	 *
 	 * @since 0.4.0
+	 * @covers ArchivedPostStatus\SavePost::save_post
 	 */
 	public function test_save_post() {
 
