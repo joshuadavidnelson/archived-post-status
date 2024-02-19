@@ -77,3 +77,15 @@ function sanitize_title( $title ) {
 function post_type_exists( $post_type ) {
 	return true;
 }
+
+/**
+ * Mock the sanitize_key() function.
+ *
+ * @since 0.4.0
+ * @return array
+ */
+function sanitize_key( $key ) {
+
+	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $key ) );
+
+}
