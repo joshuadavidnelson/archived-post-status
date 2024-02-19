@@ -4,7 +4,7 @@
  *
  * @since 0.3.9
  * @package ArchivedPostStatus
- * @subpackage ClassFunctionsTest
+ * @subpackage FunctionsTest
  */
 
 /**
@@ -40,6 +40,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_archived_label_string() function.
 	 *
 	 * @since 0.3.9
+	 * @covers \aps_archived_label_string
 	 */
 	public function test_aps_archived_label_string() {
 
@@ -57,6 +58,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_archived_label_string() function filters.
 	 *
 	 * @since 0.3.9
+	 * @covers aps_archived_label_string
 	 */
 	public function test_aps_archived_label_string_filter() {
 
@@ -76,6 +78,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_get_supported_post_types() function.
 	 *
 	 * @since 0.4.0
+	 * @covers aps_get_supported_post_types
 	 */
 	public function test_aps_get_supported_post_types() {
 
@@ -107,6 +110,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_supported_post_types filter.
 	 *
 	 * @since 0.4.0
+	 * @covers aps_get_supported_post_types
 	 */
 	public function test_aps_supported_post_types_filter() {
 
@@ -139,6 +143,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_current_user_can_view() function.
 	 *
 	 * @since 0.3.9
+	 * @covers aps_current_user_can_view
 	 */
 	public function test_aps_current_user_can_view() {
 
@@ -164,6 +169,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_current_user_can_view() filter.
 	 *
 	 * @since 0.3.9
+	 * @covers aps_current_user_can_view
 	 */
 	public function test_aps_current_user_can_view_filter() {
 
@@ -191,6 +197,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_current_user_can_archive() function.
 	 *
 	 * @since 0.4.0
+	 * @covers aps_current_user_can_archive
 	 */
 	public function aps_current_user_can_archive() {
 
@@ -216,6 +223,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_current_user_can_archive() filter.
 	 *
 	 * @since 0.4.0
+	 * @covers aps_current_user_can_archive
 	 */
 	public function test_aps_current_user_can_archive_filter() {
 
@@ -243,6 +251,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_current_user_can_unarchive() function.
 	 *
 	 * @since 0.4.0
+	 * @covers aps_current_user_can_unarchive
 	 */
 	public function aps_current_user_can_unarchive() {
 
@@ -268,6 +277,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_current_user_can_unarchive() filter.
 	 *
 	 * @since 0.4.0
+	 * @covers aps_current_user_can_unarchive
 	 */
 	public function test_aps_current_user_can_unarchive_filter() {
 
@@ -297,6 +307,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_is_read_only() function.
 	 *
 	 * @since 0.3.9
+	 * @covers aps_is_read_only
 	 */
 	public function test_aps_is_read_only() {
 
@@ -312,6 +323,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_is_read_only() function filters.
 	 *
 	 * @since 0.3.9
+	 * @covers aps_is_read_only
 	 */
 	public function test_aps_is_read_only_filters() {
 
@@ -329,6 +341,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_is_excluded_post_type() function.
 	 *
 	 * @since 0.3.9
+	 * @covers aps_is_excluded_post_type
 	 */
 	public function test_aps_is_excluded_post_type() {
 
@@ -384,6 +397,7 @@ class FunctionsTest extends TestCase {
 	 * Test the aps_display_post_states() function.
 	 *
 	 * @since 0.3.9
+	 * @covers aps_display_post_states
 	 */
 	public function test_aps_display_post_states() {
 

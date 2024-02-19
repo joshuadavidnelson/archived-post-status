@@ -4,11 +4,13 @@
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
- * @subpackage ClassArchivedTitleTest
+ * @subpackage ArchivedTitleTest
+ *
+ * @covers ArchivedPostStatus\ArchivedTitle
  */
 
 /**
- * Sample test case.
+ * Archived Title Tests
  *
  * @since 0.4.0
  */
@@ -55,6 +57,7 @@ class ArchivedTitleTest extends TestCase {
 	 * Test the ArchivedTitle::filter_title() function.
 	 *
 	 * @since 0.4.0
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
 	 */
 	public function test_filter_title() {
 
@@ -77,6 +80,7 @@ class ArchivedTitleTest extends TestCase {
 	 * Test the ArchivedTitle::filter_title() filter with a custom label.
 	 *
 	 * @since 0.4.0
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
 	 */
 	public function test_aps_title_label_filter_custom_string() {
 
@@ -100,6 +104,7 @@ class ArchivedTitleTest extends TestCase {
 	 * disable the label string by returning false.
 	 *
 	 * @since 0.4.0
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
 	 */
 	public function test_aps_title_label_filter_false() {
 
@@ -120,6 +125,7 @@ class ArchivedTitleTest extends TestCase {
 	 * Test the title label before filter
 	 *
 	 * @since 0.4.0
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
 	 */
 	public function test_aps_title_label_before_filter() {
 
@@ -140,6 +146,7 @@ class ArchivedTitleTest extends TestCase {
 	 * Test the title separator filter.
 	 *
 	 * @since 0.4.0
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
 	 */
 	public function test_aps_title_separator_filter() {
 
