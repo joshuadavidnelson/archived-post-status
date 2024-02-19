@@ -140,6 +140,33 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
+	 * Test the aps_is_excluded_post_type() function filters.
+	 *
+	 * @since 0.4.0
+	 * @covers aps_get_supported_post_types
+	 */
+	public function test_aps_excluded_post_type_filter() {
+
+		$post_types = array( 'post', 'page', 'attachment' );
+
+		\WP_Mock::userFunction(
+			'get_post_types' , array(
+				'times'  => 1,
+				'return' => $post_types,
+			)
+		);
+
+		// Pass false to the filter.
+		WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( 'attachment' )
+			->reply( array() );
+
+		// Confirm the filter is applied.
+		$this->assertEquals( $post_types, aps_get_supported_post_types() );
+
+	}
+
+	/**
 	 * Test the aps_current_user_can_view() function.
 	 *
 	 * @since 0.3.9
@@ -346,9 +373,11 @@ class FunctionsTest extends TestCase {
 	public function test_aps_is_excluded_post_type() {
 
 		\WP_Mock::userFunction(
-			'get_post_types' , array(
+			'aps_is_supported_post_type' , array(
 				'times'  => 2,
-				'return' => array( 'post', 'page', 'attachment' ),
+				'return' => function( $type ) {
+					return $type !== 'attachment';
+				},
 			)
 		);
 
@@ -360,36 +389,9 @@ class FunctionsTest extends TestCase {
 			)
 		);
 
-		// Confirm the filter is applied.
-		\WP_Mock::expectFilter( 'aps_excluded_post_types', array( 'attachment' ) );
-
 		// Confirm default condition is true.
 		$this->assertTrue( aps_is_excluded_post_type( 'attachment' ) );
 		$this->assertFalse( aps_is_excluded_post_type( 'post' ) );
-
-	}
-
-	/**
-	 * Test the aps_is_excluded_post_type() function filters.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_is_excluded_post_type_filter() {
-
-		\WP_Mock::userFunction(
-			'get_post_types' , array(
-				'times'  => 1,
-				'return' => array( 'post', 'page', 'attachment' ),
-			)
-		);
-
-		// Pass false to the filter.
-		WP_Mock::onFilter( 'aps_excluded_post_types' )
-			->with( 'attachment' )
-			->reply( array( ) );
-
-		// Confirm the filter is applied.
-		$this->assertFalse( aps_is_excluded_post_type( 'attachment' ) );
 
 	}
 
