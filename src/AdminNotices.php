@@ -54,69 +54,73 @@ class AdminNotices extends Feature {
 			return;
 		}
 
-		/**
-		 * @global string $post_type
-		 */
+		// get the post type.
 		global $post_type;
 		if ( ! $post_type ) {
-			return;
+			$post_type = get_post_type();
+
+			if ( ! $post_type ) {
+				return;
+			}
 		}
 
 		$notices = array();
 
+		$archived   = get_query_var( 'archived', false );
+		$unarchived = get_query_var( 'unarchived', false );
+		$ids        = get_query_var( 'ids', false );
+
 		// Archived Notices
-		if ( isset( $_REQUEST['archived'] ) ) {
+		if ( $archived ) {
 
 			$notices[] = sprintf(
 				_n(
 					'%s post moved to the Archive.',
 					'%s posts moved to the Archive.',
-					absint( $_REQUEST['archived'] ),
+					absint( $archived ),
 					'archived-post-status'
 				),
-				number_format_i18n( absint( $_REQUEST['archived'] ) )
-			);
-		}
-
-		if ( isset( $_REQUEST['archived'] ) && isset( $_REQUEST['ids'] ) ) {
-
-			$ids = preg_replace( '/[^0-9,]/', '', $_REQUEST['ids'] );
-
-			$notices[] = sprintf(
-				'<a href="%1$s">%2$s</a>',
-				esc_url( wp_nonce_url( "edit.php?post_type=$post_type&doaction=undo&action=unarchive&ids=$ids", 'bulk-posts' ) ),
-				__( 'Undo' )
+				number_format_i18n( absint( $archived ) )
 			);
 
+			if ( $ids ) {
+
+				$ids = preg_replace( '/[^0-9,]/', '', $ids );
+
+				$notices[] = sprintf(
+					'<a href="%1$s">%2$s</a>',
+					esc_url( wp_nonce_url( "edit.php?post_type=$post_type&doaction=undo&action=unarchive&ids=$ids", 'bulk-posts' ) ),
+					__( 'Undo' )
+				);
+			}
 		}
 
 		// Unarchive notices.
-		if ( isset( $_REQUEST['unarchived'] ) ) {
+		if ( $unarchived ) {
 
 			$notices[] = sprintf(
 				_n(
 					'%s post restored from the Archive.',
 					'%s posts restored from the Archive.',
-					absint( $_REQUEST['unarchived'] ),
+					absint( $unarchived ),
 					'archived-post-status'
 				),
-				number_format_i18n( absint( $_REQUEST['unarchived'] ) )
+				number_format_i18n( absint( $unarchived ) )
 			);
-		}
 
-		if ( isset( $_REQUEST['unarchived'] ) && isset( $_REQUEST['ids'] ) ) {
+			if ( $ids ) {
 
-			$ids = preg_replace( '/[^0-9,]/', '', $_REQUEST['ids'] );
+				$ids = preg_replace( '/[^0-9,]/', '', $ids );
+				$ids = explode( ',', $ids );
 
-			$ids = explode( ',', $_REQUEST['ids'] );
-			if ( 1 === count( $ids ) && current_user_can( 'edit_post', $ids[0] ) ) {
-				$notices[] = sprintf(
-					'<a href="%1$s">%2$s</a>',
-					esc_url( get_edit_post_link( $ids[0] ) ),
-					esc_html( get_post_type_object( get_post_type( $ids[0] ) )->labels->edit_item )
-				);
+				if ( 1 === count( $ids ) && aps_current_user_can_unarchive( $ids[0] ) ) {
+					$notices[] = sprintf(
+						'<a href="%1$s">%2$s</a>',
+						esc_url( get_edit_post_link( $ids[0] ) ),
+						esc_html( get_post_type_object( get_post_type( $ids[0] ) )->labels->edit_item )
+					);
+				}
 			}
-
 		}
 
 		// Do the notices.
