@@ -56,17 +56,19 @@ class BulkEdit extends Feature {
 	 */
 	public function bulk_actions( $actions ) {
 
+		$post_status = get_query_var( 'post_status', false );
+
 		// If it's the "All" view or supported post status filter,
 		// then show the "Archive" bulk action
-		if ( ! isset( $_REQUEST['post_status'] )
-			|| ( isset( $_REQUEST['post_status'] )
-				&& in_array( $_REQUEST['post_status'], _aps_get_archivable_statuses(), true ) ) ) {
+		if ( ! $post_status
+			|| ( $post_status
+				&& in_array( $post_status, _aps_get_archivable_statuses(), true ) ) ) {
 					$actions['archive'] = __( 'Archive', 'archived-post-status' );
 		}
 
 		// If it's the "Archived" post status filter,
 		// then show the "Unarchive" bulk action
-		if ( isset( $_REQUEST['post_status'] ) && 'archive' === $_REQUEST['post_status'] ) {
+		if ( 'archive' === $post_status ) {
 			$actions['unarchive'] = __( 'Unarchive', 'archived-post-status' );
 		}
 
