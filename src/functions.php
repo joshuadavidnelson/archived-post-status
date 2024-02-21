@@ -557,11 +557,16 @@ function aps_archive_post( $post_id = 0 ) {
 
 	add_post_meta( $post_id, '_aps_archive_meta_status', $previous_status );
 	add_post_meta( $post_id, '_aps_archive_meta_time', time() );
+	add_post_meta( $post_id, '_aps_archive_meta_user', get_current_user_id() );
+	add_post_meta( $post_id, '_aps_archive_meta_comment_status', $post->comment_status );
+	add_post_meta( $post_id, '_aps_archive_meta_ping_status', $post->ping_status );
 
 	$post_archived = wp_update_post(
 		array(
-			'ID'          => $post_id,
-			'post_status' => 'archive',
+			'ID'             => $post_id,
+			'post_status'    => 'archive',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
 		)
 	);
 
@@ -603,6 +608,7 @@ function aps_unarchive_post( $post_id = 0 ) {
 		return false;
 	}
 
+	// Get the previous status.
 	$previous_status = get_post_meta( $post_id, '_aps_archive_meta_status', true );
 
 	/**
@@ -632,34 +638,67 @@ function aps_unarchive_post( $post_id = 0 ) {
 	/**
 	 * Filters the status that a post gets assigned when it is restored from the archive.
 	 *
-	 * By default posts that are restored will be assigned a status of 'public'.
-	 * Return the value of `$previous_status` in order to assign the status that
-	 * the post had before it was archived. The `aps_unarchive_post_set_previous_status()`
-	 * function is available for this.
+	 * By default posts will be restored to their previous status.
 	 *
-	 * Prior to WordPress 5.6.0, restored posts were always assigned their original status.
-	 *
-	 * @since 5.6.0
-	 *
+	 * @since 0.4.0
 	 * @param string $new_status      The new status of the post being restored.
 	 * @param int    $post_id         The ID of the post being restored.
 	 * @param string $previous_status The status of the post at the point where it was archived.
 	 */
 	$post_status = apply_filters( 'aps_unarchive_post_status', $new_status, $post_id, $previous_status );
 
-	delete_post_meta( $post_id, '_aps_archive_meta_status' );
-	delete_post_meta( $post_id, '_aps_archive_meta_time' );
+	// Comment status
+	$comment_status = get_post_meta( $post_id, '_aps_archive_meta_comment_status', true );
 
+	/**
+	 * Filters the comment status that a post gets assigned when it is restored from the archive.
+	 *
+	 * @since 0.4.0
+	 * @param string $comment_status  The comment status of the post being restored.
+	 * @param int    $post_id         The ID of the post being restored.
+	 * @param string $previous_status The status of the post at the point where it was archived.
+	 * @return string
+	 */
+	$comment_status = apply_filters( 'aps_unarchive_post_comment_status', $comment_status, $post_id, $previous_status );
+
+	$comment_status = in_array( $comment_status, array( 'open', 'closed' ), true ) ? $comment_status : 'closed';
+
+	// Ping status
+	$ping_status = get_post_meta( $post_id, '_aps_archive_meta_ping_status', true );
+
+	/**
+	 * Filters the ping status that a post gets assigned when it is restored from the archive.
+	 *
+	 * @since 0.4.0
+	 * @param string $ping_status     The ping status of the post being restored.
+	 * @param int    $post_id         The ID of the post being restored.
+	 * @param string $previous_status The status of the post at the point where it was archived.
+	 * @return string
+	 */
+	$ping_status = apply_filters( 'aps_unarchive_post_ping_status', $ping_status, $post_id, $previous_status );
+
+	$ping_status   = in_array( $ping_status, array( 'open', 'closed' ), true ) ? $ping_status : 'closed';
+
+	// Update the post.
 	$post_unarchived = wp_update_post(
 		array(
-			'ID'          => $post_id,
-			'post_status' => $post_status,
+			'ID'             => $post_id,
+			'post_status'    => $post_status,
+			'comment_status' => $comment_status,
+			'ping_status'    => $ping_status,
 		)
 	);
 
 	if ( ! $post_unarchived ) {
 		return false;
 	}
+
+	// Remove the archive meta.
+	delete_post_meta( $post_id, '_aps_archive_meta_user' );
+	delete_post_meta( $post_id, '_aps_archive_meta_comment_status' );
+	delete_post_meta( $post_id, '_aps_archive_meta_ping_status' );
+	delete_post_meta( $post_id, '_aps_archive_meta_status' );
+	delete_post_meta( $post_id, '_aps_archive_meta_time' );
 
 	/**
 	 * Fires after a post is unarchived.
