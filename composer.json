@@ -1,5 +1,6 @@
 {
 	"name": "joshuadavidnelson/archived-post-status",
+	"version": "0.3.11",
 	"type": "wordpress-plugin",
 	"description": "A WordPress plugin that allows posts and pages to be archived so you can unpublish content without having to trash it.",
 	"homepage": "https://archivedpoststat.us/",

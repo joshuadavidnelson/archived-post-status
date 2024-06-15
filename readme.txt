@@ -4,7 +4,7 @@ Tags:              archive, archived, post status, archive post, admin, status, 
 Requires at least: 5.9
 Requires PHP:      8.1
 Tested up to:      6.5.4
-Stable tag:        0.3.10
+Stable tag:        0.3.11
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -173,6 +173,9 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
+= 0.3.11 =
+- Fix release and versioning issues that shipped with 0.3.10
+
 = 0.3.10 =
 - Test & update support for WP 6.5.4
 - Increase minimum supported php to 8.1, as 8.0 is end of life.
@@ -270,6 +273,9 @@ Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com
 Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
+
+= 0.3.11 =
+- Fix release and versioning issues that shipped with 0.3.10
 
 = 0.3.10 =
 - Test & update support for WP 6.5.4
