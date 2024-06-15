@@ -1,10 +1,10 @@
 === Archive Content with Archived Post Status ===
 Contributors:      joshuadnelson, fjarrett
 Tags:              archive, archived, post status, archive post, admin, status, workflow
-Requires at least: 5.3
-Requires PHP:      7.4
-Tested up to:      6.4.2
-Stable tag:        0.3.9.1
+Requires at least: 5.9
+Requires PHP:      8.1
+Tested up to:      6.5.4
+Stable tag:        0.3.10
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -173,6 +173,11 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
+= 0.3.10 =
+- Test & update support for WP 6.5.4
+- Increase minimum supported php to 8.1, as 8.0 is end of life.
+- Increase minimum WordPress version to 5.9, to align with the PHP version.
+
 = 0.3.9.1 - January 19, 2024 =
 - Fixing version numbers in files, missing from 0.3.9 release.
 
@@ -264,6 +269,14 @@ Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com
 Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
+
+= 0.3.10 =
+- Test & update support for WP 6.5.4
+- Increase minimum supported php to 8.1, as 8.0 is end of life.
+- Increase minimum WordPress version to 5.9, to align with the PHP version.
+
+= 0.3.9.1 - January 19, 2024 =
+- Fixing version numbers in files, missing from 0.3.9 release.
 
 = 0.3.9 =
 
