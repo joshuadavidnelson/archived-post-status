@@ -173,10 +173,10 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
-= 0.3.11 =
+= 0.3.11 - June 15, 2024 =
 - Fix release and versioning issues that shipped with 0.3.10
 
-= 0.3.10 =
+= 0.3.10 - June 15, 2024 =
 - Test & update support for WP 6.5.4
 - Increase minimum supported php to 8.1, as 8.0 is end of life.
 - Increase minimum WordPress version to 5.9, to align with the PHP version.
@@ -275,10 +275,10 @@ Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
 
-= 0.3.11 =
+= 0.3.11 - June 15, 2024 =
 - Fix release and versioning issues that shipped with 0.3.10
 
-= 0.3.10 =
+= 0.3.10 - June 15, 2024 =
 - Test & update support for WP 6.5.4
 - Increase minimum supported php to 8.1, as 8.0 is end of life.
 - Increase minimum WordPress version to 5.9, to align with the PHP version.
