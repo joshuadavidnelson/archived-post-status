@@ -11,7 +11,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Minimum PHP version supported:** 8.1  
-**Tested up to PHP version:** 8.3
+**Tested up to PHP version:** 8.3  
 **Minimum WP Version supported:** 5.9  
 **Tested up to WP version:** 6.5.4  
 **Stable tag:** 0.3.11  
