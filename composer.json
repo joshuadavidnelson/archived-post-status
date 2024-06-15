@@ -5,25 +5,28 @@
 	"homepage": "https://archivedpoststat.us/",
 	"license": "GPL-2.0-or-later",
 	"authors": [
-	  {
-		"name": "joshuadavidnelson",
-		"email": "josh@joshuadnelson.com"
-	  }
+		{
+			"name": "joshuadavidnelson",
+			"email": "josh@joshuadnelson.com"
+		}
 	],
 	"require": {
-	  "php": ">=8.1"
+		"php": ">=8.1"
 	},
 	"require-dev": {
-	  "10up/phpcs-composer": "dev-master",
-	  "phpunit/phpunit": "^9.5.24",
-	  "10up/wp_mock": "^0.5.0",
-	  "yoast/phpunit-polyfills": "^1.0"
+		"10up/phpcs-composer": "dev-master",
+		"phpunit/phpunit": "^9.5.24",
+		"10up/wp_mock": "^0.5.0",
+		"yoast/phpunit-polyfills": "^1.0",
+		"phpstan/phpstan": "^1.11",
+		"phpstan/extension-installer": "^1.4"
 	},
 	"prefer-stable": true,
 	"config": {
 	  "allow-plugins": {
 			"composer/installers": true,
-			"dealerdirect/phpcodesniffer-composer-installer": true
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"phpstan/extension-installer": true
 		}
 	}
   }
