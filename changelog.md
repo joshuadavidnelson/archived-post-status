@@ -5,6 +5,7 @@
 - Test & update support for WP 6.5.4
 - Increase minimum supported php to 8.1, as 8.0 is end of life.
 - Increase minimum WordPress version to 5.9, to align with the PHP version.
+- Darken logo colors for better contrast.
 
 ## 0.3.9.1 - January 19, 2024
 - Fixing version numbers in files, missing from 0.3.9 release.
