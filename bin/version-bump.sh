@@ -101,7 +101,7 @@ jq ".version = \"$NEW_VERSION\"" "$COMPOSER_FILE" | sed 's/    /\t/g' > "$COMPOS
 npm install --package-lock-only
 
 # Update the version in composer.lock
-composer update --lock
+composer update --lock --no-install
 
 # Update the version in the PHP doc block in plugin.php
 sed -i.bak -E "s/(Version: +).*/\1$NEW_VERSION/" "$PLUGIN_FILE"
