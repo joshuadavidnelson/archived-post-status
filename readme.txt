@@ -1,9 +1,9 @@
 === Archive Content with Archived Post Status ===
 Contributors:      joshuadnelson, fjarrett
-Tags:              archive, archived, post status, archive post, admin, status, workflow
+Tags:              archive, archived, post status, admin, workflow
 Requires at least: 5.9
 Requires PHP:      8.1
-Tested up to:      6.5.4
+Tested up to:      6.6.2
 Stable tag:        0.3.11
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
