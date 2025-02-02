@@ -204,3 +204,11 @@ The `develop` branch is the most current working branch. _Please direct all pull
 This repo contains the files needed to boot up a local development environment using [wp-env](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/).
 
 Run `npm install` and the `npm run env:start` to boot up a local environment. 
+
+### Cypress tests
+
+As of version 0.4.0, this project uses Cypress to run end-to-end / integration tests.
+
+After installing packages (`npm install`), run `npm run cypress:open` to open the Cypress test interface.
+
+Refer to this doc for more information on using Cyress.
