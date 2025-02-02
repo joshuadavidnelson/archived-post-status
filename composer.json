@@ -8,6 +8,11 @@
 		{
 			"name": "joshuadavidnelson",
 			"email": "josh@joshuadnelson.com"
+		},
+		{
+			"name": "frankiejarrett",
+			"email": "fjarrett@gmail.com",
+			"homepage": "https://frankie.bio/"
 		}
 	],
 	"require": {
