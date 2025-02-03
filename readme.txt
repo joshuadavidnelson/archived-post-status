@@ -173,7 +173,22 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
+= 0.4.0 - Feb X, 2026 =
+
+- New documenation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
+- Added block editor support
+- Added bulk edit support
+- Added WP Cli command
+- Replaced Quick Edit dropdown with Inline Row Action support
+- New core `aps_archive_post` and `aps_unarchive_post` functions, modeling the way WordPress handles "trashing" a post.
+- Update classic editor support, new "Archive" link next to "Trash" in post editor
+- Deprecating `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
+- Expanded filters and documentation blocks
+- Refactored the core plugin into feature classes
+- Added basic php unit tests
+
 = 0.3.12 - Feb 16, 2026 =
+
 - Tested up to WordPress 6.9.1
 - Tested up to PHP 8.4
 - Move over to composer for phpcs, phpstan, and linting checks
@@ -281,7 +296,23 @@ Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
 
+
+= 0.4.0 - Feb X, 2026 =
+
+- New documenation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
+- Added block editor support
+- Added bulk edit support
+- Added WP Cli command
+- Replaced Quick Edit dropdown with Inline Row Action support
+- New core `aps_archive_post` and `aps_unarchive_post` functions, modeling the way WordPress handles "trashing" a post.
+- Update classic editor support, new "Archive" link next to "Trash" in post editor
+- Deprecating `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
+- Expanded filters and documentation blocks
+- Refactored the core plugin into feature classes
+- Added basic php unit tests
+
 = 0.3.12 - Feb 16, 2026 =
+
 - Tested up to WordPress 6.9.1
 - Tested up to PHP 8.4
 - Move over to composer for phpcs, phpstan, and linting checks

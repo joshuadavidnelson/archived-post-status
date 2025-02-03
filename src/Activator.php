@@ -3,7 +3,7 @@
  * Fired during plugin activation
  *
  * @link       https://github.com/joshuadavidnelson/archived-post-status
- * @since      0.3.9
+ * @since      0.4.0
  * @package    ArchivedPostStatus
  * @subpackage Activator
  */
@@ -18,14 +18,14 @@ if ( ! defined( 'ABSPATH' ) ) { die; }
  *
  * This class defines all code necessary to run during the plugin's activation.
  *
- * @since 0.3.9
+ * @since 0.4.0
  */
 class Activator {
 
 	/**
 	 * The $_REQUEST during plugin activation.
 	 *
-	 * @since  0.3.9
+	 * @since  0.4.0
 	 * @access private
 	 * @var    array  $request The $_REQUEST array during plugin activation.
 	 */
@@ -34,7 +34,7 @@ class Activator {
 	/**
 	 * The $_REQUEST['plugin'] during plugin activation.
 	 *
-	 * @since  0.3.9
+	 * @since  0.4.0
 	 * @access private
 	 * @var    string $plugin The $_REQUEST['plugin'] value during plugin activation.
 	 */
@@ -46,7 +46,7 @@ class Activator {
 	 * Checks if the plugin was (safely) activated.
 	 * Place to add any custom action during plugin activation.
 	 *
-	 * @since 0.3.9
+	 * @since 0.4.0
 	 */
 	public static function activate() {
 
@@ -77,7 +77,7 @@ class Activator {
 	 * Gets the $_REQUEST array and checks if necessary keys are set.
 	 * Populates self::request with necessary and sanitized values.
 	 *
-	 * @since  0.3.9
+	 * @since  0.4.0
 	 * @return bool|array false or self::$request array.
 	 */
 	private static function get_request() {
@@ -115,7 +115,7 @@ class Activator {
 	 *
 	 * Validates the data in $_REQUEST is matching this plugin and action.
 	 *
-	 * @since 0.3.9
+	 * @since 0.4.0
 	 * @param string $plugin The Plugin folder/name.php.
 	 * @return bool false if either plugin or action does not match, else true.
 	 */
@@ -143,7 +143,7 @@ class Activator {
 	 *
 	 * We want no one else but users with activate_plugins or above to be able to active this plugin.
 	 *
-	 * @since 0.3.9
+	 * @since 0.4.0
 	 * @return bool false if no caps, else true.
 	 */
 	private static function check_caps() {
