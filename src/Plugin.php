@@ -134,7 +134,7 @@ class Plugin {
 	 * @since 0.4.0
 	 * @action plugins_loaded
 	 */
-	function set_locale() {
+	public function set_locale() {
 		load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
 	}
 

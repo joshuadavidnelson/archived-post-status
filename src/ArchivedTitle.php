@@ -35,7 +35,7 @@ class ArchivedTitle extends Feature {
 	public function register() {
 
 		// Add the label to the title.
-		add_filter( 'the_title', array( $this, 'filter_title' ), 10, 2 );
+		\add_filter( 'the_title', array( $this, 'filter_title' ), 10, 2 );
 	}
 
 	/**
@@ -46,7 +46,7 @@ class ArchivedTitle extends Feature {
 	 *
 	 * @return string
 	 */
-	function filter_title( $title, $post_id = null ) {
+	public function filter_title( $title, $post_id = null ) {
 
 		// Get the post id.
 		if ( ! $post_id ) {

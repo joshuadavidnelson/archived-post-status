@@ -46,7 +46,7 @@ class AdminNotices extends Feature {
 	 * @since 0.4.0
 	 * @return void
 	 */
-	function admin_notices() {
+	public function admin_notices() {
 
 		// check that we're on the edit screen
 		if ( get_current_screen()->base !== 'edit' ) {
