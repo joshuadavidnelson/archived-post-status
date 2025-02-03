@@ -1,14 +1,18 @@
 {
   "name": "joshuadavidnelson/archived-post-status",
-  "version": "0.3.12",
+  "version": "0.4.0",
   "type": "wordpress-plugin",
   "description": "A WordPress plugin that allows posts and pages to be archived so you can unpublish content without having to trash it.",
   "homepage": "https://archivedpoststat.us/",
   "license": "GPL-2.0-or-later",
   "authors": [
+		{
+			"name": "Joshua David Nelson",
+			"email": "josh@joshuadnelson.com"
+		},
     {
-      "name": "joshuadavidnelson",
-      "email": "josh@joshuadnelson.com"
+      "name": "Frankie Jarrett",
+      "email": "fjarrett@gmail.com"
     }
   ],
   "require": {
@@ -30,6 +34,7 @@
     ]
   },
   "require-dev": {
+		"10up/phpcs-composer": "dev-master",
     "phpunit/phpunit": "^9.5.24",
     "10up/wp_mock": "^0.5.0",
     "yoast/phpunit-polyfills": "^1.0",
