@@ -316,7 +316,7 @@ function aps_load_post_screen() {
 	// translators: Error message when trying to edit an Archived post.
 	wp_die(
 		__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
-		__( 'WordPress &rsaquo; Error' )
+		__( 'WordPress &rsaquo; Error' ) // phpcs:ignore
 	);
 }
 
@@ -504,7 +504,7 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
 	 * @param WP_Post $post          Post object.
 	 * @return string
 	 */
-	return (string) esc_url( apply_filters( 'archived_post_link', $archived_link, $post ) );
+	return (string) esc_url( apply_filters( 'aps_archived_post_link', $archived_link, $post ) );
 }
 
 /**
@@ -539,7 +539,7 @@ function aps_archive_post( $post_id = 0 ) {
 	 * @param WP_Post   $post            Post object.
 	 * @param string    $previous_status The status of the post about to be archived.
 	 */
-	$check = apply_filters( 'pre_archive_post', null, $post, $previous_status );
+	$check = apply_filters( 'aps_pre_archive_post', null, $post, $previous_status );
 
 	if ( null !== $check ) {
 		return $check;
@@ -580,7 +580,7 @@ function aps_archive_post( $post_id = 0 ) {
 	 * @param int    $post_id         Post ID.
 	 * @param string $previous_status The status of the post at the point where it was archived.
 	 */
-	do_action( 'archived_post', $post_id, $previous_status );
+	do_action( 'aps_archived_post', $post_id, $previous_status );
 
 	return $post;
 }
@@ -618,7 +618,7 @@ function aps_unarchive_post( $post_id = 0 ) {
 	 * @param WP_Post   $post            Post object.
 	 * @param string    $previous_status The status of the post about to be unarchived.
 	 */
-	$check = apply_filters( 'pre_unarchive_post', null, $post, $previous_status );
+	$check = apply_filters( 'aps_pre_unarchive_post', null, $post, $previous_status );
 	if ( null !== $check ) {
 		return $check;
 	}
@@ -706,7 +706,7 @@ function aps_unarchive_post( $post_id = 0 ) {
 	 * @param int    $post_id         Post ID.
 	 * @param string $previous_status The status of the post at the point where it was unarchived.
 	 */
-	do_action( 'unarchived_post', $post_id, $previous_status );
+	do_action( 'aps_unarchived_post', $post_id, $previous_status );
 
 	return $post;
 }

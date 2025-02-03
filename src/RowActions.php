@@ -139,28 +139,28 @@ class RowActions extends Feature {
 		}
 
 		if ( ! $post ) {
-			wp_die( __( 'The item you are trying archive no longer exists.' ) );
+			wp_die( __( 'The item you are trying archive no longer exists.', 'archived-post-status' ) );
 		}
 
 		if ( ! $post_type_object ) {
-			wp_die( __( 'Invalid post type.' ) );
+			wp_die( __( 'Invalid post type.', 'archived-post-status' ) );
 		}
 
 		if ( ! aps_current_user_can_archive( $post_id ) ) {
-			wp_die( __( 'Sorry, you are not allowed to archive this item.' ) );
+			wp_die( __( 'Sorry, you are not allowed to archive this item.', 'archived-post-status' ) );
 		}
 
 		$user_id = wp_check_post_lock( $post_id );
 		if ( $user_id ) {
 			$user = get_userdata( $user_id );
 			/* translators: %s: User's display name. */
-			wp_die( sprintf( __( 'You cannot archive this item. %s is currently editing.' ), $user->display_name ) );
+			wp_die( sprintf( __( 'You cannot archive this item. %s is currently editing.', 'archived-post-status' ), $user->display_name ) );
 		}
 
 		// Do the thing.
 		$function = "aps_{$action}_post";
 		if ( ! call_user_func( $function, $post_id ) ) {
-			wp_die( __( 'Error in archiving this item.' ) );
+			wp_die( __( 'Error in archiving this item.', 'archived-post-status' ) );
 		}
 
 		// Past tense the action for the query args.

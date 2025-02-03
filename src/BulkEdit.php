@@ -106,7 +106,7 @@ class BulkEdit extends Feature {
 
 				foreach ( (array) $post_ids as $post_id ) {
 					if ( ! aps_current_user_can_archive( $post_id ) ) {
-						wp_die( __( 'Sorry, you are not allowed to move this item to the Archive.' ) );
+						wp_die( __( 'Sorry, you are not allowed to move this item to the Archive.', 'archived-post-status' ) );
 					}
 
 					if ( wp_check_post_lock( $post_id ) ) {
@@ -120,7 +120,7 @@ class BulkEdit extends Feature {
 					}
 
 					if ( ! aps_archive_post( $post_id ) ) {
-						wp_die( __( 'Error in moving the item to Archive.' ) );
+						wp_die( __( 'Error in moving the item to Archive.', 'archived-post-status' ) );
 					}
 
 					++$archived;

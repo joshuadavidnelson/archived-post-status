@@ -43,7 +43,7 @@ abstract class Feature {
 		 * @param bool $active True if the feature is active, false to disable it.
 		 * @return bool
 		 */
-		return (bool) apply_filters( $filter_name, true );
+		return (bool) apply_filters( $filter_name, true ); // phpcs:ignore
 	}
 
 	/**

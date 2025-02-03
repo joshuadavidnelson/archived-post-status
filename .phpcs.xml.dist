@@ -90,4 +90,13 @@
 			<property name="blank_line_check" value="false"/>
 		</properties>
 	</rule>
+	<rule ref="WordPress.Files.FileName">
+		<properties>
+			<property name="strict_class_file_names" value="false"/>
+		</properties>
+	</rule>
+	<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
+		<exclude-pattern>*\.php$</exclude-pattern>
+	</rule>
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHook"/>
 </ruleset>
