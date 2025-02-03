@@ -46,6 +46,9 @@ class Plugin {
 	protected $version;
 
 	protected $features = array(
+		'RowActions',
+		'BulkEdit',
+		'AdminNotices',
 		'SavePost',
 		'ArchivedTitle',
 	);
@@ -156,6 +159,8 @@ class Plugin {
 		// Clear the page settings on archive.
 		add_action( 'aps_archive_post', '_aps_reset_page_settings' );
 
+		// Register the custom query vars.
+		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 
 		// Add plugin features.
 		foreach ( $this->features as $feature ) {
@@ -166,6 +171,23 @@ class Plugin {
 
 	}
 
+	/**
+	 * Add the custom query vars.
+	 *
+	 * @since 0.4.0
+	 * @filter query_vars
+	 * @param  array $vars
+	 * @return array
+	 */
+	public function query_vars( $vars ) {
+
+		$vars[] = 'archived';
+		$vars[] = 'unarchived';
+		$vars[] = 'ids';
+
+		return $vars;
+
+	}
 
 	/**
 	 * The name of the plugin used to uniquely identify it within the context of
