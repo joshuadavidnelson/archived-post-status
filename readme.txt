@@ -81,7 +81,7 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 - Replaced Quick Edit dropdown with Inline Row Action support
 - New core `aps_archive_post` and `aps_unarchive_post` functions, modeling the way WordPress handles "trashing" a post.
 - Update classic editor support, new "Archive" link next to "Trash" in post editor
-- Deprecating `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
+- Deprecated `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
 - Expanded filters and documentation blocks
 - Refactored the core plugin into feature classes
 - Added basic php unit tests
@@ -197,7 +197,7 @@ Props [fjarrett](https://github.com/fjarrett)
 - Replaced Quick Edit dropdown with Inline Row Action support
 - New core `aps_archive_post` and `aps_unarchive_post` functions, modeling the way WordPress handles "trashing" a post.
 - Update classic editor support, new "Archive" link next to "Trash" in post editor
-- Deprecating `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
+- Deprecated `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
 - Expanded filters and documentation blocks
 - Refactored the core plugin into feature classes
 - Added basic php unit tests
