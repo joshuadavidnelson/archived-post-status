@@ -22,9 +22,9 @@ jobs:
     - name: "Fix violations"
       run: |
         # phpcbf exists with 1 on success
-        vendor/bin/phpcbf --standard=WordPress-Core *.php includes/ || true
+        vendor/bin/phpcbf --standard=WordPress-Core *.php src/ || true
         # Complex errors need a second run
-        vendor/bin/phpcbf --standard=WordPress-Core *.php includes/ || true
+        vendor/bin/phpcbf --standard=WordPress-Core *.php src/ || true
     - name: "Check difference to repository"
       id: "list_diff"
       run: |
