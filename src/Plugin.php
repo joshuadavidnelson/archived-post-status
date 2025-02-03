@@ -50,6 +50,7 @@ class Plugin {
 		'BulkEdit',
 		'AdminNotices',
 		'SavePost',
+		'CLI',
 		'ArchivedTitle',
 	);
 
