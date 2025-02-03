@@ -90,7 +90,7 @@ class AdminNotices extends Feature {
 				$notices[] = sprintf(
 					'<a href="%1$s">%2$s</a>',
 					esc_url( wp_nonce_url( "edit.php?post_type=$post_type&doaction=undo&action=unarchive&ids=$ids", 'bulk-posts' ) ),
-					__( 'Undo' )
+					__( 'Undo' ) // phpcs:ignore
 				);
 			}
 		}

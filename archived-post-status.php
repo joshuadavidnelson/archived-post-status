@@ -40,7 +40,7 @@ define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN )
  * The code that runs during plugin activation.
  * This action is documented in src/Activator.php
  */
-function activate_archived_post_status() {
+function aps_activate() {
 	require_once plugin_dir_path( __FILE__ ) . 'src/Activator.php';
 	ArchivedPostStatus\Activator::activate();
 }
@@ -49,12 +49,12 @@ function activate_archived_post_status() {
  * The code that runs during plugin deactivation.
  * This action is documented in src/Deactivator.php
  */
-function deactivate_archived_post_status() {
+function aps_deactivate() {
 	require_once plugin_dir_path( __FILE__ ) . 'src/Deactivator.php';
 	ArchivedPostStatus\Deactivator::deactivate();
 }
-register_activation_hook( __FILE__, 'activate_archived_post_status' );
-register_deactivation_hook( __FILE__, 'deactivate_archived_post_status' );
+register_activation_hook( __FILE__, 'aps_activate' );
+register_deactivation_hook( __FILE__, 'aps_deactivate' );
 
 /**
  * The core plugin class that is used to define everything.

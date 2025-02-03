@@ -28,7 +28,10 @@
 		"yoast/phpunit-polyfills": "^1.0",
 		"phpstan/phpstan": "^1.11",
 		"phpstan/extension-installer": "^1.4",
-		"wp-coding-standards/wpcs": "^3.1"
+		"wp-coding-standards/wpcs": "^3.1",
+    "phpcompatibility/php-compatibility": "*",
+		"dealerdirect/phpcodesniffer-composer-installer": "^0.7",
+		"phpcompatibility/phpcompatibility-wp": "*"
 	},
 	"prefer-stable": true,
 	"config": {
