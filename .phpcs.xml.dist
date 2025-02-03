@@ -53,5 +53,7 @@
 		<exclude name="WordPress.Files.FileName" />
 		<!-- Disable class filename rule -->
 		<exclude name="WordPress.Files.ClassFileName" />
+		<!-- Disable short ternary rule -->
+		<exclude name="WordPress.PHP.DisallowShortTernary.Found" />
 	</rule>
 </ruleset>
