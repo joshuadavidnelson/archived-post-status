@@ -167,9 +167,14 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Screenshots ==
 
-1. Post list table screen.
-2. Quick Edit mode.
-3. Publish metabox controls.
+1.The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) "All" view does not show archived content, but hover over a post to expose the "Archive" link. See screenshots 6-8 for viewing archived content.
+2. Bulk archive option in [Posts Screen](https://wordpress.org/documentation/article/posts-screen/).
+3. Block editor view, the archive button appears above the "save as draft" and "move to trash" buttons.
+4. Classic editor view, the "Archive" link appears next to "Move to Trash" in the Publish box.
+5. The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) with the "Archived" filter. Archived content appears in this view with "Last Modified Date," "Previous Status," and "Archived Date." columns.
+6. The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) with the "Archived" filter. Hover over a post to expose the "Unarchive" link.
+7. The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) with the "Archived" filter. Bulk "Unarchive" option.
+8. Viewing archived content on the front end, with the "Archived" label on the title. By default only
 
 == Changelog ==
 
