@@ -555,7 +555,7 @@ function aps_archive_post( $post_id = 0 ) {
 	do_action( 'aps_archive_post', $post_id, $previous_status );
 
 	add_post_meta( $post_id, '_aps_archive_meta_status', $previous_status );
-	add_post_meta( $post_id, '_aps_archive_meta_time', current_time( 'timestamp' ) );
+	add_post_meta( $post_id, '_aps_archive_meta_time', get_post_timestamp() );
 	add_post_meta( $post_id, '_aps_archive_meta_user', get_current_user_id() );
 	add_post_meta( $post_id, '_aps_archive_meta_comment_status', $post->comment_status );
 	add_post_meta( $post_id, '_aps_archive_meta_ping_status', $post->ping_status );
