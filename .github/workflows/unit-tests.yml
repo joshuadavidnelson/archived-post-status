@@ -1,4 +1,4 @@
-name: "Unit Tests"
+name: "PHP Unit Tests"
 
 on:
   pull_request: null
@@ -13,7 +13,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        php-versions: [ '8.1', '8.2' ]
+        php-versions: [ '8.1', '8.2', '8.3' ]
 
     steps:
     - name: "Checkout"
