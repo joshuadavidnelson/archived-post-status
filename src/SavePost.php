@@ -72,6 +72,9 @@ class SavePost extends Feature {
 		if ( 'archive' === $post->post_status
 			&& ( 'closed' !== $post->comment_status || 'closed' !== $post->ping_status ) ) {
 
+			add_post_meta( $post->ID, '_aps_archive_meta_comment_status', $post->comment_status );
+			add_post_meta( $post->ID, '_aps_archive_meta_ping_status', $post->ping_status );
+
 			// Unhook to prevent infinite loop
 			remove_action( 'save_post', array( $this, 'save_post' ) );
 
