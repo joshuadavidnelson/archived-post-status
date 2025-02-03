@@ -83,4 +83,10 @@
 			<property name="blank_line_check" value="false"/>
 		</properties>
 	</rule>
+	<rule ref="WordPress">
+		<!-- Disable filename rule -->
+		<exclude name="WordPress.Files.FileName" />
+		<!-- Disable class filename rule -->
+		<exclude name="WordPress.Files.ClassFileName" />
+	</rule>
 </ruleset>
