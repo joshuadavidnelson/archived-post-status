@@ -198,7 +198,7 @@ class CLI extends Feature {
 		$status = get_post_status( $post_id );
 
 		// Check that we're not trying to archive something that is already archived.
-		if ( 'archive' === $action && 'archive' == $status ) {
+		if ( 'archive' === $action && 'archive' === $status ) {
 			return array( 'error', "Post {$post_id} is already archived." );
 		}
 

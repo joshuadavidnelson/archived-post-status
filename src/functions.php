@@ -778,14 +778,14 @@ function _aps_reset_page_settings( $post_id ) {
 		 * post_for_posts, or page_for_privacy_policy,
 		 * adjust the corresponding options.
 		 */
-		if ( get_option( 'page_on_front' ) == $post->ID ) {
+		if ( get_option( 'page_on_front' ) === $post->ID ) {
 			update_option( 'show_on_front', 'posts' );
 			update_option( 'page_on_front', 0 );
 		}
-		if ( get_option( 'page_for_posts' ) == $post->ID ) {
+		if ( get_option( 'page_for_posts' ) === $post->ID ) {
 			update_option( 'page_for_posts', 0 );
 		}
-		if ( get_option( 'wp_page_for_privacy_policy' ) == $post->ID ) {
+		if ( get_option( 'wp_page_for_privacy_policy' ) === $post->ID ) {
 			update_option( 'wp_page_for_privacy_policy', 0 );
 		}
 	}

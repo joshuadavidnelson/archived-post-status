@@ -68,7 +68,7 @@ class RowActions extends Feature {
 
 			$actions['archive'] = '<a href="' . aps_get_archive_post_link( $post->ID ) . '" title="' . esc_attr( __( 'Archive this post', 'archived-post-status' ) ) . '">' . __( 'Archive', 'archived-post-status' ) . '</a>';
 
-		} elseif ( $post->post_status == 'archive'
+		} elseif ( $post->post_status === 'archive'
 			&& aps_current_user_can_unarchive( $post->ID ) ) {
 
 			// Remove actions that don't apply to Archived posts.
