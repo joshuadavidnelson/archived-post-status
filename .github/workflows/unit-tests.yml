@@ -1,4 +1,4 @@
-name: "Unit Tests"
+name: "PHP Unit Tests"
 
 on:
   pull_request: null
