@@ -35,7 +35,7 @@ class SavePost extends Feature {
 	public function register() {
 
 		// Close ping and comment status on archived posts.
-		add_action( 'save_post', array( $this, 'save_post' ), 10, 3 );
+		\add_action( 'save_post', array( $this, 'save_post' ), 10, 3 );
 
 	}
 
@@ -59,12 +59,12 @@ class SavePost extends Feature {
 		if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
 			return;
 		}
-		if ( wp_is_post_revision( $post_id ) ) {
+		if ( \wp_is_post_revision( $post_id ) ) {
 			return;
 		}
 
 		// Only posts that we're okay with
-		if ( ! aps_is_supported_post_type( $post->post_type ) ) {
+		if ( ! \aps_is_supported_post_type( $post->post_type ) ) {
 			return;
 		}
 
@@ -72,11 +72,11 @@ class SavePost extends Feature {
 		if ( 'archive' === $post->post_status
 			&& ( 'closed' !== $post->comment_status || 'closed' !== $post->ping_status ) ) {
 
-			add_post_meta( $post->ID, '_aps_archive_meta_comment_status', $post->comment_status );
-			add_post_meta( $post->ID, '_aps_archive_meta_ping_status', $post->ping_status );
+			\add_post_meta( $post->ID, '_aps_archive_meta_comment_status', $post->comment_status );
+			\add_post_meta( $post->ID, '_aps_archive_meta_ping_status', $post->ping_status );
 
 			// Unhook to prevent infinite loop
-			remove_action( 'save_post', array( $this, 'save_post' ) );
+			\remove_action( 'save_post', array( $this, 'save_post' ) );
 
 			$args = array(
 				'ID'             => $post->ID,
@@ -84,10 +84,10 @@ class SavePost extends Feature {
 				'ping_status'    => 'closed',
 			);
 
-			wp_update_post( $args );
+			\wp_update_post( $args );
 
 			// Add hook back again
-			add_action( 'save_post', array( $this, 'save_post' ), 10, 3 );
+			\add_action( 'save_post', array( $this, 'save_post' ), 10, 3 );
 		}
 	}
 }
