@@ -8,13 +8,14 @@
  * that starts the plugin.
  *
  * @link    https://github.com/joshuadavidnelson/archived-post-status
- * @since   0.3.9
+ * @since   0.4.0
  * @package ArchivedPostStatus
  *
  * @wordpress-plugin
  * Plugin Name: Archived Post Status
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
- * Version:     0.3.11
+ * Version:     0.4.0
+ * Plugin URI:  https://archivedpoststat.us/
  * Author:      Joshua David Nelson
  * Author URI:  https://joshuadnelson.com
  * Text Domain: archived-post-status
@@ -29,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; }
 /**
  * Define plugin constants.
  */
-define( 'ARCHIVED_POST_STATUS_VERSION', '0.3.11' );
+define( 'ARCHIVED_POST_STATUS_VERSION', '0.4.0' );
 define( 'ARCHIVED_POST_STATUS_PLUGIN', plugin_basename( __FILE__ ) );
 define( 'ARCHIVED_POST_STATUS_DIR', __DIR__ );
 define( 'ARCHIVED_POST_STATUS_URL', plugins_url( '/', __FILE__ ) );
@@ -67,7 +68,7 @@ require ARCHIVED_POST_STATUS_DIR . '/src/Plugin.php';
  * then kicking off the plugin from this point in the file does
  * not affect the page life cycle.
  *
- * @since 0.3.9
+ * @since 0.4.0
  */
 function run_archived_post_status() {
 	$plugin = new ArchivedPostStatus\Plugin( ARCHIVED_POST_STATUS_PLUGIN, ARCHIVED_POST_STATUS_VERSION );
