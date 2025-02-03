@@ -3,7 +3,6 @@ parameters:
     inferPrivatePropertyTypeFromConstructor: true
     scanFiles:
         - archived-post-status.php
-        - src/archived-post-status.php
     scanDirectories:
         - src/
     paths:
