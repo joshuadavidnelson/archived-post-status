@@ -74,7 +74,7 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 = 0.4.0 - February X, 2025 =
 - Updated Tested to WordPress 6.7.1
-- New documenation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
+- New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 - Added block editor support
 - Added bulk edit support
 - Added WP Cli command
@@ -190,7 +190,7 @@ Props [fjarrett](https://github.com/fjarrett)
 
 = 0.4.0 - February X, 2025 =
 - Updated Tested to WordPress 6.7.1
-- New documenation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
+- New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 - Added block editor support
 - Added bulk edit support
 - Added WP Cli command
