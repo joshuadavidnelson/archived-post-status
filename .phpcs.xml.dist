@@ -30,6 +30,15 @@
 	<!-- Rules: WordPress Coding Standards -->
 	<!-- https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
 	<!-- https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties -->
+	<rule ref="WordPress">
+		<!-- Exclude specific sniffs -->
+		<!-- Disable filename rule -->
+		<exclude name="WordPress.Files.FileName" />
+		<!-- Disable class filename rule -->
+		<exclude name="WordPress.Files.ClassFileName" />
+		<!-- Disable short ternary rule -->
+		<exclude name="WordPress.PHP.DisallowShortTernary" />
+	</rule>
 	<config name="minimum_supported_wp_version" value="5.9"/>
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
@@ -47,13 +56,5 @@
 		<properties>
 			<property name="blank_line_check" value="true"/>
 		</properties>
-	</rule>
-	<rule ref="WordPress">
-		<!-- Disable filename rule -->
-		<exclude name="WordPress.Files.FileName" />
-		<!-- Disable class filename rule -->
-		<exclude name="WordPress.Files.ClassFileName" />
-		<!-- Disable short ternary rule -->
-		<exclude name="WordPress.PHP.DisallowShortTernary.Found" />
 	</rule>
 </ruleset>
