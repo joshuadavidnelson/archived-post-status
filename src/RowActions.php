@@ -57,7 +57,7 @@ class RowActions extends Feature {
 	 * @param  WP_Post $post
 	 * @return array
 	 */
-	function row_actions( $actions, $post ) {
+	public function row_actions( $actions, $post ) {
 
 		if ( ! aps_is_supported_post_type( $post->post_type ) ) {
 			return $actions;
@@ -104,7 +104,7 @@ class RowActions extends Feature {
 	 * @param string $action  Optional. The action. Default is 'archive'.
 	 * @return void
 	 */
-	function post_action_archive( $post_id, $action = 'archive' ) {
+	public function post_action_archive( $post_id, $action = 'archive' ) {
 
 		check_admin_referer( _aps_nonce_key( $action, $post_id ) );
 
@@ -185,7 +185,7 @@ class RowActions extends Feature {
 	 * @param int $post_id The post ID.
 	 * @return void
 	 */
-	function post_action_unarchive( $post_id ) {
+	public function post_action_unarchive( $post_id ) {
 		$this->post_action_archive( $post_id, 'unarchive' );
 	}
 }

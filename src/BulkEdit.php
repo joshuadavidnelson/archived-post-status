@@ -87,7 +87,7 @@ class BulkEdit extends Feature {
 	 *                         Array of post IDs.
 	 * @return string
 	 */
-	function handle_bulk_action( $sendback, $doaction, $post_ids ) {
+	public function handle_bulk_action( $sendback, $doaction, $post_ids ) {
 
 		// If there are no post IDs, bail.
 		// If the action is not 'archive' or 'unarchive', bail.

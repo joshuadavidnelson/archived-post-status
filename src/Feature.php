@@ -76,5 +76,5 @@ abstract class Feature {
 	 *
 	 * @since 0.4.0
 	 */
-	abstract function register();
+	abstract public function register();
 }
