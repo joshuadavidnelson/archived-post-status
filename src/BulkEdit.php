@@ -92,7 +92,7 @@ class BulkEdit extends Feature {
 		// If there are no post IDs, bail.
 		// If the action is not 'archive' or 'unarchive', bail.
 		if ( empty( $post_ids )
-			|| ! in_array( $doaction, array( 'archive', 'unarchive' ) ) ) {
+			|| ! in_array( $doaction, array( 'archive', 'unarchive' ), true ) ) {
 				return $sendback;
 		}
 
