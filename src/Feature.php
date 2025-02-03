@@ -9,7 +9,7 @@
 namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
  * Abstract class for features.
@@ -77,5 +77,4 @@ abstract class Feature {
 	 * @since 0.4.0
 	 */
 	abstract function register();
-
 }

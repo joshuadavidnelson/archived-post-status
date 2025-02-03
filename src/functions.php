@@ -7,7 +7,7 @@
  */
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
  * Translations strings placeholder function.
@@ -272,7 +272,6 @@ function aps_edit_screen_js( $hook ) {
 
 	$src = ARCHIVED_POST_STATUS_URL . 'assets/js/edit-screen.js';
 	wp_enqueue_script( 'aps-edit-screen', $src, array( 'jquery' ), ARCHIVED_POST_STATUS_VERSION );
-
 }
 
 /**
@@ -420,7 +419,7 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
 		return;
 	}
 
-	if ( ! in_array( $action, [ 'archive', 'unarchive' ], true ) ) {
+	if ( ! in_array( $action, array( 'archive', 'unarchive' ), true ) ) {
 		$action = 'archive';
 	} else {
 		$action = sanitize_key( $action );
@@ -677,7 +676,7 @@ function aps_unarchive_post( $post_id = 0 ) {
 	 */
 	$ping_status = apply_filters( 'aps_unarchive_post_ping_status', $ping_status, $post_id, $previous_status );
 
-	$ping_status   = in_array( $ping_status, array( 'open', 'closed' ), true ) ? $ping_status : 'closed';
+	$ping_status = in_array( $ping_status, array( 'open', 'closed' ), true ) ? $ping_status : 'closed';
 
 	// Update the post.
 	$post_unarchived = wp_update_post(

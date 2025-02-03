@@ -12,7 +12,7 @@
 namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
  * The core plugin class.
@@ -165,11 +165,10 @@ class Plugin {
 
 		// Add plugin features.
 		foreach ( $this->features as $feature ) {
-			$class = __NAMESPACE__ . '\\' . $feature;
+			$class   = __NAMESPACE__ . '\\' . $feature;
 			$feature = new $class();
 			$feature->init();
 		}
-
 	}
 
 	/**
@@ -187,7 +186,6 @@ class Plugin {
 		$vars[] = 'ids';
 
 		return $vars;
-
 	}
 
 	/**

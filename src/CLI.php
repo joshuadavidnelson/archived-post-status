@@ -9,10 +9,10 @@
 namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
-use \WP_CLI;
-use \WP_CLI\Utils;
+use WP_CLI;
+use WP_CLI\Utils;
 
 /**
  * All the functionality needed to support the "Archived Date" field.
@@ -47,7 +47,6 @@ class CLI extends Feature {
 
 		// Register the CLI commands.
 		\add_action( 'cli_init', array( $this, 'cli' ) );
-
 	}
 
 	/**
@@ -64,7 +63,6 @@ class CLI extends Feature {
 
 		WP_CLI::add_command( 'post archive', array( $this, 'archive' ) );
 		WP_CLI::add_command( 'post unarchive', array( $this, 'unarchive' ) );
-
 	}
 
 	/**
@@ -95,11 +93,11 @@ class CLI extends Feature {
 	 */
 	public function archive( $args, $assoc_args ) {
 
-		$status = 0;
+		$status   = 0;
 		$counting = ( count( $args ) > $this->count_limit );
 
 		if ( $counting ) {
-			$progress = Utils\make_progress_bar( "Archiving", count( $args ) );
+			$progress = Utils\make_progress_bar( 'Archiving', count( $args ) );
 		}
 
 		foreach ( $args as $obj_id ) {
@@ -118,7 +116,6 @@ class CLI extends Feature {
 		}
 
 		exit( $status );
-
 	}
 
 	/**
@@ -145,18 +142,21 @@ class CLI extends Feature {
 	 */
 	public function unarchive( $args, $assoc_args ) {
 
-		$status = 0;
-		$counting = ( count( $args ) > $this->count_limit );
+		$status     = 0;
+		$counting   = ( count( $args ) > $this->count_limit );
 		$new_status = Utils\get_flag_value( $assoc_args, 'status', false );
 
 		if ( $counting ) {
-			$progress = Utils\make_progress_bar( "Unarchiving", count( $args ) );
+			$progress = Utils\make_progress_bar( 'Unarchiving', count( $args ) );
 		}
 
 		if ( $new_status ) {
-			add_filter( 'aps_unarchive_post_status', function() use ( $new_status ) {
-				return $new_status;
-			} );
+			add_filter(
+				'aps_unarchive_post_status',
+				function () use ( $new_status ) {
+					return $new_status;
+				}
+			);
 		}
 
 		foreach ( $args as $obj_id ) {
@@ -175,7 +175,6 @@ class CLI extends Feature {
 		}
 
 		exit( $status );
-
 	}
 
 	/**
@@ -192,7 +191,7 @@ class CLI extends Feature {
 		// Check that the post type is supported
 		$post_type = get_post_type( $post_id );
 		if ( ! aps_is_supported_post_type( $post_type ) ) {
-			return [ 'error', "Post {$post_id} is not a supported post type." ];
+			return array( 'error', "Post {$post_id} is not a supported post type." );
 		}
 
 		// Get the current status of the post.
@@ -200,7 +199,7 @@ class CLI extends Feature {
 
 		// Check that we're not trying to archive something that is already archived.
 		if ( 'archive' === $action && 'archive' == $status ) {
-			return [ 'error', "Post {$post_id} is already archived." ];
+			return array( 'error', "Post {$post_id} is already archived." );
 		}
 
 		// Force skips the check for the current status of the post.
@@ -213,13 +212,13 @@ class CLI extends Feature {
 
 			// Check that the current status can be archived.
 			if ( ! in_array( $status, $archivable_statuses, true ) ) {
-				return [ 'error', "Post {$post_id} cannot be archived, '{$status}' is not an archivable status." ];
+				return array( 'error', "Post {$post_id} cannot be archived, '{$status}' is not an archivable status." );
 			}
 		}
 
 		// Check that the current status can be unarchived, if that is the action.
 		if ( 'unarchive' === $action && 'archive' !== $status ) {
-			return [ 'error', "Post {$post_id} cannot be unarchived because it is not in the archive." ];
+			return array( 'error', "Post {$post_id} cannot be unarchived because it is not in the archive." );
 		}
 
 		if ( Utils\get_flag_value( $assoc_args, 'defer-term-counting' ) ) {
@@ -229,7 +228,7 @@ class CLI extends Feature {
 		// Perform the action.
 		$function = "aps_{$action}_post";
 		if ( ! call_user_func( $function, $post_id ) ) {
-			return [ 'error', "Failed to {$action} post {$post_id}." ];
+			return array( 'error', "Failed to {$action} post {$post_id}." );
 		}
 
 		if ( Utils\get_flag_value( $assoc_args, 'defer-term-counting' ) ) {
@@ -238,7 +237,7 @@ class CLI extends Feature {
 
 		// Return the success message.
 		$actioned = $action . 'd';
-		return [ 'success', "{$actioned} post {$post_id}." ];
+		return array( 'success', "{$actioned} post {$post_id}." );
 	}
 
 	/**
