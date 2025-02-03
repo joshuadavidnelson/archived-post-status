@@ -6,7 +6,7 @@
 /**
  * Mock wp_cache_get() function.
  *
- * @since 0.3.9
+ * @since 0.4.0
  *
  * @param string $key
  * @param string $group
@@ -19,7 +19,7 @@ function wp_cache_get( $key, $group ) {
 /**
  * Mock wp_cache_set() function.
  *
- * @since 0.3.9
+ * @since 0.4.0
  *
  * @param string $key
  * @param mixed  $value
@@ -33,7 +33,7 @@ function wp_cache_set( $key, $value, $group ) {
 /**
  * Mock absint() function.
  *
- * @since 0.3.9
+ * @since 0.4.0
  *
  * @param mixed $maybeint
  * @return int
@@ -54,4 +54,38 @@ function _n_noop( $singular, $plural, $domain = null ) {
 		'context'  => null,
 		'domain'   => $domain,
 	);
+}
+
+/**
+ * MOve sanitize_title function.
+ *
+ * @since 0.4.0
+ * @param mixed $title
+ * @return string
+ */
+function sanitize_title( $title ) {
+	return strtolower( str_replace( ' ', '-', $title ) );
+}
+
+/**
+ * Mock the post_type_exists() function.
+ *
+ * @since 0.4.0
+ * @param string $post_type
+ * @return bool
+ */
+function post_type_exists( $post_type ) {
+	return true;
+}
+
+/**
+ * Mock the sanitize_key() function.
+ *
+ * @since 0.4.0
+ * @return array
+ */
+function sanitize_key( $key ) {
+
+	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $key ) );
+
 }
