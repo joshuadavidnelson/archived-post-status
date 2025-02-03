@@ -7,8 +7,6 @@
 
 [![WP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/wp-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest) [![PHP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/php-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest)
 
-Allows posts and pages to be archived so you can unpublish content without having to trash it.
-
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Minimum PHP version supported:** 8.1  
 **Tested up to PHP version:** 8.3  
