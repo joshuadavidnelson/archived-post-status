@@ -5,6 +5,11 @@
   "description": "A WordPress plugin that allows posts and pages to be archived so you can unpublish content without having to trash it.",
   "homepage": "https://archivedpoststat.us/",
   "license": "GPL-2.0-or-later",
+  "support": {
+    "issues": "https://github.com/joshuadavidnelson/archived-post-status/issues",
+    "docs": "https://docs.archivedpoststat.us/",
+    "forum": "https://wordpress.org/support/plugin/archived-post-status/"
+  },
   "authors": [
 		{
 			"name": "Joshua David Nelson",
