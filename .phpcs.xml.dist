@@ -21,6 +21,8 @@
 
 	<!-- Rules: Check PHP version compatibility -->
 	<config name="testVersion" value="8.1-"/>
+
+	<!-- https://github.com/PHPCompatibility/PHPCompatibilityWP -->
 	<rule ref="PHPCompatibilityWP">
 		<include-pattern>*\.php$</include-pattern>
 	</rule>
