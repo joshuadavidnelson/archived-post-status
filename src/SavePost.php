@@ -9,7 +9,7 @@
 namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
  * The save post flow.
@@ -36,7 +36,6 @@ class SavePost extends Feature {
 
 		// Close ping and comment status on archived posts.
 		\add_action( 'save_post', array( $this, 'save_post' ), 10, 3 );
-
 	}
 
 	/**

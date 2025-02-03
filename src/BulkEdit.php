@@ -9,7 +9,7 @@
 namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
  * Bulk Edit functions.
@@ -42,7 +42,6 @@ class BulkEdit extends Feature {
 			add_filter( "handle_bulk_actions-{$screen}", array( $this, 'handle_bulk_action' ), 10, 3 );
 
 		}
-
 	}
 
 	/**
@@ -73,7 +72,6 @@ class BulkEdit extends Feature {
 		}
 
 		return $actions;
-
 	}
 
 	/**
@@ -94,7 +92,7 @@ class BulkEdit extends Feature {
 		// If there are no post IDs, bail.
 		// If the action is not 'archive' or 'unarchive', bail.
 		if ( empty( $post_ids )
-			|| ! in_array( $doaction, [ 'archive', 'unarchive' ] ) ) {
+			|| ! in_array( $doaction, array( 'archive', 'unarchive' ) ) ) {
 				return $sendback;
 		}
 
@@ -165,6 +163,5 @@ class BulkEdit extends Feature {
 		}
 
 		return $sendback;
-
 	}
 }

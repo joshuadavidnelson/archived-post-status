@@ -9,7 +9,7 @@
 namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
  * The inline archive buttons class.
@@ -42,11 +42,10 @@ class RowActions extends Feature {
 		}
 
 		// The archive post action.
-		add_action( 'post_action_archive', array( $this,'post_action_archive' ) );
+		add_action( 'post_action_archive', array( $this, 'post_action_archive' ) );
 
 		// The unarchive post action.
 		add_action( 'post_action_unarchive', array( $this, 'post_action_unarchive' ) );
-
 	}
 
 	/**
@@ -67,7 +66,7 @@ class RowActions extends Feature {
 		if ( in_array( $post->post_status, _aps_get_archivable_statuses(), true )
 			&& aps_current_user_can_archive( $post->ID ) ) {
 
-			$actions['archive']  = '<a href="' . aps_get_archive_post_link( $post->ID ).'" title="' . esc_attr( __( 'Archive this post' , 'archived-post-status') ) . '">' . __( 'Archive', 'archived-post-status' ) . '</a>';
+			$actions['archive'] = '<a href="' . aps_get_archive_post_link( $post->ID ) . '" title="' . esc_attr( __( 'Archive this post', 'archived-post-status' ) ) . '">' . __( 'Archive', 'archived-post-status' ) . '</a>';
 
 		} elseif ( $post->post_status == 'archive'
 			&& aps_current_user_can_unarchive( $post->ID ) ) {
@@ -88,7 +87,7 @@ class RowActions extends Feature {
 				}
 			}
 
-			$actions['unarchive']  = '<a href="' . aps_get_unarchive_post_link( $post->ID ).'" title="' . esc_attr( __( 'Unarchive this post' , 'archived-post-status' ) ) . '">' . __( 'Unarchive', 'archived-post-status' ) . '</a>';
+			$actions['unarchive'] = '<a href="' . aps_get_unarchive_post_link( $post->ID ) . '" title="' . esc_attr( __( 'Unarchive this post', 'archived-post-status' ) ) . '">' . __( 'Unarchive', 'archived-post-status' ) . '</a>';
 
 		}
 
@@ -130,13 +129,11 @@ class RowActions extends Feature {
 		}
 
 		$sendback = wp_get_referer();
-		if ( ! $sendback ||
-			str_contains( $sendback, 'post.php' ) ||
-			str_contains( $sendback, 'post-new.php' ) ) {
-				$sendback = admin_url( 'edit.php' );
-				if ( ! empty( $post_type ) ) {
-					$sendback = add_query_arg( 'post_type', $post_type, $sendback );
-				}
+		if ( ! $sendback || str_contains( $sendback, 'post.php' ) || str_contains( $sendback, 'post-new.php' ) ) {
+			$sendback = admin_url( 'edit.php' );
+			if ( ! empty( $post_type ) ) {
+				$sendback = add_query_arg( 'post_type', $post_type, $sendback );
+			}
 		} else {
 			$sendback = remove_query_arg( array( 'archived', 'unarchived', 'ids' ), $sendback );
 		}
@@ -179,7 +176,6 @@ class RowActions extends Feature {
 			)
 		);
 		exit;
-
 	}
 
 	/**
@@ -192,5 +188,4 @@ class RowActions extends Feature {
 	function post_action_unarchive( $post_id ) {
 		$this->post_action_archive( $post_id, 'unarchive' );
 	}
-
 }

@@ -9,7 +9,7 @@
 namespace ArchivedPostStatus;
 
 // Exit if accessed directly, prevent direct access to this file.
-if ( ! defined( 'ABSPATH' ) ) { die; }
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
  * Post editor functions.
@@ -36,7 +36,6 @@ class ArchivedTitle extends Feature {
 
 		// Add the label to the title.
 		add_filter( 'the_title', array( $this, 'filter_title' ), 10, 2 );
-
 	}
 
 	/**
@@ -114,6 +113,4 @@ class ArchivedTitle extends Feature {
 
 		return $title;
 	}
-
 }
-
