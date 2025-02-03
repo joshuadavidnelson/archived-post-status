@@ -73,6 +73,7 @@ class AdminNotices extends Feature {
 		if ( $archived ) {
 
 			$notices[] = sprintf(
+				// translators: %s is the number of posts moved to the Archive.
 				_n(
 					'%s post moved to the Archive.',
 					'%s posts moved to the Archive.',
@@ -98,6 +99,7 @@ class AdminNotices extends Feature {
 		if ( $unarchived ) {
 
 			$notices[] = sprintf(
+				// translators: %s is the number of posts restored from the Archive.
 				_n(
 					'%s post restored from the Archive.',
 					'%s posts restored from the Archive.',
