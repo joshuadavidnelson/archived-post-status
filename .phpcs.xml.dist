@@ -57,5 +57,4 @@
 	<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
 		<exclude-pattern>*\.php$</exclude-pattern>
 	</rule>
-		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHook"/>
 </ruleset>
