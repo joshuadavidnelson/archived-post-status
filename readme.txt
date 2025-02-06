@@ -1,5 +1,6 @@
 === Archive Content with Archived Post Status ===
 Contributors:      joshuadnelson, fjarrett
+Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
