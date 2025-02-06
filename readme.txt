@@ -1,5 +1,6 @@
 === Archive Content with Archived Post Status ===
 Contributors:      joshuadnelson, fjarrett
+Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
@@ -72,9 +73,9 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
-= 0.4.0 - Feb X, 2026 =
+= 0.4.0 - February X, 2025 =
 
-- New documenation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
+- New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 - Added block editor support
 - Added bulk edit support
 - Added WP Cli command
@@ -195,10 +196,9 @@ Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
 
-
 = 0.4.0 - Feb X, 2026 =
 
-- New documenation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
+- New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 - Added block editor support
 - Added bulk edit support
 - Added WP Cli command
