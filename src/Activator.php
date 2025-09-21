@@ -68,7 +68,7 @@ class Activator {
 			exit;
 		}
 
-		if ( false === self::get_request()
+		if ( ! self::get_request()
 			|| false === self::validate_request( self::$plugin )
 			|| false === self::check_caps()
 		) {
