@@ -18,11 +18,15 @@ indent_style = tab
 indent_style = space
 indent_size = 2
 
+[*.{neon.dist,xml}]
+indent_style = space
+indent_size = 4
+
 [*.{md,markdown}]
 trim_trailing_whitespace = false
 
 [*.md]
 trim_trailing_whitespace = false
 
-[{*.txt,wp-config-sample.php}]
+[{*.txt}]
 end_of_line = crlf
