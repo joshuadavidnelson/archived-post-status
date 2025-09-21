@@ -105,20 +105,20 @@ class Activator {
 			&& isset( self::$request['action'] )
 		) {
 
-			if ( ! empty( $sanitized_request['plugin'] ) ) {
-				if ( false !== wp_verify_nonce( $sanitized_request['_wpnonce'], 'activate-plugin_' . $sanitized_request['plugin'] ) ) {
+			if ( ! empty( self::$request['plugin'] ) ) {
+				if ( false !== wp_verify_nonce( self::$request['_wpnonce'], 'activate-plugin_' . self::$request['plugin'] ) ) {
 
-					self::$request['plugin'] = (string) $sanitized_request['plugin'];
-					self::$request['action'] = (string) $sanitized_request['action'];
+					self::$request['plugin'] = (string) self::$request['plugin'];
+					self::$request['action'] = (string) self::$request['action'];
 
 					return self::$request;
 
 				}
-			} elseif ( ! empty( $sanitized_request['checked'] ) ) {
-				if ( false !== wp_verify_nonce( $sanitized_request['_wpnonce'], 'bulk-plugins' ) ) {
+			} elseif ( ! empty( self::$request['checked'] ) ) {
+				if ( false !== wp_verify_nonce( self::$request['_wpnonce'], 'bulk-plugins' ) ) {
 
-					self::$request['action']  = (string) $sanitized_request['action'];
-					self::$request['plugins'] = array_map( 'sanitize_text_field', (array) $sanitized_request['checked'] );
+					self::$request['action']  = (string) self::$request['action'];
+					self::$request['plugins'] = array_map( 'sanitize_text_field', (array) self::$request['checked'] );
 
 					return self::$request;
 
