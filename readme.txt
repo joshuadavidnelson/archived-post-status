@@ -24,7 +24,7 @@ The one thing missing here is a status for content that is _viewable_ but **not*
 
 === Introducing the Archive ===
 
-The 'archive' status marks content to a _post-published state, viewable to some but no longer edited. Examples might include:
+The 'archive' status marks content to a _post-published_ state, viewable to some but no longer edited. Examples might include:
 
 * an out-of-date walkthrough
 * a review of a discontinued product
@@ -62,14 +62,14 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Screenshots ==
 
-1.The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) "All" view does not show archived content, but hover over a post to expose the "Archive" link. See screenshots 6-8 for viewing archived content.
+1. The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) "All" view does not show archived content, but hover over a post to expose the "Archive" link. See screenshots 6-8 for viewing archived content.
 2. Bulk archive option in [Posts Screen](https://wordpress.org/documentation/article/posts-screen/).
 3. Block editor view, the archive button appears above the "save as draft" and "move to trash" buttons.
 4. Classic editor view, the "Archive" link appears next to "Move to Trash" in the Publish box.
 5. The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) with the "Archived" filter. Archived content appears in this view with "Last Modified Date," "Previous Status," and "Archived Date." columns.
 6. The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) with the "Archived" filter. Hover over a post to expose the "Unarchive" link.
 7. The [Posts Screen](https://wordpress.org/documentation/article/posts-screen/) with the "Archived" filter. Bulk "Unarchive" option.
-8. Viewing archived content on the front end, with the "Archived" label on the title. By default only
+8. Viewing archived content on the front end, with the "Archived" label on the title. By default only users with Editor or higher roles can see archived content.
 
 == Changelog ==
 
@@ -99,7 +99,7 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 = 0.3.10 - June 15, 2024 =
 - Test & update support for WP 6.5.4
-- Increase minimum supported php to 8.1, as 8.0 is end of life.
+- Increase minimum supported PHP to 8.1, as 8.0 is end of life.
 - Increase minimum WordPress version to 5.9, to align with the PHP version.
 - Darken logo colors for better contrast.
 - Improve German translations, h/t @mdibella-dev
@@ -177,7 +177,7 @@ Props [fjarrett](https://github.com/fjarrett), [RavanH](https://github.com/Ravan
 * New: Added language support for `de_DE`, `es_ES`, `fr_FR`, `pt_PT` and `ru_RU`.
 * New: Users with the `read_private_posts` capability can now view Archived content.
 * New: Automatically close comments and pings when content is archived.
-* Tweak: Allow mulitple post states to exist alongside Archived in edit screen.
+* Tweak: Allow multiple post states to exist alongside Archived in edit screen.
 * Fix: The `aps_excluded_post_types` filter now works as expected on Edit screens.
 
 Props [fjarrett](https://github.com/fjarrett)
@@ -222,7 +222,7 @@ Props [fjarrett](https://github.com/fjarrett)
 
 = 0.3.10 - June 15, 2024 =
 - Test & update support for WP 6.5.4
-- Increase minimum supported php to 8.1, as 8.0 is end of life.
+- Increase minimum supported PHP to 8.1, as 8.0 is end of life.
 - Increase minimum WordPress version to 5.9, to align with the PHP version.
 - Darken logo colors for better contrast.
 - Improve German translations, h/t @mdibella-dev

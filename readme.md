@@ -54,27 +54,68 @@ Learn how to use and extend the plugin at [docs.archivedpoststat.us](https://doc
 
 ## Contributing
 
-All contributions are welcomed and considered, please refer to [contributing.md](contributing.md).
+There are lots of ways to help with this project and all contributions are welcomed, thanks for your help! 
 
-### Pull requests
-All pull requests should be directed at the `develop` branch, and will be reviewed prior to merging. No pull requests will be merged with failing tests, but it's okay if you don't initially pass tests. Please create a draft pull request for proof of concept code or changes you'd like to have input on prior to review.
+Please refer to [contributing.md](contributing.md).
 
-Please make on a branch specific to a single issue or feature. For instance, if you are suggest a solution to an issue, please create fork with a branch like `issue-894`. Or if you are proposing a new feature, create a fork with the branch name indicating the feature like `feature-example-bananas`
+## Pull requests
 
-All improvements are merged into `develop` and then queued up for release before being merged into `stable`. Releases are deployed via github actions to wordpress.org on tagging a new release.
+All pull requests should be directed at the `develop` branch, and will be reviewed prior to merging.
 
-### Main Branches
+Stable releases should include unit tests, but it's okay if you don't initially have any tests. Please create a draft pull request for proof of concept code or changes you'd like to have input on prior to review.
 
-The `stable` branch is reserved for releases and intended to be a mirror of the official current release, or `trunk` on wordpress.org.
+### Branches
+
+The `stable` branch is reserved for releases and intended to be a mirror of the official current release, or `trunk` on `wordpress.org`.
 
 The `develop` branch is the most current working branch. _Please direct all pull requests to the `develop` branch_
 
+Please make your changes on a branch specific to a single issue or feature. For instance, if you are suggest a solution to an issue, please create fork with a branch like `issue-894`. Or if you are proposing a new feature, create a fork with the branch name indicating the feature like `feature/example-bananas`
+
+All improvements are merged into `develop` and then queued up for release before being merged into `stable`. Releases are deployed via github actions to `wordpress.org` on tagging a new release.
+
 ### Local Development
 
-**Requirements:**
+#### Requirements
+
 - Docker
 - Node Package Manager (npm)
+- PHP Composer
 
 This repo contains the files needed to boot up a local development environment using [wp-env](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/).
 
-Run `npm install` and the `npm run env:start` to boot up a local environment. 
+Run `npm install` and use the `npm run env:start` to boot up a local environment.
+
+Use `npm run env:stop` to stop the local environment.
+
+#### Accessing Shell
+
+To access the shell interface of your local development: `npm run env:shell`
+
+### Tests and checks
+
+Github actions will run phpunit tests, coding standard checks, and static anaylsis. You can run these checks locally via:
+
+#### PHPUnit Tests
+
+PHP Unit tests go in the `/tests/php/` folder.
+
+To run tests:
+
+1. Install composer dependencies via `composer install`
+2. Run `./vendor/bin/phpunit` or use the composer script: `composer run phpunit`
+
+#### PHP Coding Standards
+
+This project follows WordPress Coding Standards. To check your code:
+
+1. Install composer dependencies via `composer install`
+2. Run PHP Code Sniffer: `./vendor/bin/phpcs` or use the composer script: `composer run phpcs`
+3. To automatically fix coding standard issues: `./vendor/bin/phpcbf` or use the composer script: `composer run phpcbf`
+
+#### PHP Stan
+
+PHPStan is used for static analysis to catch potential issues. To run PHPStan:
+
+1. Install composer dependencies via `composer install`
+2. Run PHPStan: `./vendor/bin/phpstan analyse --memory-limit=2048M` or use the composer script: `composer run phpstan`
