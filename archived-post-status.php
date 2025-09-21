@@ -16,6 +16,9 @@
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
  * Version:     0.4.0
  * Plugin URI:  https://archivedpoststat.us/
+ * Requires at least: 5.9
+ * Tested up to: 6.8.2
+ * Requires PHP: 8.1
  * Author:      Joshua David Nelson
  * Author URI:  https://joshuadnelson.com
  * Text Domain: archived-post-status
@@ -39,6 +42,9 @@ define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN )
 /**
  * The code that runs during plugin activation.
  * This action is documented in src/Activator.php
+ *
+ * @since 0.4.0
+ * @return void
  */
 function aps_activate() {
 	require_once plugin_dir_path( __FILE__ ) . 'src/Activator.php';
@@ -48,6 +54,9 @@ function aps_activate() {
 /**
  * The code that runs during plugin deactivation.
  * This action is documented in src/Deactivator.php
+ *
+ * @since 0.4.0
+ * @return void
  */
 function aps_deactivate() {
 	require_once plugin_dir_path( __FILE__ ) . 'src/Deactivator.php';
