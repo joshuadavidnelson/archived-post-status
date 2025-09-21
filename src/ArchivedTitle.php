@@ -104,7 +104,7 @@ class ArchivedTitle extends Feature {
 			if ( ! empty( $label ) ) {
 
 				// Sanitize the strings.
-				$safe_strings = array_filter( array( $label, $sep ), 'esc_attr' );
+				$safe_strings = array_filter( array_map( 'esc_attr', array( $label, $sep ) ) );
 
 				// Add the strings to the title.
 				$title = $before ? implode( '', $safe_strings ) . $title : $title . implode( '', array_reverse( $safe_strings ) );
