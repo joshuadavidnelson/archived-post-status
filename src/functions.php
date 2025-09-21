@@ -403,23 +403,23 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
  * @param int    $post    Optional. Post ID. Default is the global `$post`.
  * @param string $context Optional. The context. Default is 'display'.
  * @param string $action  Optional. The action. Default is 'archive'.
- * @return void|string
+ * @return string|false URL used for the post preview, or false if the post does not exist.
  */
 function aps_get_archive_post_link( $post = 0, $context = 'display', $action = 'archive' ) {
 
 	$post = get_post( $post );
 	if ( ! $post ) {
-		return;
+		return false;
 	}
 
 	$post_type_object = get_post_type_object( $post->post_type );
 	if ( ! $post_type_object
 		|| ! aps_is_supported_post_type( $post->post_type ) ) {
-			return;
+			return false;
 	}
 
 	if ( ! aps_current_user_can_archive( $post->ID ) ) {
-		return;
+		return false;
 	}
 
 	if ( ! in_array( $action, array( 'archive', 'unarchive' ), true ) ) {
@@ -446,10 +446,9 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
  * Get the link to unarchive a post.
  *
  * @since 0.4.0
- * @param int    $post_id Optional. Post ID. Default is the global `$post`.
  * @param int    $post    Optional. Post ID. Default is the global `$post`.
  * @param string $context Optional. The context. Default is 'display'.
- * @return void|string
+ * @return string
  */
 function aps_get_unarchive_post_link( $post = 0, $context = 'display' ) {
 	return aps_get_archive_post_link( $post, $context, 'unarchive' );
@@ -470,14 +469,14 @@ function aps_get_unarchive_post_link( $post = 0, $context = 'display' ) {
  *                                  Default empty array.
  * @param string      $archived_link Optional. Base preview link to be used if it should differ from the
  *                                  post permalink. Default empty.
- * @return string|null URL used for the post preview, or null if the post does not exist.
+ * @return string|false URL used for the post preview, or false if the post does not exist.
  */
 function aps_get_archived_post_link( $post = null, $query_args = array(), $archived_link = '' ) {
 
 	// make sure we have a valid post object.
 	$post = get_post( $post );
 	if ( ! $post ) {
-		return;
+		return false;
 	}
 
 	// is the post status viewable?
@@ -490,7 +489,7 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
 	if ( ! $post_type_object
 		|| ! aps_is_supported_post_type( $post->post_type )
 		|| is_post_type_viewable( $post_type_object ) ) {
-			return;
+			return false;
 	}
 
 	if ( ! $archived_link ) {
@@ -526,7 +525,7 @@ function aps_archive_post( $post_id = 0 ) {
 
 	$post = get_post( $post_id );
 	if ( ! $post ) {
-		return $post;
+		return false;
 	}
 
 	if ( 'archive' === $post->post_status ) {
@@ -604,7 +603,7 @@ function aps_unarchive_post( $post_id = 0 ) {
 
 	$post = get_post( $post_id );
 	if ( ! $post ) {
-		return $post;
+		return false;
 	}
 
 	if ( 'archive' !== $post->post_status ) {
@@ -735,7 +734,7 @@ function aps_unarchive_post_set_previous_status( $new_status, $post_id, $previou
  *
  * @param string $action
  * @param integer $post_id
- * @return void
+ * @return string
  */
 function _aps_nonce_key( $action = 'archive', $post_id = 0 ) {
 
