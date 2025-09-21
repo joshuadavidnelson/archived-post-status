@@ -18,3 +18,7 @@ parameters:
         - '#Call to static method warning\(\) on an unknown class WP_CLI#'
         - '#Function WP_CLI\\Utils\\make_progress_bar not found#'
         - '#Function WP_CLI\\Utils\\get_flag_value not found#'
+        # False positive: negated boolean expression can be true when archive/unarchive functions return false
+        -
+            message: '#Negated boolean expression is always false#'
+            path: src/RowActions.php
