@@ -1,6 +1,9 @@
 <?php
 /**
- * Fired during plugin activation
+ * Fired during plugin activation.
+ *
+ * This class will validate the activation request and check the user's capabilities
+ * before activating the plugin and running any on-activation code.
  *
  * @link       https://github.com/joshuadavidnelson/archived-post-status
  * @since      0.4.0
@@ -27,9 +30,15 @@ class Activator {
 	 *
 	 * @since  0.4.0
 	 * @access private
-	 * @var    array  $request The $_REQUEST array during plugin activation.
+	 * @var    array<string, mixed> $request The $_REQUEST array during plugin activation.
 	 */
-	private static $request = array();
+	private static $request = array(
+		'_wpnonce' => '',
+		'action'   => '',
+		'plugin'   => '',
+		'plugins'  => array(),
+		'checked'  => '',
+	);
 
 	/**
 	 * The $_REQUEST['plugin'] during plugin activation.
@@ -47,8 +56,17 @@ class Activator {
 	 * Place to add any custom action during plugin activation.
 	 *
 	 * @since 0.4.0
+	 * @return void
 	 */
 	public static function activate() {
+
+		// sanitize the request object.
+		$sanitized_request = self::get_sanitized_request();
+		if ( ! empty( $sanitized_request ) ) {
+			self::$request = $sanitized_request;
+		} else {
+			exit;
+		}
 
 		if ( false === self::get_request()
 			|| false === self::validate_request( self::$plugin )
@@ -78,28 +96,29 @@ class Activator {
 	 * Populates self::request with necessary and sanitized values.
 	 *
 	 * @since  0.4.0
-	 * @return bool|array false or self::$request array.
+	 * @return array<string, mixed> false if no request, else array with plugin and action.
 	 */
 	private static function get_request() {
 
-		if ( ! empty( $_REQUEST )
-			&& isset( $_REQUEST['_wpnonce'] )
-			&& isset( $_REQUEST['action'] )
+		if ( ! empty( self::$request )
+			&& isset( self::$request['_wpnonce'] )
+			&& isset( self::$request['action'] )
 		) {
-			if ( isset( $_REQUEST['plugin'] ) ) {
-				if ( false !== wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'activate-plugin_' . sanitize_text_field( wp_unslash( $_REQUEST['plugin'] ) ) ) ) {
 
-					self::$request['plugin'] = sanitize_text_field( wp_unslash( $_REQUEST['plugin'] ) );
-					self::$request['action'] = sanitize_text_field( wp_unslash( $_REQUEST['action'] ) );
+			if ( ! empty( $sanitized_request['plugin'] ) ) {
+				if ( false !== wp_verify_nonce( $sanitized_request['_wpnonce'], 'activate-plugin_' . $sanitized_request['plugin'] ) ) {
+
+					self::$request['plugin'] = (string) $sanitized_request['plugin'];
+					self::$request['action'] = (string) $sanitized_request['action'];
 
 					return self::$request;
 
 				}
-			} elseif ( isset( $_REQUEST['checked'] ) ) {
-				if ( false !== wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-plugins' ) ) {
+			} elseif ( ! empty( $sanitized_request['checked'] ) ) {
+				if ( false !== wp_verify_nonce( $sanitized_request['_wpnonce'], 'bulk-plugins' ) ) {
 
-					self::$request['action']  = sanitize_text_field( wp_unslash( $_REQUEST['action'] ) );
-					self::$request['plugins'] = array_map( 'sanitize_text_field', (array) wp_unslash( $_REQUEST['checked'] ) );
+					self::$request['action']  = (string) $sanitized_request['action'];
+					self::$request['plugins'] = array_map( 'sanitize_text_field', (array) $sanitized_request['checked'] );
 
 					return self::$request;
 
@@ -107,7 +126,45 @@ class Activator {
 			}
 		}
 
-		return false;
+		return array();
+	}
+
+	/**
+	 * Get the sanitized request.
+	 *
+	 * Gets the $_REQUEST array and checks if necessary keys are set.
+	 * Populates self::request with necessary and sanitized values.
+	 *
+	 * @since  0.4.0
+	 * @return bool|array<string, mixed> false if no request, else array with sanitized values.
+	 */
+	private static function get_sanitized_request() {
+
+		// Define the list of keys to sanitize and return.
+		$keys_to_sanitize = array(
+			'_wpnonce',
+			'action',
+			'plugin',
+			'plugins',
+			'checked',
+		);
+
+		// Initialize the sanitized request array.
+		$sanitized_request = array();
+
+		// Iterate over the list of keys and sanitize their values.
+		foreach ( $keys_to_sanitize as $key ) {
+			if ( isset( $_REQUEST[ $key ] ) && is_string( $_REQUEST[ $key ] ) ) {
+				$sanitized_request[ $key ] = sanitize_text_field ( wp_unslash( $_REQUEST[ $key ] ) );
+			} elseif ( isset( $_REQUEST[ $key ] ) && is_array( $_REQUEST[ $key ] ) ) {
+				$sanitized_request[ $key ] = array_map( 'sanitize_text_field', (array) wp_unslash( $_REQUEST[ $key ] ) );
+			} else {
+				$sanitized_request[ $key ] = '';
+			}
+		}
+
+		// Return the sanitized request array.
+		return $sanitized_request;
 	}
 
 	/**
@@ -130,6 +187,7 @@ class Activator {
 
 		} elseif ( isset( self::$request['plugins'] )
 			&& 'activate-selected' === self::$request['action']
+			&& is_array( self::$request['plugins'] )
 			&& in_array( $plugin, self::$request['plugins'], true )
 		) {
 			return true;
@@ -147,6 +205,6 @@ class Activator {
 	 * @return bool false if no caps, else true.
 	 */
 	private static function check_caps() {
-		return current_user_can( 'activate_plugins' );
+		return \current_user_can( 'activate_plugins' );
 	}
 }
