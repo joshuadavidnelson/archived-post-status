@@ -4,6 +4,5 @@ Thumbs.db
 *.tar.gz
 *.zip
 node_modules
-dist
 vendor
 *.cache
