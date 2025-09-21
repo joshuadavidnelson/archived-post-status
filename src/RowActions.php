@@ -54,10 +54,10 @@ class RowActions extends Feature {
 	 * @since 0.4.0
 	 * @filter post_row_actions
 	 * @param  array   $actions
-	 * @param  WP_Post $post
+	 * @param  \WP_Post $post
 	 * @return array
 	 */
-	public function row_actions( $actions, $post ) {
+	public function row_actions( $actions, \WP_Post $post ) {
 
 		if ( ! aps_is_supported_post_type( $post->post_type ) ) {
 			return $actions;

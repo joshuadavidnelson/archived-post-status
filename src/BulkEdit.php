@@ -60,8 +60,7 @@ class BulkEdit extends Feature {
 		// If it's the "All" view or supported post status filter,
 		// then show the "Archive" bulk action
 		if ( ! $post_status
-			|| ( $post_status
-				&& in_array( $post_status, _aps_get_archivable_statuses(), true ) ) ) {
+			|| in_array( $post_status, _aps_get_archivable_statuses(), true ) ) {
 					$actions['archive'] = __( 'Archive', 'archived-post-status' );
 		}
 
@@ -83,7 +82,7 @@ class BulkEdit extends Feature {
 	 * @since 0.4.0
 	 * @param string $sendback The redirect URL.
 	 * @param string $doaction The action being taken.
-	 * @param array  $items    The items to take the action on.
+	 * @param array  $post_ids The items to take the action on.
 	 *                         Array of post IDs.
 	 * @return string
 	 */

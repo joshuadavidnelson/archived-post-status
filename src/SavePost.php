@@ -43,10 +43,10 @@ class SavePost extends Feature {
 	 *
 	 * @since 0.4.0
 	 * @param int     $post_id
-	 * @param WP_Post $post
+	 * @param \WP_Post $post
 	 * @param bool    $update
 	 */
-	public function save_post( $post_id, $post, $update ) {
+	public function save_post( $post_id, \WP_Post $post, $update ) {
 
 		// Bail out if running an autosave, ajax, cron, or revision.
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
