@@ -46,12 +46,12 @@ class Plugin {
 	protected $version;
 
 	protected $features = array(
-		'RowActions',
-		'BulkEdit',
 		'AdminNotices',
-		'SavePost',
-		'CLI',
 		'ArchivedTitle',
+		'BulkEdit',
+		'CLI',
+		'RowActions',
+		'SavePost',
 	);
 
 	/**
