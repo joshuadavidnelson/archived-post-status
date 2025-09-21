@@ -25,7 +25,8 @@
   "scripts": {
     "env": "wp-env",
     "env:start": "wp-env start",
-    "env:stop": "wp-env stop"
+    "env:stop": "wp-env stop",
+    "env:shell": "wp-env run cli /bin/bash"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
