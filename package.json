@@ -13,7 +13,6 @@
     "env": "wp-env",
     "env:start": "wp-env start",
     "env:stop": "wp-env stop",
-    "env:shell": "wp-env run cli /bin/bash"
     "env:shell": "wp-env run cli /bin/bash",
 		"build": "webpack --mode=production",
 		"test": "jest --verbose --runInBand --detectOpenHandles --forceExit"
