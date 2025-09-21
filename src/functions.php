@@ -215,6 +215,7 @@ function aps_current_user_can_view( $post_id = 0 ) {
 	 *
 	 * @since 0.3.0
 	 * @param string $capability The user capability to view archived content.
+	 * @param int    $post_id    Optional. The post ID to check against.
 	 * @return string
 	 */
 	$capability = (string) apply_filters( 'aps_default_read_capability', 'read_private_posts', $post_id );
@@ -361,6 +362,7 @@ function aps_current_user_can_archive( $post_id = 0 ) {
 	 *
 	 * @since 0.4.0
 	 * @param string $capability The user capability to archive content.
+	 * @param int    $post_id    Optional. The post ID to check against.
 	 * @return string
 	 */
 	$capability = (string) apply_filters( 'aps_user_archive_capability', 'edit_others_posts', $post_id );
@@ -382,6 +384,7 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
 	 *
 	 * @since 0.4.0
 	 * @param string $capability The user capability to unarchive content.
+	 * @param int    $post_id    Optional. The post ID to check against.
 	 * @return string
 	 */
 	$capability = (string) apply_filters( 'aps_user_unarchive_capability', 'edit_others_posts', $post_id );
@@ -397,7 +400,7 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
  * @see https://developer.wordpress.org/reference/functions/get_delete_post_link/
  *
  * @since 0.4.0
- * @param int    $post_id Optional. Post ID. Default is the global `$post`.
+ * @param int    $post    Optional. Post ID. Default is the global `$post`.
  * @param string $context Optional. The context. Default is 'display'.
  * @param string $action  Optional. The action. Default is 'archive'.
  * @return void|string
@@ -444,6 +447,7 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
  *
  * @since 0.4.0
  * @param int    $post_id Optional. Post ID. Default is the global `$post`.
+ * @param int    $post    Optional. Post ID. Default is the global `$post`.
  * @param string $context Optional. The context. Default is 'display'.
  * @return void|string
  */
