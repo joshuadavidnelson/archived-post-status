@@ -136,7 +136,7 @@ class Activator {
 	 * Populates self::request with necessary and sanitized values.
 	 *
 	 * @since  0.4.0
-	 * @return bool|array<string, mixed> false if no request, else array with sanitized values.
+	 * @return array<string, mixed> sanitized request array.
 	 */
 	private static function get_sanitized_request() {
 
