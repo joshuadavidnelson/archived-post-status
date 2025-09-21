@@ -30,17 +30,18 @@ jobs:
     steps:
     - name: "Checkout"
       uses: "actions/checkout@v3"
+
     - name: "Install PHP"
       uses: "shivammathur/setup-php@v2"
       with:
         php-version: "8.2"
-    - name: "Install PHPCS"
+
+    - name: "Install Composer Packages"
       run: |
-        composer require --no-plugins --dev wp-coding-standards/wpcs
-        composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-        composer run post-install-cmd
+        composer install
+
     - name: "Run PHPCS"
-      run: "vendor/bin/phpcs *.php src/"
+      run: "composer run phpcs"
 
   static-analysis:
     name: "Run static analysis"
@@ -52,10 +53,12 @@ jobs:
       uses: "shivammathur/setup-php@v2"
       with:
         php-version: "8.2"
-    - name: "Install PHPStan"
-      run: "composer require --dev szepeviktor/phpstan-wordpress"
+
+    - name: "Install Composer Packages"
+      run: "composer install"
+
     - name: "Run PHPStan"
-      run: "vendor/bin/phpstan analyze"
+      run: "composer run phpstan"
 
   phpunit:
     name: ${{ matrix.php-versions }} PHPUnit Tests
@@ -81,4 +84,4 @@ jobs:
       run: "composer install"
 
     - name: "PHPUnit Tests"
-      run: './vendor/bin/phpunit'
+      run: 'composer run phpunit'
