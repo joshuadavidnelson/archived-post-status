@@ -155,14 +155,14 @@ class Plugin {
 		// Prevent Archived content from being edited.
 		add_action( 'load-post.php', 'aps_load_post_screen' );
 
-		// Add quick edit option for archive post status.
-		add_action( 'admin_enqueue_scripts', 'aps_edit_screen_js' );
-
 		// Clear the page settings on archive.
 		add_action( 'aps_archive_post', '_aps_reset_page_settings' );
 
 		// Register the custom query vars.
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
+
+		// Disable post edit links on archived content in the edit screen.
+		add_action( 'admin_enqueue_scripts', array( $this, 'edit_screen_js' ) );
 
 		// Add the plugin screen js.
 		add_action( 'admin_enqueue_scripts', array( $this, 'plugin_screen_js' ) );
@@ -173,6 +173,31 @@ class Plugin {
 			$feature = new $class();
 			$feature->init();
 		}
+	}
+
+	/**
+	 * Enqueue the edit screen javascript.
+	 *
+	 * @since 0.4.0
+	 * @action admin_enqueue_scripts
+	 * @param string $hook The current admin page.
+	 * @return void
+	 */
+	public function edit_screen_js( $hook ) {
+
+		global $typenow;
+		if ( ! aps_is_supported_post_type( $typenow )
+			|| ! aps_is_read_only()
+			|| 'edit.php' !== $hook ) {
+				return;
+		}
+
+		wp_enqueue_script(
+			'aps-edit-screen',
+			ARCHIVED_POST_STATUS_URL . 'assets/js/edit-screen.js',
+			array(),
+			ARCHIVED_POST_STATUS_VERSION
+		);
 	}
 
 	/**
