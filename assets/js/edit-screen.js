@@ -1,22 +1,14 @@
-jQuery( document ).ready( function( $ ) {
-    $rows = $( '#the-list tr.status-archive' );
+document.addEventListener('DOMContentLoaded', function() {
 
-    $.each( $rows, function() {
-        disallowEditing( $( this ) );
-    } );
-    $( '.inline-edit-row' ).on( 'remove', function() {
-        var id   = $( this ).prop( 'id' ).replace( 'edit-', '' ),
-            $row = $( '#post-' + id );
+    var rows = document.querySelectorAll('#the-list tr.status-archive');
 
-        if ( $row.hasClass( 'status-archive' ) ) {
-            disallowEditing( $row );
-        }
-    } );
+    rows.forEach(function(row) {
+        disallowEditing(row);
+    });
 
-    function disallowEditing( $row ) {
-        var title = $row.find( '.column-title a.row-title' ).text();
+    function disallowEditing(row) {
+        var title = row.querySelector('.column-title a.row-title').textContent;
 
-        $row.find( '.column-title a.row-title' ).replaceWith( title );
-        $row.find( '.row-actions .edit' ).remove();
+        row.querySelector('.column-title a.row-title').outerHTML = title;
     }
-} );
+});
