@@ -164,12 +164,89 @@ class Plugin {
 		// Register the custom query vars.
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 
+		// Add the plugin screen js.
+		add_action( 'admin_enqueue_scripts', array( $this, 'plugin_screen_js' ) );
+
 		// Add plugin features.
 		foreach ( $this->features as $feature ) {
 			$class   = __NAMESPACE__ . '\\' . $feature;
 			$feature = new $class();
 			$feature->init();
 		}
+	}
+
+	/**
+	 * Confirm deactivation of the plugin.
+	 *
+	 * @since 0.4.0
+	 * @return void
+	 */
+	public function plugin_screen_js( $hook ) {
+
+		if ( 'plugins.php' != $hook ) {
+			return;
+		}
+
+		// Enqueue the script.
+		wp_enqueue_script(
+			'aps-plugin-screen',
+			ARCHIVED_POST_STATUS_URL . 'assets/js/plugin-screen.js',
+			array( 'jquery' ),
+			ARCHIVED_POST_STATUS_VERSION
+		);
+
+		// Set the script translations.
+		wp_set_script_translations(
+			'aps-plugin-screen',
+			'archived-post-status',
+			plugin_dir_path( __FILE__ ) . '/languages/'
+		);
+
+		// Localize the script.
+		wp_localize_script(
+			'aps-plugin-screen',
+			'archivedPostStatus',
+			array(
+				'hasArchivedPosts' => $this->has_archived_posts(),
+			)
+		);
+
+	}
+
+	/**
+	 * Check if there are any Archived posts.
+	 *
+	 * @since 0.4.0
+	 * @return int
+	 */
+	private function has_archived_posts() {
+
+		// Check if the query results are already cached
+		$has_archived_posts = wp_cache_get( 'has_archived_posts', 'archived-post-status' );
+		if ( false === $has_archived_posts ) {
+
+			$args = array(
+				'post_status'            => 'archive',
+				'post_type'              => \aps_get_supported_post_types(),
+				'posts_per_page'         => 1,
+				'fields'                 => 'ids',
+				'nopaging'               => true,
+				'update_post_term_cache' => false,
+				'update_post_meta_cache' => false,
+			);
+
+			// Query the database if the results are not cached
+			$query = new \WP_Query( $args );
+
+			$count = $query->found_posts;
+			$has_archived_posts = $count > 0;
+
+			// Cache the query results for future use
+			wp_cache_set( 'has_archived_posts', $has_archived_posts, 'archived-post-status', 60 * 60 );
+
+		}
+
+		return $has_archived_posts;
 	}
 
 	/**
