@@ -45,6 +45,13 @@ class Plugin {
 	 */
 	protected $version;
 
+	/**
+	 * The features provided by the plugin.
+	 *
+	 * @since 0.4.0
+	 * @access protected
+	 * @var array $features The features provided by the plugin.
+	 */
 	protected $features = array(
 		'AdminNotices',
 		'ArchivedTitle',
