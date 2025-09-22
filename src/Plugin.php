@@ -159,9 +159,6 @@ class Plugin {
 		// Add the archive post status to the post state in the admin table view.
 		add_filter( 'display_post_states', 'aps_display_post_states', 10, 2 );
 
-		// Prevent Archived content from being edited.
-		add_action( 'load-post.php', 'aps_load_post_screen' );
-
 		// Clear the page settings on archive.
 		add_action( 'aps_archive_post', '_aps_reset_page_settings' );
 
