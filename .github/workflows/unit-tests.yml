@@ -8,7 +8,7 @@ on:
 
 jobs:
   phpunit:
-    name: ${{ matrix.php-versions }} PHPUnit Tests
+    name: "PHPUnit Tests"
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
@@ -18,12 +18,10 @@ jobs:
     - name: "Checkout"
       uses: "actions/checkout@v6"
 
-    - name: "Set PHP version"
+    - name: "Install PHP"
       uses: "shivammathur/setup-php@v2"
       with:
-        php-version: ${{ matrix.php-versions }}
-        coverage: none
-        tools: phpunit, phpunit-polyfills, composer:v2
+        php-version: "8.2"
       env:
         debug: true
 
