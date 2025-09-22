@@ -9,7 +9,7 @@ Stable tag:        0.4.0
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
-Use an "Archived" status to unpublish content without having to trash it.
+Use an "Archive" status to unpublish content without having to trash it.
 
 == Description ==
 
@@ -73,7 +73,7 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
-= 0.4.0 - February X, 2025 =
+= 0.4.0 - Feb X, 2026 =
 
 - New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 - Added block editor support
