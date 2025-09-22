@@ -1,13 +1,13 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
 
-    var rows = document.querySelectorAll('#the-list tr.status-archive');
+    const rows = document.querySelectorAll('#the-list tr.status-archive');
 
-    rows.forEach(function(row) {
+    rows.forEach((row) => {
         disallowEditing(row);
     });
 
     function disallowEditing(row) {
-        var title = row.querySelector('.column-title a.row-title').textContent;
+        const title = row.querySelector('.column-title a.row-title').textContent;
 
         row.querySelector('.column-title a.row-title').outerHTML = title;
     }
