@@ -27,14 +27,6 @@ class PostEditor extends Feature {
 	protected $name = 'post_editor';
 
 	/**
-	 * The version of the script.
-	 *
-	 * @since 0.4.0
-	 * @var   string
-	 */
-	protected $script_version = '0.1.0';
-
-	/**
 	 * Register the feature.
 	 *
 	 * @since 0.4.0
@@ -93,7 +85,7 @@ class PostEditor extends Feature {
 				'wp-hooks',
 				'wp-i18n'
 			),
-			$this->script_version,
+			ARCHIVED_POST_STATUS_VERSION,
 			true
 		);
 
