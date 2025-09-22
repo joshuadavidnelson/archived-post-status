@@ -32,7 +32,7 @@ jobs:
       run: "composer install"
 
     - name: "PHPUnit Tests"
-      run: './vendor/bin/phpunit'
+      run: 'composer run phpunit'
 
   jest:
     name: "Javascript Unit Tests"

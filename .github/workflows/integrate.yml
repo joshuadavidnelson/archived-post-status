@@ -59,29 +59,3 @@ jobs:
 
     - name: "Run PHPStan"
       run: "composer run phpstan"
-
-  phpunit:
-    name: ${{ matrix.php-versions }} PHPUnit Tests
-    runs-on: "ubuntu-latest"
-    strategy:
-      matrix:
-        php-versions: ['8.1', '8.2.', '8.3']
-
-    steps:
-    - name: "Checkout"
-      uses: "actions/checkout@v3"
-
-    - name: "Set PHP version"
-      uses: "shivammathur/setup-php@v2"
-      with:
-        php-version: ${{ matrix.php-versions }}
-        coverage: none
-        tools: phpunit, phpunit-polyfills, composer:v2
-      env:
-        debug: true
-
-    - name: "Install dependencies"
-      run: "composer install"
-
-    - name: "PHPUnit Tests"
-      run: 'composer run phpunit'
