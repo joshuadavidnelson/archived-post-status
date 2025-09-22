@@ -1,4 +1,4 @@
-name: "PHP Unit Tests"
+name: "Unit Tests"
 
 on:
   pull_request: null
@@ -33,3 +33,23 @@ jobs:
 
     - name: "PHPUnit Tests"
       run: './vendor/bin/phpunit'
+
+  jest:
+    name: "Javascript Unit Tests"
+    runs-on: "ubuntu-latest"
+
+    steps:
+    - name: "Checkout"
+      uses: "actions/checkout@v3"
+
+    - name: "Setup Node.js"
+      uses: "actions/setup-node@v5"
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: "Install npm dependencies"
+      run: "npm install"
+
+    - name: "Run Jest tests"
+      run: "npm run test"
