@@ -50,6 +50,7 @@ class Plugin {
 		'ArchivedTitle',
 		'BulkEdit',
 		'CLI',
+		'PostEditor',
 		'RowActions',
 		'SavePost',
 	);
