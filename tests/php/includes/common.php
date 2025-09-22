@@ -4,6 +4,34 @@
  */
 
 /**
+ * Mock plugin_basename() function.
+ */
+function plugin_basename( $file ) {
+	return 'archived-post-status/archived-post-status.php';
+}
+
+/**
+ * Mock plugins_url() function.
+ */
+function plugins_url( $path = '', $plugin = '' ) {
+	return 'https://example.com/wp-content/plugins/archived-post-status/' . ltrim( $path, '/' );
+}
+
+/**
+ * Mock register_activation_hook() function.
+ */
+function register_activation_hook( $file, $callback ) {
+	// Do nothing.
+}
+
+/**
+ * Mock register_deactivation_hook() function.
+ */
+function register_deactivation_hook( $file, $callback ) {
+	// Do nothing.
+}
+
+/**
  * Mock wp_cache_get() function.
  *
  * @since 0.4.0
@@ -79,7 +107,7 @@ function post_type_exists( $post_type ) {
 }
 
 /**
- * Mock the sanitize_key() function.
+ * Mock sanitize_key() function.
  *
  * @since 0.4.0
  * @return array
@@ -88,4 +116,71 @@ function sanitize_key( $key ) {
 
 	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $key ) );
 
+}
+
+/**
+ * Mock plugin_dir_path() function.
+ */
+function plugin_dir_path( $file ) {
+	return dirname( $file ) . '/';
+}
+
+/**
+ * Mock load_plugin_textdomain() function.
+ */
+function load_plugin_textdomain( $domain, $deprecated = false, $plugin_rel_path = false ) {
+	return true;
+}
+
+/**
+ * Mock is_admin() function.
+ */
+function is_admin() {
+	return true;
+}
+
+/**
+ * Mock current_user_can() function.
+ */
+function current_user_can( $capability, ...$args ) {
+	return true;
+}
+
+/**
+ * Mock get_post_types() function.
+ */
+function get_post_types( $args = array(), $output = 'names', $operator = 'and' ) {
+	return array( 'post', 'page' );
+}
+
+/**
+ * Mock register_post_status() function.
+ */
+function register_post_status( $post_status, $args = array() ) {
+	return true;
+}
+
+/**
+ * Mock get_post() function.
+ */
+function get_post( $post = null, $output = OBJECT, $filter = 'raw' ) {
+	$mock_post = new stdClass();
+	$mock_post->ID = 123;
+	$mock_post->post_status = 'publish';
+	$mock_post->post_type = 'post';
+	return $mock_post;
+}
+
+/**
+ * Mock wp_die() function.
+ */
+function wp_die( $message = '', $title = '', $args = array() ) {
+	throw new Exception( $message );
+}
+
+/**
+ * Mock _deprecated_function() function.
+ */
+function _deprecated_function( $function, $version, $replacement = null ) {
+	// Do nothing in tests.
 }
