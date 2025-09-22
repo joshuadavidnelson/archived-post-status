@@ -216,7 +216,7 @@ class Plugin {
 		wp_enqueue_script(
 			'aps-plugin-screen',
 			ARCHIVED_POST_STATUS_URL . 'assets/js/plugin-screen.js',
-			array( 'jquery' ),
+			array(),
 			ARCHIVED_POST_STATUS_VERSION
 		);
 
