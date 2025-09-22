@@ -1,5 +1,5 @@
 module.exports = {
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   testMatch: [
     '**/assets/js/**/*.test.js'
   ],
@@ -14,5 +14,8 @@ module.exports = {
     'html'
   ],
   collectCoverage: false,
-  verbose: true
+  verbose: true,
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  }
 };
