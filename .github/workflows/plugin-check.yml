@@ -1,4 +1,4 @@
-name: 'wp-plugin-check'
+name: 'WP Plugin Check'
 on: # rebuild any PRs and main branch changes
   pull_request:
   push:
