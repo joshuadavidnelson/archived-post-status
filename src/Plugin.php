@@ -262,7 +262,6 @@ class Plugin {
 				'post_type'              => \aps_get_supported_post_types(),
 				'posts_per_page'         => 1,
 				'fields'                 => 'ids',
-				'nopaging'               => true,
 				'update_post_term_cache' => false,
 				'update_post_meta_cache' => false,
 			);

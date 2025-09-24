@@ -86,6 +86,7 @@ class Activator {
 		/**
 		 * The plugin is now safely activated.
 		 */
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules -- Required during plugin activation to set up rewrite rules.
 		flush_rewrite_rules();
 	}
 

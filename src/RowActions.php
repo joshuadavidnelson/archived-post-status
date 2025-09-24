@@ -119,31 +119,34 @@ class RowActions extends Feature {
 		 */
 		global $post_type, $post_type_object, $post;
 
+		$current_post = $post;
 		if ( $post_id ) {
-			$post = get_post( $post_id );
+			$current_post = get_post( $post_id );
 		}
 
-		if ( $post ) {
-			$post_type        = $post->post_type;
-			$post_type_object = get_post_type_object( $post_type );
+		$current_post_type = $post_type;
+		$current_post_type_object = $post_type_object;
+		if ( $current_post ) {
+			$current_post_type        = $current_post->post_type;
+			$current_post_type_object = get_post_type_object( $current_post_type );
 		}
 
 		$sendback = wp_get_referer();
 		if ( ! $sendback || str_contains( $sendback, 'post.php' ) || str_contains( $sendback, 'post-new.php' ) ) {
 			$sendback = admin_url( 'edit.php' );
-			if ( ! empty( $post_type ) ) {
-				$sendback = add_query_arg( 'post_type', $post_type, $sendback );
+			if ( ! empty( $current_post_type ) ) {
+				$sendback = add_query_arg( 'post_type', $current_post_type, $sendback );
 			}
 		} else {
 			$sendback = remove_query_arg( array( 'archived', 'unarchived', 'ids' ), $sendback );
 		}
 
-		if ( ! $post ) {
+		if ( ! $current_post ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'The item you are trying archive no longer exists.', 'archived-post-status' ) );
 		}
 
-		if ( ! $post_type_object ) {
+		if ( ! $current_post_type_object ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'Invalid post type.', 'archived-post-status' ) );
 		}
