@@ -173,7 +173,7 @@ class PostEditor extends Feature {
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 		wp_die(
 			__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
-			__( 'WordPress &rsaquo; Error', 'archived-post-status' )
+			__( 'WordPress &rsaquo; Error' ) // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a WordPress core string and should not have a text domain.
 		);
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
