@@ -143,6 +143,7 @@ class Plugin {
 	 * @action plugins_loaded
 	 */
 	public function set_locale() {
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- WordPress.org handles this automatically, but keeping for non-WordPress.org installs
 		load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
 	}
 

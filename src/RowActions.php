@@ -157,7 +157,7 @@ class RowActions extends Feature {
 		if ( $user_id ) {
 			$user = get_userdata( $user_id );
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally, $user->display_name is safe
-			/* translators: %s: User's display name. */
+			// translators: %s: User's display name.
 			wp_die( sprintf( __( 'You cannot archive this item. %s is currently editing.', 'archived-post-status' ), $user->display_name ) );
 		}
 
