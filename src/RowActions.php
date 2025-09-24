@@ -156,9 +156,10 @@ class RowActions extends Feature {
 		$user_id = wp_check_post_lock( $post_id );
 		if ( $user_id ) {
 			$user = get_userdata( $user_id );
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally, $user->display_name is safe
-			// translators: %s: User's display name.
+			// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally, $user->display_name is safe
+			/* translators: %s: User's display name. */
 			wp_die( sprintf( __( 'You cannot archive this item. %s is currently editing.', 'archived-post-status' ), $user->display_name ) );
+			// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 
 		// Do the thing.
