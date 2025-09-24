@@ -55,6 +55,7 @@ class CLI extends Feature {
 	 * @since 0.4.0
 	 * @return void
 	 */
+	// phpcs:ignore Generic.NamingConventions.ConstructorName.OldStyle -- This is not a constructor, it's a method to register CLI commands.
 	public function cli() {
 
 		if ( ! class_exists( __CLASS__ ) ) {
@@ -115,6 +116,7 @@ class CLI extends Feature {
 			$progress->finish();
 		}
 
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- exit() with integer status code is safe
 		exit( $status );
 	}
 
@@ -174,6 +176,7 @@ class CLI extends Feature {
 			$progress->finish();
 		}
 
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- exit() with integer status code is safe
 		exit( $status );
 	}
 

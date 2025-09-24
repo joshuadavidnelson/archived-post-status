@@ -119,47 +119,56 @@ class RowActions extends Feature {
 		 */
 		global $post_type, $post_type_object, $post;
 
+		$current_post = $post;
 		if ( $post_id ) {
-			$post = get_post( $post_id );
+			$current_post = get_post( $post_id );
 		}
 
-		if ( $post ) {
-			$post_type        = $post->post_type;
-			$post_type_object = get_post_type_object( $post_type );
+		$current_post_type = $post_type;
+		$current_post_type_object = $post_type_object;
+		if ( $current_post ) {
+			$current_post_type        = $current_post->post_type;
+			$current_post_type_object = get_post_type_object( $current_post_type );
 		}
 
 		$sendback = wp_get_referer();
 		if ( ! $sendback || str_contains( $sendback, 'post.php' ) || str_contains( $sendback, 'post-new.php' ) ) {
 			$sendback = admin_url( 'edit.php' );
-			if ( ! empty( $post_type ) ) {
-				$sendback = add_query_arg( 'post_type', $post_type, $sendback );
+			if ( ! empty( $current_post_type ) ) {
+				$sendback = add_query_arg( 'post_type', $current_post_type, $sendback );
 			}
 		} else {
 			$sendback = remove_query_arg( array( 'archived', 'unarchived', 'ids' ), $sendback );
 		}
 
-		if ( ! $post ) {
+		if ( ! $current_post ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'The item you are trying archive no longer exists.', 'archived-post-status' ) );
 		}
 
-		if ( ! $post_type_object ) {
+		if ( ! $current_post_type_object ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'Invalid post type.', 'archived-post-status' ) );
 		}
 
 		if ( ! aps_current_user_can_archive( $post_id ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'Sorry, you are not allowed to archive this item.', 'archived-post-status' ) );
 		}
 
 		$user_id = wp_check_post_lock( $post_id );
 		if ( $user_id ) {
 			$user = get_userdata( $user_id );
+			// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally, $user->display_name is safe
 			/* translators: %s: User's display name. */
 			wp_die( sprintf( __( 'You cannot archive this item. %s is currently editing.', 'archived-post-status' ), $user->display_name ) );
+			// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 
 		// Do the thing.
 		$function = "aps_{$action}_post";
 		if ( ! call_user_func( $function, $post_id ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'Error in archiving this item.', 'archived-post-status' ) );
 		}
 

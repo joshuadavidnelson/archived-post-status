@@ -1,4 +1,4 @@
-=== Archive Content with Archived Post Status ===
+=== Archived Post Status ===
 Contributors:      joshuadnelson, fjarrett
 Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
@@ -196,19 +196,8 @@ Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
 
-= 0.4.0 - Feb X, 2026 =
-
-- New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
-- Added block editor support
-- Added bulk edit support
-- Added WP Cli command
-- Replaced Quick Edit dropdown with Inline Row Action support
-- New core `aps_archive_post` and `aps_unarchive_post` functions, modeling the way WordPress handles "trashing" a post.
-- Update classic editor support, new "Archive" link next to "Trash" in post editor
-- Deprecated `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
-- Expanded filters and documentation blocks
-- Refactored the core plugin into feature classes
-- Added basic php unit tests
+= 0.4.0 - February X, 2025 =
+Major update with block editor support, bulk edit, WP CLI commands, and new documentation site. Refactored codebase with new core functions and expanded filters. See changelog for full details.
 
 = 0.3.12 - Feb 16, 2026 =
 

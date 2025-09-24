@@ -54,8 +54,10 @@ class PostEditor extends Feature {
 
 		$post_id = get_the_ID();
 		if ( aps_current_user_can_archive( $post_id ) ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- aps_get_archive_post_link() returns escaped URL and __() returns safe translated string
 			echo '<div id="archive-action" style="margin-right: 10px;float: left;
 			line-height: calc( 30/ 13 );"><a class="submitdelete deletion" href="' . aps_get_archive_post_link( $post_id ) . '">' . __( 'Archive', 'archived-post-status' ) . '</a></div>';
+			// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 
 	}
@@ -168,9 +170,11 @@ class PostEditor extends Feature {
 		}
 
 		// translators: Error message when trying to edit an Archived post.
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 		wp_die(
 			__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
-			__( 'WordPress &rsaquo; Error' ) // phpcs:ignore
+			__( 'WordPress &rsaquo; Error' ) // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a WordPress core string and should not have a text domain.
 		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }

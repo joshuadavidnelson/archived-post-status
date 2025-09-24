@@ -143,6 +143,7 @@ class Plugin {
 	 * @action plugins_loaded
 	 */
 	public function set_locale() {
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- WordPress.org handles this automatically, but keeping for non-WordPress.org installs
 		load_plugin_textdomain( 'archived-post-status', false, ARCHIVED_POST_STATUS_LANG_PATH );
 	}
 
@@ -200,7 +201,8 @@ class Plugin {
 			'aps-edit-screen',
 			ARCHIVED_POST_STATUS_URL . 'assets/js/edit-screen.js',
 			array(),
-			ARCHIVED_POST_STATUS_VERSION
+			ARCHIVED_POST_STATUS_VERSION,
+			true
 		);
 	}
 
@@ -221,7 +223,8 @@ class Plugin {
 			'aps-plugin-screen',
 			ARCHIVED_POST_STATUS_URL . 'assets/js/plugin-screen.js',
 			array(),
-			ARCHIVED_POST_STATUS_VERSION
+			ARCHIVED_POST_STATUS_VERSION,
+			true
 		);
 
 		// Set the script translations.
@@ -259,7 +262,6 @@ class Plugin {
 				'post_type'              => \aps_get_supported_post_types(),
 				'posts_per_page'         => 1,
 				'fields'                 => 'ids',
-				'nopaging'               => true,
 				'update_post_term_cache' => false,
 				'update_post_meta_cache' => false,
 			);
