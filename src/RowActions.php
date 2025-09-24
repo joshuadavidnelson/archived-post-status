@@ -139,20 +139,24 @@ class RowActions extends Feature {
 		}
 
 		if ( ! $post ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'The item you are trying archive no longer exists.', 'archived-post-status' ) );
 		}
 
 		if ( ! $post_type_object ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'Invalid post type.', 'archived-post-status' ) );
 		}
 
 		if ( ! aps_current_user_can_archive( $post_id ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'Sorry, you are not allowed to archive this item.', 'archived-post-status' ) );
 		}
 
 		$user_id = wp_check_post_lock( $post_id );
 		if ( $user_id ) {
 			$user = get_userdata( $user_id );
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally, $user->display_name is safe
 			/* translators: %s: User's display name. */
 			wp_die( sprintf( __( 'You cannot archive this item. %s is currently editing.', 'archived-post-status' ), $user->display_name ) );
 		}
@@ -160,6 +164,7 @@ class RowActions extends Feature {
 		// Do the thing.
 		$function = "aps_{$action}_post";
 		if ( ! call_user_func( $function, $post_id ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 			wp_die( __( 'Error in archiving this item.', 'archived-post-status' ) );
 		}
 

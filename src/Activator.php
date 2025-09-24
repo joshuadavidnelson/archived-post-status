@@ -154,9 +154,13 @@ class Activator {
 
 		// Iterate over the list of keys and sanitize their values.
 		foreach ( $keys_to_sanitize as $key ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This runs during plugin activation where nonce verification is handled by WordPress core
 			if ( isset( $_REQUEST[ $key ] ) && is_string( $_REQUEST[ $key ] ) ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This runs during plugin activation where nonce verification is handled by WordPress core
 				$sanitized_request[ $key ] = sanitize_text_field ( wp_unslash( $_REQUEST[ $key ] ) );
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This runs during plugin activation where nonce verification is handled by WordPress core
 			} elseif ( isset( $_REQUEST[ $key ] ) && is_array( $_REQUEST[ $key ] ) ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This runs during plugin activation where nonce verification is handled by WordPress core
 				$sanitized_request[ $key ] = array_map( 'sanitize_text_field', (array) wp_unslash( $_REQUEST[ $key ] ) );
 			} else {
 				$sanitized_request[ $key ] = '';

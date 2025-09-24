@@ -200,7 +200,8 @@ class Plugin {
 			'aps-edit-screen',
 			ARCHIVED_POST_STATUS_URL . 'assets/js/edit-screen.js',
 			array(),
-			ARCHIVED_POST_STATUS_VERSION
+			ARCHIVED_POST_STATUS_VERSION,
+			true
 		);
 	}
 
@@ -221,7 +222,8 @@ class Plugin {
 			'aps-plugin-screen',
 			ARCHIVED_POST_STATUS_URL . 'assets/js/plugin-screen.js',
 			array(),
-			ARCHIVED_POST_STATUS_VERSION
+			ARCHIVED_POST_STATUS_VERSION,
+			true
 		);
 
 		// Set the script translations.

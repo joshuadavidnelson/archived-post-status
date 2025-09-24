@@ -115,6 +115,7 @@ class CLI extends Feature {
 			$progress->finish();
 		}
 
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- exit() with integer status code is safe
 		exit( $status );
 	}
 
@@ -174,6 +175,7 @@ class CLI extends Feature {
 			$progress->finish();
 		}
 
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- exit() with integer status code is safe
 		exit( $status );
 	}
 
