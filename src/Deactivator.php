@@ -68,6 +68,7 @@ class Deactivator {
 		/**
 		 * The plugin is now safely deactivated.
 		 */
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules -- Required during plugin deactivation to clean up rewrite rules.
 		flush_rewrite_rules();
 	}
 

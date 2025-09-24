@@ -55,10 +55,11 @@ class AdminNotices extends Feature {
 
 		// get the post type.
 		global $post_type;
-		if ( ! $post_type ) {
-			$post_type = get_post_type();
+		$current_post_type = $post_type;
+		if ( ! $current_post_type ) {
+			$current_post_type = get_post_type();
 
-			if ( ! $post_type ) {
+			if ( ! $current_post_type ) {
 				return;
 			}
 		}
@@ -90,7 +91,7 @@ class AdminNotices extends Feature {
 			$ids_string = implode( ',', $ids );
 			$ids_string = preg_replace( '/[^0-9,]/', '', $ids_string );				$notices[] = sprintf(
 					'<a href="%1$s">%2$s</a>',
-					esc_url( wp_nonce_url( "edit.php?post_type=$post_type&doaction=undo&action=unarchive&ids=$ids_string", 'bulk-posts' ) ),
+					esc_url( wp_nonce_url( "edit.php?post_type=$current_post_type&doaction=undo&action=unarchive&ids=$ids_string", 'bulk-posts' ) ),
 					__( 'Undo' ) // phpcs:ignore
 				);
 			}

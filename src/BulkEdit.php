@@ -105,6 +105,7 @@ class BulkEdit extends Feature {
 
 				foreach ( (array) $post_ids as $post_id ) {
 					if ( ! aps_current_user_can_archive( $post_id ) ) {
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 						wp_die( __( 'Sorry, you are not allowed to move this item to the Archive.', 'archived-post-status' ) );
 					}
 
@@ -119,6 +120,7 @@ class BulkEdit extends Feature {
 					}
 
 					if ( ! aps_archive_post( $post_id ) ) {
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 						wp_die( __( 'Error in moving the item to Archive.', 'archived-post-status' ) );
 					}
 
@@ -139,16 +141,19 @@ class BulkEdit extends Feature {
 			case 'unarchive':
 				$unarchived = 0;
 
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress bulk actions handle nonce verification at a higher level
 				if ( isset( $_GET['doaction'] ) && ( 'undo' === $_GET['doaction'] ) ) {
 					add_filter( 'aps_unarchive_post_status', 'aps_unarchive_post_set_previous_status', 10, 3 );
 				}
 
 				foreach ( (array) $post_ids as $post_id ) {
 					if ( ! aps_current_user_can_unarchive( $post_id ) ) {
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 						wp_die( __( 'Sorry, you are not allowed to restore this item from the Archive.', 'archived-post-status' ) );
 					}
 
 					if ( ! aps_unarchive_post( $post_id ) ) {
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
 						wp_die( __( 'Error in restoring the item from Archive.', 'archived-post-status' ) );
 					}
 
