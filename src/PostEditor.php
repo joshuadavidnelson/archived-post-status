@@ -138,21 +138,42 @@ class PostEditor extends Feature {
 	 */
 	public function load_post_screen() {
 
+		// Only disable editing if archive posts are read only.
 		if ( ! aps_is_read_only() ) {
 			return;
 		}
 
-		$post_id = absint( get_query_var( 'post' ) );
-		$post    = get_post( $post_id );
+		// Get post ID from URL parameters - get_query_var may not be available at this hook
+		$post_id = 0;
 
-		if ( is_null( $post )
-			|| ! aps_is_supported_post_type( $post->post_type )
-			|| 'archive' !== $post->post_status ) {
+		// Try multiple methods to get the post ID
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL parameter to identify post, not processing form data
+		if ( isset( $_GET['post'] ) && is_numeric( $_GET['post'] ) ) {
+			$post_id = absint( $_GET['post'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL parameter to identify post, not processing form data
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reading form parameter to identify post, not processing/saving form data
+		} elseif ( isset( $_POST['post_ID'] ) && is_numeric( $_POST['post_ID'] ) ) {
+			$post_id = absint( $_POST['post_ID'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reading form parameter to identify post, not processing/saving form data
+		} elseif ( isset( $GLOBALS['post'] ) && $GLOBALS['post'] instanceof \WP_Post ) {
+			$post_id = $GLOBALS['post']->ID;
+		}
+
+		$post_type = get_post_type( $post_id );
+
+		if ( ! absint( $post_id )
+			|| ! $post_type
+			|| ! aps_is_supported_post_type( $post_type )
+			|| 'archive' !== get_post_status( $post_id ) ) {
 				return;
 		}
 
-		$action  = esc_attr( get_query_var( 'action' ) );
-		$message = absint( get_query_var( 'message' ) );
+		// Get action and message from URL parameters
+		$action  = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL parameter to determine admin action, not processing form data
+		$message = isset( $_GET['message'] ) ? absint( $_GET['message'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL parameter to determine admin message, not processing form data
+
+		// If this is an unarchive action, allow it.
+		if ( 'unarchive' === $action ) {
+			return;
+		}
 
 		// Redirect to list table after saving as Archived.
 		if ( 'edit' === $action && 1 === $message ) {
@@ -160,7 +181,7 @@ class PostEditor extends Feature {
 			wp_safe_redirect(
 				add_query_arg(
 					'post_type',
-					$post->post_type,
+					$post_type,
 					self_admin_url( 'edit.php' )
 				),
 				302
