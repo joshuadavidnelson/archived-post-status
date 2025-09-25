@@ -4,7 +4,7 @@
 .gitignore
 .gitattributes
 .distignore
-.wordpress-org
+/.wordpress-org/
 composer.json
 composer.lock
 code-of-conduct.md
@@ -13,7 +13,7 @@ package.json
 package-lock.json
 .wp-env.json
 .git
-.github
+/.github/
 .travis.yml
 .DS_Store
 .wp-env.json
@@ -27,6 +27,7 @@ tests
 .babelrc
 .phpcs.xml
 webpack.config.js
+.gitbook.yaml
 /docs/
 
 *.cache
