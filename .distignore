@@ -27,6 +27,7 @@ tests
 .babelrc
 .phpcs.xml
 webpack.config.js
+/docs/
 
 *.cache
 *.log
