@@ -96,8 +96,16 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'post';
 
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [] )
+			->reply( [] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
+		\WP_Mock::onFilter( 'aps_is_read_only' )
+			->with( true )
+			->reply( true );
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->once();
 
 		// Act
@@ -117,7 +125,13 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'attachment';
 
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'attachment' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [] )
+			->reply( [ 'attachment' ] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
 
 		// Act
@@ -137,8 +151,16 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'post';
 
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [] )
+			->reply( [] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
+		\WP_Mock::onFilter( 'aps_is_read_only' )
+			->with( true )
+			->reply( false );
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
 
 		// Act
@@ -158,8 +180,16 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'post';
 
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [] )
+			->reply( [] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
+		\WP_Mock::onFilter( 'aps_is_read_only' )
+			->with( true )
+			->reply( true );
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
 
 		// Act
