@@ -119,3 +119,11 @@ PHPStan is used for static analysis to catch potential issues. To run PHPStan:
 
 1. Install composer dependencies via `composer install`
 2. Run PHPStan: `./vendor/bin/phpstan analyse --memory-limit=2048M` or use the composer script: `composer run phpstan`
+
+### Cypress tests
+
+As of version 0.4.0, this project uses Cypress to run end-to-end / integration tests.
+
+After installing packages (`npm install`), run `npm run cypress:open` to open the Cypress test interface.
+
+Refer to this doc for more information on using Cyress.
