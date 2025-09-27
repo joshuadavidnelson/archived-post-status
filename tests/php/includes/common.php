@@ -171,6 +171,8 @@ function register_post_status( $post_status, $args = array() ) {
 	return true;
 }
 
+
+
 /**
  * Mock get_post() function.
  */
@@ -560,5 +562,41 @@ if ( ! function_exists( 'absint' ) ) {
 if ( ! function_exists( 'str_contains' ) ) {
 	function str_contains( $haystack, $needle ) {
 		return $needle !== '' && strpos( $haystack, $needle ) !== false;
+	}
+}
+
+/**
+ * Mock delete_post_meta() function.
+ */
+if ( ! function_exists( 'delete_post_meta' ) ) {
+	function delete_post_meta( $post_id, $meta_key, $meta_value = '' ) {
+		return true;
+	}
+}
+
+/**
+ * Mock get_post_timestamp() function.
+ */
+if ( ! function_exists( 'get_post_timestamp' ) ) {
+	function get_post_timestamp( $post = null, $field = 'date' ) {
+		return time();
+	}
+}
+
+/**
+ * Mock get_current_user_id() function.
+ */
+if ( ! function_exists( 'get_current_user_id' ) ) {
+	function get_current_user_id() {
+		return 1;
+	}
+}
+
+/**
+ * Mock remove_action() function.
+ */
+if ( ! function_exists( 'remove_action' ) ) {
+	function remove_action( $hook_name, $callback, $priority = 10 ) {
+		return true;
 	}
 }
