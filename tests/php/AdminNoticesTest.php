@@ -24,12 +24,29 @@ class AdminNoticesTest extends TestCase {
 		parent::set_up();
 		$this->feature = new ArchivedPostStatus\AdminNotices();
 
-		// Setup common WordPress function mocks that AdminNotices needs
-		\WP_Mock::userFunction( 'get_query_var' )->andReturn( 0 );
-		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com' );
-		\WP_Mock::userFunction( 'get_edit_post_link' )->andReturn( 'http://example.com/edit' );
-		\WP_Mock::userFunction( 'get_post_type_object' )->andReturn( (object) [ 'labels' => (object) [ 'name' => 'Posts' ] ] );
-		\WP_Mock::userFunction( 'get_post_type' )->andReturn( 'post' );
+		// Mock query variable retrieval for bulk action counting
+		\WP_Mock::userFunction( 'get_query_var' )
+			->andReturn( 0 );
+
+		// Mock nonce URL generation for admin actions
+		\WP_Mock::userFunction( 'wp_nonce_url' )
+			->andReturn( 'http://example.com' );
+
+		// Mock edit post link generation
+		\WP_Mock::userFunction( 'get_edit_post_link' )
+			->andReturn( 'http://example.com/edit' );
+
+		// Mock post type object with labels
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) [
+				'labels' => (object) [
+					'name' => 'Posts'
+				]
+			] );
+
+		// Mock post type retrieval
+		\WP_Mock::userFunction( 'get_post_type' )
+			->andReturn( 'post' );
 	}
 
 	/**
@@ -54,8 +71,11 @@ class AdminNoticesTest extends TestCase {
 	public function test_notices_only_show_on_edit_screen() {
 
 		// Arrange - Not edit screen
-		$screen = $this->createMockScreen([ 'base' => 'dashboard' ]);
-		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( $screen );
+		$screen = $this->createMockScreen( [ 'base' => 'dashboard' ] );
+
+		// Mock current screen retrieval
+		\WP_Mock::userFunction( 'get_current_screen' )
+			->andReturn( $screen );
 
 		// Act - should return early
 		$this->feature->admin_notices();
@@ -71,16 +91,34 @@ class AdminNoticesTest extends TestCase {
 	 */
 	public function test_notices_with_archived_posts() {
 		// Arrange
-		$screen = $this->createMockScreen([ 'base' => 'edit' ]);
-		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( $screen );
+		$screen = $this->createMockScreen( [ 'base' => 'edit' ] );
+
+		// Mock current screen retrieval for edit screen
+		\WP_Mock::userFunction( 'get_current_screen' )
+			->andReturn( $screen );
 
 		global $post_type;
 		$post_type = 'post';
 
-		\WP_Mock::userFunction( 'get_query_var' )->andReturn( 1 );
-		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com' );
-		\WP_Mock::userFunction( 'get_edit_post_link' )->andReturn( 'http://example.com/edit' );
-		\WP_Mock::userFunction( 'get_post_type_object' )->andReturn( (object) [ 'labels' => (object) [ 'name' => 'Posts' ] ] );
+		// Mock query variable for archived post count
+		\WP_Mock::userFunction( 'get_query_var' )
+			->andReturn( 1 );
+
+		// Mock nonce URL generation for notices
+		\WP_Mock::userFunction( 'wp_nonce_url' )
+			->andReturn( 'http://example.com' );
+
+		// Mock edit post link generation for notices
+		\WP_Mock::userFunction( 'get_edit_post_link' )
+			->andReturn( 'http://example.com/edit' );
+
+		// Mock post type object with labels for notices
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) [
+				'labels' => (object) [
+					'name' => 'Posts'
+				]
+			] );
 
 		// Act
 		$this->feature->admin_notices();
@@ -96,16 +134,34 @@ class AdminNoticesTest extends TestCase {
 	 */
 	public function test_notices_with_unarchived_posts() {
 		// Arrange
-		$screen = $this->createMockScreen([ 'base' => 'edit' ]);
-		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( $screen );
+		$screen = $this->createMockScreen( [ 'base' => 'edit' ] );
+
+		// Mock current screen retrieval for edit screen
+		\WP_Mock::userFunction( 'get_current_screen' )
+			->andReturn( $screen );
 
 		global $post_type;
 		$post_type = 'post';
 
-		\WP_Mock::userFunction( 'get_query_var' )->andReturn( 1 );
-		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com' );
-		\WP_Mock::userFunction( 'get_edit_post_link' )->andReturn( 'http://example.com/edit' );
-		\WP_Mock::userFunction( 'get_post_type_object' )->andReturn( (object) [ 'labels' => (object) [ 'name' => 'Posts' ] ] );
+		// Mock query variable for unarchived post count
+		\WP_Mock::userFunction( 'get_query_var' )
+			->andReturn( 1 );
+
+		// Mock nonce URL generation for notices
+		\WP_Mock::userFunction( 'wp_nonce_url' )
+			->andReturn( 'http://example.com' );
+
+		// Mock edit post link generation for notices
+		\WP_Mock::userFunction( 'get_edit_post_link' )
+			->andReturn( 'http://example.com/edit' );
+
+		// Mock post type object with labels for notices
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) [
+				'labels' => (object) [
+					'name' => 'Posts'
+				]
+			] );
 
 		// Act
 		$this->feature->admin_notices();

@@ -73,7 +73,10 @@ class TestCase extends BaseTestCase {
 	protected function mockWordPressCoreFunctions( array $config = [] ) {
 		$defaults = [
 			'current_user_can_edit_others_posts' => true,
-			'get_post_types' => [ 'post' => 'post', 'page' => 'page' ],
+			'get_post_types' => [
+				'post' => 'post',
+				'page' => 'page'
+			],
 			'wp_update_post' => true,
 			'get_post' => null, // Will be set per test if needed
 			'get_the_ID' => null, // Will be set per test if needed
@@ -82,22 +85,26 @@ class TestCase extends BaseTestCase {
 		$config = array_merge( $defaults, $config );
 
 		if ( isset( $config['current_user_can_edit_others_posts'] ) ) {
+			// Mock user capability check for editing others' posts
 			\WP_Mock::userFunction( 'current_user_can' )
 				->with( 'edit_others_posts' )
 				->andReturn( $config['current_user_can_edit_others_posts'] );
 		}
 
 		if ( isset( $config['get_post_types'] ) ) {
+			// Mock post types retrieval for archive support
 			\WP_Mock::userFunction( 'get_post_types' )
 				->andReturn( $config['get_post_types'] );
 		}
 
 		if ( isset( $config['wp_update_post'] ) ) {
+			// Mock post update operations
 			\WP_Mock::userFunction( 'wp_update_post' )
 				->andReturn( $config['wp_update_post'] );
 		}
 
 		if ( isset( $config['get_post'] ) ) {
+			// Mock post object retrieval
 			\WP_Mock::userFunction( 'get_post' )
 				->andReturn( $config['get_post'] );
 		}
@@ -115,18 +122,26 @@ class TestCase extends BaseTestCase {
 		$defaults = [
 			'excluded_post_types' => [],
 			'excluded_post_types_return' => [],
-			'supported_post_types' => [ 'post', 'page' ],
-			'supported_post_types_return' => [ 'post', 'page' ],
+			'supported_post_types' => [
+				'post',
+				'page'
+			],
+			'supported_post_types_return' => [
+				'post',
+				'page'
+			],
 			'is_read_only' => true,
 			'is_read_only_return' => true,
 		];
 
 		$config = array_merge( $defaults, $config );
 
+		// Mock filter for excluded post types
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( $config['excluded_post_types'] )
 			->reply( $config['excluded_post_types_return'] );
 
+		// Mock filter for supported post types
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
 			->with( $config['supported_post_types'] )
 			->reply( $config['supported_post_types_return'] );

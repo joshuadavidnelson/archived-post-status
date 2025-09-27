@@ -54,7 +54,7 @@ class PluginTest extends TestCase {
 	 * @covers ArchivedPostStatus\Plugin::set_locale
 	 */
 	public function test_set_locale() {
-		// Arrange
+		// Mock textdomain loading for internationalization
 		\WP_Mock::userFunction( 'load_plugin_textdomain' )
 			->with( 'archived-post-status', false, \WP_Mock\Functions::type( 'string' ) )
 			->once();
@@ -73,7 +73,10 @@ class PluginTest extends TestCase {
 	 */
 	public function test_query_vars() {
 		// Arrange
-		$vars = [ 'p', 'page_id' ];
+		$vars = [
+			'p',
+			'page_id'
+		];
 
 		// Act
 		$result = $this->plugin->query_vars( $vars );

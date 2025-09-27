@@ -47,25 +47,24 @@ class BulkEditTest extends TestCase {
 	 */
 	public function test_archive_bulk_action() {
 
-		\WP_Mock::userFunction(
-			'get_query_var', array(
-				'return' => false,
-			)
-		);
+		// Mock query var to indicate we're not on a filtered view
+		\WP_Mock::userFunction( 'get_query_var' )
+			->andReturn( false );
 
-		$mock_actions = array(
-			'-1' 	=> 'Bulk actions',
-			'edit' 	=> 'Edit',
+		$mock_actions = [
+			'-1'   => 'Bulk actions',
+			'edit' => 'Edit',
 			'trash' => 'Move to Trash',
-		);
+		];
 
 		$new_actions = $this->class->bulk_actions( $mock_actions );
 
 		foreach( $mock_actions as $key => $value ) {
+
 			$this->assertArrayHasKey( $key, $new_actions );
 		}
-		$this->assertArrayHasKey( 'archive', $new_actions );
 
+		$this->assertArrayHasKey( 'archive', $new_actions );
 	}
 
 	/**
@@ -76,11 +75,9 @@ class BulkEditTest extends TestCase {
 	 */
 	public function test_unarchive_bulk_action() {
 
-		\WP_Mock::userFunction(
-			'get_query_var', array(
-				'return' => 'archive',
-			)
-		);
+		// Mock query var to indicate we're viewing archived posts
+		\WP_Mock::userFunction( 'get_query_var' )
+			->andReturn( 'archive' );
 
 		$mock_actions = array(
 			'-1' 	=> 'Bulk actions',
@@ -330,23 +327,48 @@ class BulkEditTest extends TestCase {
 			->with( 'edit_others_posts', \Mockery::any() )
 			->andReturn( true );
 		\WP_Mock::userFunction( 'get_post' )->times( $post_count )->andReturn( (object) [ 'post_status' => 'archive', 'comment_status' => 'closed', 'ping_status' => 'closed' ] );
-		\WP_Mock::userFunction( 'get_post_meta' )->andReturn( 'publish' ); // Return previous status
-		\WP_Mock::userFunction( 'delete_post_meta' )->andReturn( true ); // Delete metadata
-		\WP_Mock::userFunction( 'wp_update_post' )->times( $post_count )->andReturn( true );
-		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( $redirect_to );
-		\WP_Mock::userFunction( 'remove_filter' )->andReturn( true );
+		// Mock post meta retrieval to get previous status
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->andReturn( 'publish' );
+
+		// Mock meta deletion for cleanup
+		\WP_Mock::userFunction( 'delete_post_meta' )
+			->andReturn( true );
+
+		// Mock post update calls for each post
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->times( $post_count )
+			->andReturn( true );
+
+		// Mock query arg addition for redirect
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturn( $redirect_to );
+
+		// Mock filter removal
+		\WP_Mock::userFunction( 'remove_filter' )
+			->andReturn( true );
 	}
 
 	/**
 	 * Helper method to mock locked post scenario
 	 */
 	private function mockLockedPostScenario( $redirect_to ) {
-		\WP_Mock::userFunction( 'remove_query_arg' )->andReturn( $redirect_to );
+		// Mock query arg removal for clean URLs
+		\WP_Mock::userFunction( 'remove_query_arg' )
+			->andReturn( $redirect_to );
+
+		// Mock user permission check (passes)
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', \Mockery::any() )
 			->andReturn( true );
-		\WP_Mock::userFunction( 'wp_check_post_lock' )->andReturn( true ); // Locked post
-		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( $redirect_to );
+
+		// Mock post lock check (post is locked)
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->andReturn( true );
+
+		// Mock query arg addition for redirect
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturn( $redirect_to );
 	}
 
 	/**

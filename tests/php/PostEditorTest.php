@@ -52,26 +52,60 @@ class PostEditorTest extends TestCase {
 	 * @covers ArchivedPostStatus\PostEditor::post_submitbox_archive_button
 	 */
 	public function test_archive_button_displays_when_user_can_archive() {
-		// Arrange
-		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 123 );
+		// Mock current post ID retrieval
+		\WP_Mock::userFunction( 'get_the_ID' )
+			->andReturn( 123 );
+
+		// Mock user permission check for editing others' posts
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 123 )
 			->andReturn( true );
-		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( (object) [ 'ID' => 123, 'post_type' => 'post' ] );
-		\WP_Mock::userFunction( 'get_post_type_object' )->andReturn( (object) [ '_edit_link' => 'post.php?post=%d&action=edit' ] );
-		\WP_Mock::userFunction( 'admin_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=123&action=edit' );
-		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( 'http://example.com/wp-admin/post.php?post=123&action=archive' );
-		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com/archive' );
-		\WP_Mock::userFunction( 'esc_url' )->andReturnUsing( function( $url ) { return $url; } );
-		\WP_Mock::userFunction( '__' )->with( 'Archive', 'archived-post-status' )->andReturn( 'Archive' );
+
+		// Mock post object retrieval
+		\WP_Mock::userFunction( 'get_post' )
+			->with( 123 )
+			->andReturn( (object) [
+				'ID' => 123,
+				'post_type' => 'post'
+			] );
+
+		// Mock post type object for edit link template
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) [
+				'_edit_link' => 'post.php?post=%d&action=edit'
+			] );
+
+		// Mock admin URL generation
+		\WP_Mock::userFunction( 'admin_url' )
+			->andReturn( 'http://example.com/wp-admin/post.php?post=123&action=edit' );
+
+		// Mock query arg addition for archive action
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturn( 'http://example.com/wp-admin/post.php?post=123&action=archive' );
+
+		// Mock nonce URL generation for security
+		\WP_Mock::userFunction( 'wp_nonce_url' )
+			->andReturn( 'http://example.com/archive' );
+
+		// Mock URL escaping (pass-through)
+		\WP_Mock::userFunction( 'esc_url' )
+			->andReturnUsing( function( $url ) { return $url; } );
+
+		// Mock translation function
+		\WP_Mock::userFunction( '__' )
+			->with( 'Archive', 'archived-post-status' )
+			->andReturn( 'Archive' );
 
 		// Expect output to be captured
 		ob_start();
+
 		$this->feature->post_submitbox_archive_button();
+
 		$output = ob_get_clean();
 
 		// Assert - should have some output when user can archive
 		$this->assertNotEmpty( $output );
+
 		$this->assertStringContainsString( 'archive-action', $output );
 	}
 
