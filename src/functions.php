@@ -298,7 +298,7 @@ function aps_current_user_can_archive( $post_id = 0 ) {
 	 * @param int    $post_id    Optional. The post ID to check against.
 	 * @return string
 	 */
-	$capability = (string) apply_filters( 'aps_user_archive_capability', 'edit_others_posts', $post_id );
+	$capability = (string) apply_filters( 'aps_default_archive_capability', 'edit_others_posts', $post_id );
 
 	return current_user_can( $capability, $post_id );
 }
