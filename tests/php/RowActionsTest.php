@@ -39,31 +39,22 @@ class RowActionsTest extends TestCase {
 
 		$this->mock_post = $mock_post;
 
-		// Move check_admin_referer
-		\WP_Mock::userFunction(
-			'check_admin_referer', array(
-				'return' => true,
-			)
-		);
+		// Mock admin referer check for security validation
+		\WP_Mock::userFunction( 'check_admin_referer' )
+			->andReturn( true );
 
-		// Mock the get_post() function.
-		\WP_Mock::userFunction(
-			'get_post', array(
-				'return' => $this->mock_post,
-			)
-		);
+		// Mock post object retrieval
+		\WP_Mock::userFunction( 'get_post' )
+			->andReturn( $this->mock_post );
 
-		// mock the get_post_type_object() function.
-		\WP_Mock::userFunction(
-			'get_post_type_object', array(
-				'return' => (object) [
-					'labels' => (object) [
-						'singular_name' => 'Post',
-					],
-					'_edit_link' => 'http://example.com/wp-admin/post.php?post=%s&action=edit',
+		// Mock post type object with labels and edit link template
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) [
+				'labels' => (object) [
+					'singular_name' => 'Post',
 				],
-			)
-		);
+				'_edit_link' => 'http://example.com/wp-admin/post.php?post=%s&action=edit',
+			] );
 
 		// Mock the wp_nonce_url() function.
 		\WP_Mock::userFunction(
@@ -94,45 +85,62 @@ class RowActionsTest extends TestCase {
 			)
 		);
 
-		// Mock the admin_url() function.
-		\WP_Mock::userFunction(
-			'admin_url', array(
-				'return' => function( $path ) {
+		// Mock admin URL generation with path concatenation
+		\WP_Mock::userFunction( 'admin_url' )
+			->andReturn(
+				function( $path ) {
 					return 'http://example.com/wp-admin/' . $path;
-				},
-			)
-		);
+				}
+			);
 
-		// Mock WordPress core functions that aps_ functions wrap
-		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
+		// Mock post type retrieval for supported types
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( [
+				'post' => 'post',
+				'page' => 'page'
+			] );
+
+		// Mock filter for excluded post types
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( [ 'attachment' ] )
 			->reply( [] );
+
+		// Mock filter for supported post types
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( [ 'post', 'page' ] )
-			->reply( [ 'post', 'page' ] );
+			->with( [
+				'post',
+				'page'
+			] )
+			->reply( [
+				'post',
+				'page'
+			] );
+
+		// Mock user capability checks for editing others' posts
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', \Mockery::any() )
 			->andReturn( true );
+
+		// Mock user capability checks for reading private posts
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'read_private_posts', \Mockery::any() )
 			->andReturn( true );
-		\WP_Mock::userFunction( 'aps_get_unarchive_post_link' )->andReturn( 'http://example.com/86/' );
-		\WP_Mock::userFunction(
-			'_aps_get_archivable_statuses', array(
-				'return' => [ 'publish' ],
-			)
-		);
-		\WP_Mock::userFunction(
-			'_aps_nonce_key', array(
-				'return' => 'row-action-test',
-			)
-		);
-		\WP_Mock::userFunction(
-			'aps_get_archive_post_link', array(
-				'return' => 'http://example.com/wp-admin/post.php?id=86&action=archive',
-			)
-		);
+
+		// Mock unarchive post link generation
+		\WP_Mock::userFunction( 'aps_get_unarchive_post_link' )
+			->andReturn( 'http://example.com/86/' );
+
+		// Mock archivable statuses retrieval
+		\WP_Mock::userFunction( '_aps_get_archivable_statuses' )
+			->andReturn( [ 'publish' ] );
+
+		// Mock nonce key generation
+		\WP_Mock::userFunction( '_aps_nonce_key' )
+			->andReturn( 'row-action-test' );
+
+		// Mock archive post link generation
+		\WP_Mock::userFunction( 'aps_get_archive_post_link' )
+			->andReturn( 'http://example.com/wp-admin/post.php?id=86&action=archive' );
 
 	}
 
@@ -197,11 +205,14 @@ class RowActionsTest extends TestCase {
 	 */
 	public function test_row_actions_for_unarchivable_post() {
 
+		// Mock user view capability with call counter for sequential returns
 		\WP_Mock::userFunction( 'aps_current_user_can_view' )
-			->andReturnUsing( function() {
-				static $call_count = 0;
-				return $call_count++ === 0 ? true : false;
-			} );
+			->andReturnUsing(
+				function() {
+					static $call_count = 0;
+					return $call_count++ === 0 ? true : false;
+				}
+			);
 
 		$mock_actions = [
 			'inline hide-if-no-js' => 'Quick Edit',
@@ -248,20 +259,55 @@ class RowActionsTest extends TestCase {
 		$archived_post->post_type = 'post';
 		$archived_post->ID = 86;
 
-		// Override setUp mocks for archived post scenario
-		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] )->zeroOrMoreTimes();
+		// Mock post type retrieval with multiple calls allowed
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( [
+				'post' => 'post',
+				'page' => 'page'
+			] )
+			->zeroOrMoreTimes();
+
+		// Mock supported post types filter
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( [ 'post', 'page' ] )
-			->reply( [ 'post', 'page' ] );
+			->with( [
+				'post',
+				'page'
+			] )
+			->reply( [
+				'post',
+				'page'
+			] );
+
+		// Mock user capability for editing others' posts
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 86 )
-			->andReturn( true )->zeroOrMoreTimes();
+			->andReturn( true )
+			->zeroOrMoreTimes();
+
+		// Mock user capability for reading private posts
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'read_private_posts', 86 )
-			->andReturn( true )->zeroOrMoreTimes();
-		\WP_Mock::userFunction( 'aps_get_unarchive_post_link' )->andReturn( 'http://example.com/unarchive' )->zeroOrMoreTimes();
-		\WP_Mock::userFunction( '__' )->andReturn( 'Unarchive' )->zeroOrMoreTimes();
-		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing( function( $value ) { return $value; } )->zeroOrMoreTimes();
+			->andReturn( true )
+			->zeroOrMoreTimes();
+
+		// Mock unarchive post link generation
+		\WP_Mock::userFunction( 'aps_get_unarchive_post_link' )
+			->andReturn( 'http://example.com/unarchive' )
+			->zeroOrMoreTimes();
+
+		// Mock text translation for unarchive label
+		\WP_Mock::userFunction( '__' )
+			->andReturn( 'Unarchive' )
+			->zeroOrMoreTimes();
+
+		// Mock attribute escaping function
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing(
+				function( $value ) {
+					return $value;
+				}
+			)
+			->zeroOrMoreTimes();
 
 		// Act
 		$result = $this->class->row_actions( $actions, $archived_post );

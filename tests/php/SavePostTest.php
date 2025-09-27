@@ -53,19 +53,31 @@ class SavePostTest extends TestCase {
 			'ping_status' => 'open'
 		]);
 
-		// Mock WordPress functions (simplified approach for complex plugin functions)
-		\WP_Mock::userFunction( 'wp_is_post_revision' )->with( 123 )->andReturn( false );
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
+		// Mock revision check to ensure we're not dealing with a revision
+		\WP_Mock::userFunction( 'wp_is_post_revision' )
+			->with( 123 )
+			->andReturn( false );
 
-		// Expect metadata to be saved
-		\WP_Mock::userFunction( 'add_post_meta' )->atLeast()->once();
+		// Mock post type support check for archiving
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )
+			->andReturn( true );
+
+		// Expect metadata to be saved for comment/ping status preservation
+		\WP_Mock::userFunction( 'add_post_meta' )
+			->atLeast()
+			->once();
 
 		// Expect hooks to be managed (relaxed to handle edge cases)
-		\WP_Mock::userFunction( 'remove_action' )->zeroOrMoreTimes();
-		\WP_Mock::userFunction( 'add_action' )->zeroOrMoreTimes();
+		\WP_Mock::userFunction( 'remove_action' )
+			->zeroOrMoreTimes();
 
-		// Expect the post to be updated
-		\WP_Mock::userFunction( 'wp_update_post' )->once();
+		\WP_Mock::userFunction( 'add_action' )
+			->zeroOrMoreTimes();
+
+		// Expect the post to be updated with closed comments/pings
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once();
 
 		// Act
 		$this->feature->save_post( 123, $post, true );

@@ -27,9 +27,13 @@ class ArchivedTitleTest extends TestCase {
 		parent::set_up();
 		$this->feature = new ArchivedPostStatus\ArchivedTitle();
 
-		// Setup common mocks for title functionality
-		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
-		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 123 );
+		// Mock archived label string retrieval
+		\WP_Mock::userFunction( 'aps_archived_label_string' )
+			->andReturn( 'Archived' );
+
+		// Mock current post ID retrieval
+		\WP_Mock::userFunction( 'get_the_ID' )
+			->andReturn( 123 );
 	}
 
 	/**
@@ -54,18 +58,26 @@ class ArchivedTitleTest extends TestCase {
 			'post_status' => 'archive'
 		]);
 
-		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( false ); // Frontend context
+		// Mock post object retrieval
+		\WP_Mock::userFunction( 'get_post' )
+			->with( 123 )
+			->andReturn( $post );
 
-		// Setup filter expectations with default behavior
+		// Mock admin context check for frontend display
+		\WP_Mock::userFunction( 'is_admin' )
+			->andReturn( false );
+
+		// Mock filter for customizing archived label text
 		\WP_Mock::onFilter( 'aps_title_label' )
 			->with( 'Archived', 123, 'Test Post' )
 			->reply( 'Archived' );
 
+		// Mock filter for label positioning (before/after title)
 		\WP_Mock::onFilter( 'aps_title_label_before' )
 			->with( true, 123 )
 			->reply( true );
 
+		// Mock filter for title separator customization
 		\WP_Mock::onFilter( 'aps_title_separator' )
 			->with( ': ', 123 )
 			->reply( ': ' );
