@@ -224,7 +224,7 @@ class FunctionsTest extends TestCase {
 		);
 
 		// Pass false to the filter.
-		WP_Mock::onFilter( 'aps_user_archive_capability' )
+		WP_Mock::onFilter( 'aps_default_archive_capability' )
 			->with( 'edit_others_posts', 0 )
 			->reply( 'read' );
 
