@@ -1,6 +1,6 @@
 <?php
 /**
- * PostEditor Tests
+ * Post Editor Tests
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
@@ -8,14 +8,12 @@
  */
 
 /**
- * PostEditor test case extending FeatureTestCase
+ * Post Editor test case
  *
  * @since 0.4.0
  * @covers ArchivedPostStatus\PostEditor
- * @covers ArchivedPostStatus\Feature::is_active
- * @covers ArchivedPostStatus\Feature::get_name
  */
-class PostEditorTest extends FeatureTestCase {
+class PostEditorTest extends TestCase {
 
 	/**
 	 * Set up the test.
