@@ -369,8 +369,8 @@ class FunctionsTest extends TestCase {
 		// Act
 		aps_register_archive_post_status();
 
-		// Assert - function call verified by WP_Mock
-		$this->assertTrue( true );
+		// Assert - WP_Mock verifies ->once() expectation was satisfied
+		$this->addToAssertionCount( 1 );
 	}
 
 	/**

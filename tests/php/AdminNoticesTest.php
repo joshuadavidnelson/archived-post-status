@@ -166,8 +166,8 @@ class AdminNoticesTest extends TestCase {
 		// Act
 		$this->feature->admin_notices();
 
-		// Assert
-		$this->assertTrue( true );
+		// Assert - WP_Mock verifies expected function calls were made
+		$this->addToAssertionCount( 1 );
 	}
 
 
