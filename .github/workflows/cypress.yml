@@ -1,0 +1,54 @@
+name: E2E Testing
+
+on:
+  pull_request: null
+  push:
+    branches:
+      - stable
+      - develop
+
+jobs:
+  cypress:
+    name: ${{ matrix.core.name }} / ${{ matrix.php.name }}
+    ## Pending upgrade of `@wordpress/env` package.
+    continue-on-error: ${{ matrix.core.version == 'WordPress/WordPress#master' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php:
+          - {name: 'PHP Default', version: null}
+        core:
+          - {name: 'WP stable', version: 'latest'}
+          - {name: 'WP 5.9', version: 'WordPress/WordPress#5.9'}
+          - {name: 'WP trunk', version: 'WordPress/WordPress#master'}
+        include:
+          - php: {name: 'PHP 8.1', version: '8.1'}
+            core: {name: 'WP 5.9', version: 'WordPress/WordPress#5.9'}
+          - php: {name: 'PHP 8.3', version: '8.3'}
+            core: {name: 'WP stable', version: 'latest'}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Composer
+      run: composer install
+      continue-on-error: true
+
+    - name: Set the core version
+      run: |
+        ./tests/bin/set-core-version.js ${{ matrix.core.version }} ${{ matrix.php.version }}
+
+    - name: Set up WP environment
+      run: npm run env:start
+
+    - name: Log WP environment versions
+      run: |
+        npx wp-env run cli "wp core version"
+        npx wp-env run cli "php --version"
+
+    - name: Test
+      run: npm run cypress:run
