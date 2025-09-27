@@ -114,25 +114,7 @@ class AdminNoticesTest extends TestCase {
 		$this->assertTrue( true );
 	}
 
-	/**
-	 * Test notices with both archived and unarchived posts
-	 * Note: Skipped due to complex notice display logic
-	 *
-	 * @covers ArchivedPostStatus\AdminNotices::admin_notices
-	 */
-	public function test_notices_with_both_archived_and_unarchived() {
-		$this->markTestSkipped( 'Complex notice display logic - test skipped' );
-	}
 
-	/**
-	 * Test notices fallback for older WordPress versions
-	 * Note: Skipped because we can't mock function_exists()
-	 *
-	 * @covers ArchivedPostStatus\AdminNotices::admin_notices
-	 */
-	public function test_notices_fallback_for_older_wordpress() {
-		$this->markTestSkipped( 'Cannot mock function_exists() for this test case' );
-	}
 
 	/**
 	 * Test notices handles empty post type gracefully
@@ -183,25 +165,7 @@ class AdminNoticesTest extends TestCase {
 		$this->assertTrue( true );
 	}
 
-	/**
-	 * Test archived notice with single post
-	 *
-	 * @covers ArchivedPostStatus\AdminNotices::admin_notices
-	 */
-	public function test_archived_notice_single_post() {
-		// Skip due to complex internal function dependencies
-		$this->markTestSkipped( 'Complex internal function dependencies with _n, function_exists, and absint' );
-	}
 
-	/**
-	 * Test unarchived notice with multiple posts
-	 *
-	 * @covers ArchivedPostStatus\AdminNotices::admin_notices
-	 */
-	public function test_unarchived_notice_multiple_posts() {
-		// Skip due to complex internal function dependencies
-		$this->markTestSkipped( 'Complex internal function dependencies with _n, function_exists, and absint' );
-	}
 
 	/**
 	 * Test notices on wrong screen base

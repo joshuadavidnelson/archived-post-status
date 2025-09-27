@@ -187,46 +187,6 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test aps_archive_post function exists and is callable
-	 *
-	 * @covers ::aps_archive_post
-	 */
-	public function test_archive_post_function_exists() {
-		// Skip due to complex WordPress function dependencies
-		$this->markTestSkipped( 'Complex WordPress function dependencies require integration testing' );
-	}
-
-	/**
-	 * Test aps_unarchive_post function exists and is callable
-	 *
-	 * @covers ::aps_unarchive_post
-	 */
-	public function test_unarchive_post_function_exists() {
-		// Skip due to complex WordPress function dependencies
-		$this->markTestSkipped( 'Complex WordPress function dependencies require integration testing' );
-	}
-
-	/**
-	 * Test aps_get_archive_post_link function exists and is callable
-	 *
-	 * @covers ::aps_get_archive_post_link
-	 */
-	public function test_get_archive_post_link_function_exists() {
-		// Skip due to complex WordPress function dependencies
-		$this->markTestSkipped( 'Complex WordPress function dependencies require integration testing' );
-	}
-
-	/**
-	 * Test aps_get_unarchive_post_link function exists and is callable
-	 *
-	 * @covers ::aps_get_unarchive_post_link
-	 */
-	public function test_get_unarchive_post_link_function_exists() {
-		// Skip due to complex WordPress function dependencies
-		$this->markTestSkipped( 'Complex WordPress function dependencies require integration testing' );
-	}
-
-	/**
 	 * Test aps_get_supported_post_types default behavior
 	 *
 	 * @covers ::aps_get_supported_post_types
