@@ -55,7 +55,13 @@ class SavePostTest extends TestCase {
 
 		// Mock WordPress functions
 		\WP_Mock::userFunction( 'wp_is_post_revision' )->with( 123 )->andReturn( false );
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [ 'attachment' ] )
+			->reply( [] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
 
 		// Expect metadata to be saved
 		\WP_Mock::userFunction( 'add_post_meta' )->atLeast()->once();
@@ -136,7 +142,13 @@ class SavePostTest extends TestCase {
 		]);
 
 		\WP_Mock::userFunction( 'wp_is_post_revision' )->andReturn( false );
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'attachment' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [ 'attachment' ] )
+			->reply( [ 'attachment' ] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
 
 		// Should not call wp_update_post
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
@@ -162,7 +174,7 @@ class SavePostTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_is_post_revision' )->with( 123 )->andReturn( true );
 
 		// Should not proceed with any other checks
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->never();
+
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
 		// Act

@@ -133,11 +133,17 @@ class BulkEditTest extends TestCase {
 
 		// Mock required functions
 		\WP_Mock::userFunction( 'remove_query_arg' )->andReturn( $redirect_to );
-		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', \Mockery::any() )
+			->andReturn( true );
 		\WP_Mock::userFunction( 'wp_check_post_lock' )->andReturn( false );
 		\WP_Mock::userFunction( 'get_post_status' )->andReturn( 'publish' );
 		\WP_Mock::userFunction( '_aps_get_archivable_statuses' )->andReturn( [ 'publish', 'draft' ] );
-		\WP_Mock::userFunction( 'aps_archive_post' )->times( 3 )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->times( 3 )->andReturn( (object) [ 'post_status' => 'publish', 'comment_status' => 'open', 'ping_status' => 'open' ] );
+		\WP_Mock::userFunction( 'add_post_meta' )->times( 15 )->andReturn( true ); // 3 posts × 5 meta fields each
+		\WP_Mock::userFunction( 'get_post_timestamp' )->times( 3 )->andReturn( time() );
+		\WP_Mock::userFunction( 'get_current_user_id' )->times( 3 )->andReturn( 1 );
+		\WP_Mock::userFunction( 'wp_update_post' )->times( 3 )->andReturn( true );
 		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( $redirect_to );
 
 		// Act
@@ -161,8 +167,13 @@ class BulkEditTest extends TestCase {
 
 		// Mock required functions
 		\WP_Mock::userFunction( 'remove_query_arg' )->andReturn( $redirect_to );
-		\WP_Mock::userFunction( 'aps_current_user_can_unarchive' )->andReturn( true );
-		\WP_Mock::userFunction( 'aps_unarchive_post' )->times( 3 )->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', \Mockery::any() )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->times( 3 )->andReturn( (object) [ 'post_status' => 'archive', 'comment_status' => 'closed', 'ping_status' => 'closed' ] );
+		\WP_Mock::userFunction( 'get_post_meta' )->andReturn( 'publish' ); // Return previous status
+		\WP_Mock::userFunction( 'delete_post_meta' )->andReturn( true ); // Delete metadata
+		\WP_Mock::userFunction( 'wp_update_post' )->times( 3 )->andReturn( true );
 		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( $redirect_to );
 		\WP_Mock::userFunction( 'remove_filter' )->andReturn( true );
 
@@ -226,11 +237,17 @@ class BulkEditTest extends TestCase {
 		$post_ids = [ 1, 2 ];
 
 		\WP_Mock::userFunction( 'remove_query_arg' )->andReturn( $redirect_to );
-		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', \Mockery::any() )
+			->andReturn( true );
 		\WP_Mock::userFunction( 'wp_check_post_lock' )->andReturn( false );
 		\WP_Mock::userFunction( 'get_post_status' )->andReturn( 'publish' );
 		\WP_Mock::userFunction( '_aps_get_archivable_statuses' )->andReturn( [ 'publish', 'draft' ] );
-		\WP_Mock::userFunction( 'aps_archive_post' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->andReturn( (object) [ 'post_status' => 'publish', 'comment_status' => 'open', 'ping_status' => 'open' ] );
+		\WP_Mock::userFunction( 'add_post_meta' )->times( 10 )->andReturn( true ); // 2 posts × 5 meta fields each
+		\WP_Mock::userFunction( 'get_post_timestamp' )->andReturn( time() );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 1 );
+		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( true );
 		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( $redirect_to );
 
 		// Act
@@ -252,7 +269,9 @@ class BulkEditTest extends TestCase {
 		$post_ids = [ 1, 2 ];
 
 		\WP_Mock::userFunction( 'remove_query_arg' )->andReturn( $redirect_to );
-		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', \Mockery::any() )
+			->andReturn( true );
 		\WP_Mock::userFunction( 'wp_check_post_lock' )->andReturn( true ); // Locked post
 		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( $redirect_to );
 
@@ -275,7 +294,9 @@ class BulkEditTest extends TestCase {
 		$post_ids = [ 1 ];
 
 		\WP_Mock::userFunction( 'remove_query_arg' )->andReturn( $redirect_to );
-		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', \Mockery::any() )
+			->andReturn( true );
 		\WP_Mock::userFunction( 'wp_check_post_lock' )->andReturn( false );
 		\WP_Mock::userFunction( 'get_post_status' )->andReturn( 'private' );
 		\WP_Mock::userFunction( '_aps_get_archivable_statuses' )->andReturn( [ 'publish', 'draft' ] ); // private not in list
@@ -303,8 +324,13 @@ class BulkEditTest extends TestCase {
 		$_GET['doaction'] = 'undo';
 
 		\WP_Mock::userFunction( 'remove_query_arg' )->andReturn( $redirect_to );
-		\WP_Mock::userFunction( 'aps_current_user_can_unarchive' )->andReturn( true );
-		\WP_Mock::userFunction( 'aps_unarchive_post' )->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', \Mockery::any() )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->andReturn( (object) [ 'post_status' => 'archive', 'comment_status' => 'closed', 'ping_status' => 'closed' ] );
+		\WP_Mock::userFunction( 'get_post_meta' )->andReturn( 'publish' ); // Return previous status
+		\WP_Mock::userFunction( 'delete_post_meta' )->andReturn( true ); // Delete metadata
+		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( true );
 		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( $redirect_to );
 		\WP_Mock::onFilter( 'aps_unarchive_post_status' )->with( 'aps_unarchive_post_set_previous_status', 10, 3 );
 

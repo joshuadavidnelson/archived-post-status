@@ -26,7 +26,9 @@ class PostEditorTest extends TestCase {
 
 		// Setup common mocks
 		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 123 );
-		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts' )
+			->andReturn( true );
 		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( $this->createMockScreen() );
 	}
 
@@ -52,8 +54,15 @@ class PostEditorTest extends TestCase {
 	public function test_archive_button_displays_when_user_can_archive() {
 		// Arrange
 		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 123 );
-		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->with( 123 )->andReturn( true );
-		\WP_Mock::userFunction( 'aps_get_archive_post_link' )->with( 123 )->andReturn( 'http://example.com/archive' );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 123 )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( (object) [ 'ID' => 123, 'post_type' => 'post' ] );
+		\WP_Mock::userFunction( 'get_post_type_object' )->andReturn( (object) [ '_edit_link' => 'post.php?post=%d&action=edit' ] );
+		\WP_Mock::userFunction( 'admin_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=123&action=edit' );
+		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( 'http://example.com/wp-admin/post.php?post=123&action=archive' );
+		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com/archive' );
+		\WP_Mock::userFunction( 'esc_url' )->andReturnUsing( function( $url ) { return $url; } );
 		\WP_Mock::userFunction( '__' )->with( 'Archive', 'archived-post-status' )->andReturn( 'Archive' );
 
 		// Expect output to be captured
@@ -175,7 +184,9 @@ class PostEditorTest extends TestCase {
 	 */
 	public function test_load_post_screen_returns_early_when_not_read_only() {
 		// Arrange
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( false );
+		\WP_Mock::onFilter( 'aps_is_read_only' )
+			->with( true )
+			->reply( false );
 
 		// Act
 		$this->feature->load_post_screen();
@@ -193,7 +204,9 @@ class PostEditorTest extends TestCase {
 	 */
 	public function test_load_post_screen_processes_archived_posts() {
 		// Arrange
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+		\WP_Mock::onFilter( 'aps_is_read_only' )
+			->with( true )
+			->reply( true );
 
 		// Mock $_GET superglobal
 		$_GET['post'] = '123';
@@ -220,7 +233,9 @@ class PostEditorTest extends TestCase {
 	 */
 	public function test_load_post_screen_gets_post_id_from_post_data() {
 		// Arrange
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+		\WP_Mock::onFilter( 'aps_is_read_only' )
+			->with( true )
+			->reply( true );
 
 		// Mock $_POST superglobal
 		$_POST['post_ID'] = '456';
@@ -247,7 +262,9 @@ class PostEditorTest extends TestCase {
 	 */
 	public function test_load_post_screen_handles_global_post() {
 		// Arrange
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+		\WP_Mock::onFilter( 'aps_is_read_only' )
+			->with( true )
+			->reply( true );
 
 		// Mock global post
 		$post = $this->createMockPost([ 'ID' => 789 ]);
