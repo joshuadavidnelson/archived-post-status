@@ -149,8 +149,8 @@ class PostEditorTest extends TestCase {
 		// Act
 		$this->feature->enqueue_scripts( 'post.php' );
 
-		// Assert - test passes if no scripts enqueued
-		$this->assertTrue( true );
+		// Assert - WP_Mock verifies ->never() expectation was satisfied
+		$this->addToAssertionCount( 1 );
 	}
 
 	/**
@@ -170,8 +170,8 @@ class PostEditorTest extends TestCase {
 		// Act
 		$this->feature->enqueue_scripts( 'index.php' );
 
-		// Assert
-		$this->assertTrue( true );
+		// Assert - WP_Mock verifies ->never() expectation was satisfied
+		$this->addToAssertionCount( 1 );
 	}
 
 	/**
