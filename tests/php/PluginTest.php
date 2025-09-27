@@ -170,16 +170,6 @@ class PluginTest extends TestCase {
 	}
 
 	/**
-	 * Test plugin_screen_js enqueues script on plugins page
-	 *
-	 * @covers ArchivedPostStatus\Plugin::plugin_screen_js
-	 */
-	public function test_plugin_screen_js_enqueues_on_plugins_page() {
-		// Skip this test due to complex internal function mocking requirements
-		$this->markTestSkipped( 'Complex internal function mocking not supported' );
-	}
-
-	/**
 	 * Test plugin_screen_js skips non-plugins pages
 	 *
 	 * @covers ArchivedPostStatus\Plugin::plugin_screen_js

@@ -234,6 +234,7 @@ class RowActionsTest extends TestCase {
 	}
 
 
+
 	/**
 	 * Test row_actions with archived post status
 	 *
