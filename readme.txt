@@ -74,7 +74,7 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 == Changelog ==
 
 = 0.4.0 - February X, 2025 =
-- Updated Tested to WordPress 6.7.1
+- Tested to WordPress 6.8.2
 - New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 - Added block editor support
 - Added bulk edit support
@@ -190,12 +190,15 @@ Props [fjarrett](https://github.com/fjarrett)
 == Upgrade Notice ==
 
 = 0.4.0 - February X, 2025 =
-Major update with block editor support, bulk edit, WP CLI commands, and new documentation site. Refactored codebase with new core functions and expanded filters. See changelog for full details.
+
+Major update adding more ways to archive posts: classic and block editor buttons, bulk edit, WP CLI commands, and a new documentation site. Refactored codebase with new core functions and expanded filters. See changelog for full details.
 
 = 0.3.11 - June 15, 2024 =
+
 - Fix release and versioning issues that shipped with 0.3.10
 
 = 0.3.10 - June 15, 2024 =
+
 - Test & update support for WP 6.5.4
 - Increase minimum supported PHP to 8.1, as 8.0 is end of life.
 - Increase minimum WordPress version to 5.9, to align with the PHP version.
@@ -203,6 +206,7 @@ Major update with block editor support, bulk edit, WP CLI commands, and new docu
 - Improve German translations, h/t @mdibella-dev
 
 = 0.3.9.1 - January 19, 2024 =
+
 - Fixing version numbers in files, missing from 0.3.9 release.
 
 = 0.3.9 =
