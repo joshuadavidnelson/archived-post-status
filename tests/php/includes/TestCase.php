@@ -14,7 +14,6 @@ class TestCase extends BaseTestCase {
 	 */
 	public function set_up() {
 		\WP_Mock::setUp();
-		$this->setup_common();
 	}
 
 	/**
@@ -27,33 +26,44 @@ class TestCase extends BaseTestCase {
 	}
 
 	/**
-	 * Mock common functions
-	 *
-	 * @since 0.8
+	 * Create a mock post with default values
 	 */
-	public function setup_common() {
-		\WP_Mock::userFunction(
-			'__', array(
-				'return_arg' => 0,
-			)
-		);
+	protected function createMockPost( array $args = [] ) {
+		$defaults = [
+			'ID' => 123,
+			'post_type' => 'post',
+			'post_status' => 'publish',
+			'comment_status' => 'open',
+			'ping_status' => 'open',
+			'post_title' => 'Test Post'
+		];
 
-		\WP_Mock::userFunction(
-			'esc_html__', array(
-				'return_arg' => 0,
-			)
-		);
+		$args = array_merge( $defaults, $args );
+		$post = \Mockery::mock( 'WP_Post' );
 
-		\WP_Mock::userFunction(
-			'esc_html_e', array(
-				'return_arg' => 0,
-			)
-		);
+		foreach ( $args as $key => $value ) {
+			$post->$key = $value;
+		}
 
-		\WP_Mock::userFunction(
-			'_e', array(
-				'return_arg' => 0,
-			)
-		);
+		return $post;
+	}
+
+	/**
+	 * Create a mock screen object
+	 */
+	protected function createMockScreen( array $args = [] ) {
+		$defaults = [
+			'base' => 'edit',
+			'post_type' => 'post'
+		];
+
+		$args = array_merge( $defaults, $args );
+		$screen = \Mockery::mock( 'WP_Screen' );
+
+		foreach ( $args as $key => $value ) {
+			$screen->$key = $value;
+		}
+
+		return $screen;
 	}
 }
