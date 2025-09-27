@@ -67,12 +67,12 @@ class CLI extends Feature {
 	}
 
 	/**
-	 * Archive a post.
+	 * Archive one or more posts.
 	 *
 	 * ## OPTIONS
 	 *
-	 * <post_id>
-	 * : The ID of the post to archive.
+	 * <id>...
+	 * : One or more IDs of posts to archive.
 	 *
 	 * [--force]
 	 * : Only supported public post types with core non-trashed statuses can be archived. Use this flag to skip current status check.
@@ -82,11 +82,14 @@ class CLI extends Feature {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Archive a post
+	 *     # Archive a single post
 	 *     wp post archive 123
 	 *
-	 *     # Archive a post without checking the current status
-	 *     wp post archive 123 --force
+	 *     # Archive multiple posts
+	 *     wp post archive 123 456 789
+	 *
+	 *     # Archive posts without checking the current status
+	 *     wp post archive 123 456 --force
 	 *
 	 * @since 0.4.0
 	 * @param array $args       The arguments.
@@ -121,12 +124,12 @@ class CLI extends Feature {
 	}
 
 	/**
-	 * Unarchive a post.
+	 * Unarchive one or more posts.
 	 *
 	 * ## OPTIONS
 	 *
 	 * <id>...
-	 * : One or more IDs of posts to delete.
+	 * : One or more IDs of posts to unarchive.
 	 *
 	 * [--status=<status>]
 	 * : Override the new status of the post(s).
@@ -136,7 +139,14 @@ class CLI extends Feature {
 	 *
 	 * ## EXAMPLES
 	 *
+	 *     # Unarchive a single post
 	 *     wp post unarchive 123
+	 *
+	 *     # Unarchive multiple posts
+	 *     wp post unarchive 123 456 789
+	 *
+	 *     # Unarchive posts with specific status
+	 *     wp post unarchive 123 456 --status=draft
 	 *
 	 * @since 0.4.0
 	 * @param array $args       The arguments.
