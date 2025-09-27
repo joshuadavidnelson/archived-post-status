@@ -197,7 +197,8 @@ Props [fjarrett](https://github.com/fjarrett)
 == Upgrade Notice ==
 
 = 0.4.0 - February X, 2025 =
-Major update with block editor support, bulk edit, WP CLI commands, and new documentation site. Refactored codebase with new core functions and expanded filters. See changelog for full details.
+
+Major update adding more ways to archive posts: classic and block editor buttons, bulk edit, WP CLI commands, and a new documentation site. Refactored codebase with new core functions and expanded filters. See changelog for full details.
 
 = 0.3.12 - Feb 16, 2026 =
 
@@ -207,9 +208,11 @@ Major update with block editor support, bulk edit, WP CLI commands, and new docu
 - Upgrade Github actions to actions/checkout@v6 running on php 8.4
 
 = 0.3.11 - June 15, 2024 =
+
 - Fix release and versioning issues that shipped with 0.3.10
 
 = 0.3.10 - June 15, 2024 =
+
 - Test & update support for WP 6.5.4
 - Increase minimum supported PHP to 8.1, as 8.0 is end of life.
 - Increase minimum WordPress version to 5.9, to align with the PHP version.
@@ -217,6 +220,7 @@ Major update with block editor support, bulk edit, WP CLI commands, and new docu
 - Improve German translations, h/t @mdibella-dev
 
 = 0.3.9.1 - January 19, 2024 =
+
 - Fixing version numbers in files, missing from 0.3.9 release.
 
 = 0.3.9 =
