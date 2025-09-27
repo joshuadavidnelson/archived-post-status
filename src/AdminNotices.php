@@ -89,7 +89,8 @@ class AdminNotices extends Feature {
 			// Convert to array and then to comma-separated string and sanitize
 			$ids = (array) $ids;
 			$ids_string = implode( ',', $ids );
-			$ids_string = preg_replace( '/[^0-9,]/', '', $ids_string );				$notices[] = sprintf(
+			$ids_string = preg_replace( '/[^0-9,]/', '', $ids_string );
+			$notices[] = sprintf(
 					'<a href="%1$s">%2$s</a>',
 					esc_url( wp_nonce_url( "edit.php?post_type=$current_post_type&doaction=undo&action=unarchive&ids=$ids_string", 'bulk-posts' ) ),
 					__( 'Undo' ) // phpcs:ignore
