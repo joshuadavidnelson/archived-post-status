@@ -7,7 +7,7 @@
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
- * @covers ArchivedPostStatus\SavePost
+ * @covers ArchivedPostSPost
  */
 
 /**
@@ -197,9 +197,6 @@ class SavePostTest extends TestCase {
 		$this->assertTrue( true );
 	}
 
-	 *
-	 * @covers ArchivedPostStatus\SavePost::save_post
-	 */
 
 	/**
 	 * Test save_post handles partially closed status

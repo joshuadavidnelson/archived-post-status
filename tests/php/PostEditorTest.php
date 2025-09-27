@@ -86,6 +86,7 @@ class PostEditorTest extends TestCase {
 	}
 
 
+
 	/**
 	 * Test scripts not enqueued on classic editor
 	 *
