@@ -110,7 +110,194 @@ class FunctionsTest extends TestCase {
 		\WP_Mock::userFunction( 'current_user_can' )
 			->andReturn( true );
 
+		// Mock the current_user_can() function with proper WordPress core mocking
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'read_private_posts', 0 )
+			->andReturn( true );
+
+		// Mock the default capability filter
+		\WP_Mock::onFilter( 'aps_default_read_capability' )
+			->with( 'read_private_posts', 0 )
+			->reply( 'read_private_posts' );
+
+		// Mock the final result filter
 		\WP_Mock::onFilter( 'aps_current_user_can_view' )
+			->with( true )
+			->reply( true );
+
+		// Act
+		$result = aps_current_user_can_view();
+
+		// Assert
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Test the aps_current_user_can_view() filter.
+	 *
+	 * @since 0.3.9
+	 * @covers aps_current_user_can_view
+	 */
+	public function test_aps_current_user_can_view_filter() {
+		// Mock the current_user_can() function
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'read', 0 )
+			->andReturn( false );
+
+		// Mock the default capability filter to return a different capability
+		\WP_Mock::onFilter( 'aps_default_read_capability' )
+			->with( 'read_private_posts', 0 )
+			->reply( 'read' );
+
+		// Mock the final result filter
+		\WP_Mock::onFilter( 'aps_current_user_can_view' )
+			->with( false )
+			->reply( false );
+
+		// Act
+		$result = aps_current_user_can_view();
+
+		// Assert
+		$this->assertFalse( $result );
+
+	}
+
+	/**
+	 * Test the aps_current_user_can_archive() function.
+	 *
+	 * @since 0.4.0
+	 * @covers aps_current_user_can_archive
+	 */
+	public function aps_current_user_can_archive() {
+
+		// Mock the current_user_can() function.
+		\WP_Mock::userFunction(
+			'current_user_can', array(
+				'times'  => 1,
+				'return' => function( $capability, ...$args ) {
+					return $capability === 'edit_others_posts';
+				},
+			)
+		);
+
+		// Confirm the filter is applied.
+		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 0 );
+
+		// Confirm the default condition is true.
+		$this->assertTrue( aps_current_user_can_archive() );
+
+	}
+
+	/**
+	 * Test the aps_current_user_can_archive() filter.
+	 *
+	 * @since 0.4.0
+	 * @covers aps_current_user_can_archive
+	 */
+	public function test_aps_current_user_can_archive_filter() {
+
+		// Mock the current_user_can() function.
+		\WP_Mock::userFunction(
+			'current_user_can', array(
+				'times'  => 1,
+				'return' => function( $capability, ...$args ) {
+					return $capability === 'edit_others_posts';
+				},
+			)
+		);
+
+		// Pass false to the filter.
+		WP_Mock::onFilter( 'aps_default_archive_capability' )
+			->with( 'edit_others_posts', 0 )
+			->reply( 'read' );
+
+		// Confirm the filter is applied.
+		$this->assertFalse( aps_current_user_can_archive() );
+
+	}
+
+	/**
+	 * Test the aps_current_user_can_unarchive() function.
+	 *
+	 * @since 0.4.0
+	 * @covers aps_current_user_can_unarchive
+	 */
+	public function aps_current_user_can_unarchive() {
+
+		// Mock the current_user_can() function.
+		\WP_Mock::userFunction(
+			'current_user_can', array(
+				'times'  => 1,
+				'return' => function( $capability, ...$args ) {
+					return $capability === 'edit_others_posts';
+				},
+			)
+		);
+
+		// Confirm the filter is applied.
+		\WP_Mock::expectFilter( 'aps_user_unarchive_capability', 'edit_others_posts', 0 );
+
+		// Confirm the default condition is true.
+		$this->assertTrue( aps_current_user_can_unarchive() );
+
+	}
+
+	/**
+	 * Test the aps_current_user_can_unarchive() filter.
+	 *
+	 * @since 0.4.0
+	 * @covers aps_current_user_can_unarchive
+	 */
+	public function test_aps_current_user_can_unarchive_filter() {
+
+		// Mock the current_user_can() function.
+		\WP_Mock::userFunction(
+			'current_user_can', array(
+				'times'  => 1,
+				'return' => function( $capability, ...$args ) {
+					return $capability === 'edit_others_posts';
+				},
+			)
+		);
+
+		// Pass false to the filter.
+		WP_Mock::onFilter( 'aps_user_unarchive_capability' )
+			->with( 'edit_others_posts', 0 )
+			->reply( 'read' );
+
+		// Confirm the filter is applied.
+		$this->assertFalse( aps_current_user_can_unarchive() );
+
+	}
+
+
+
+	/**
+	 * Test the aps_is_read_only() function.
+	 *
+	 * @since 0.3.9
+	 * @covers aps_is_read_only
+	 */
+	public function test_aps_is_read_only() {
+
+		// Confirm the filter is applied.
+		\WP_Mock::expectFilter( 'aps_is_read_only', true );
+
+		// Confirm default condition is true.
+		$this->assertTrue( aps_is_read_only() );
+
+	}
+
+	/**
+	 * Test the aps_is_read_only() function filters.
+	 *
+	 * @since 0.3.9
+	 * @covers aps_is_read_only
+	 */
+	public function test_aps_is_read_only_filters() {
+
+		// Pass false to the filter.
+		WP_Mock::onFilter( 'aps_is_read_only' )
 			->with( true )
 			->reply( true );
 

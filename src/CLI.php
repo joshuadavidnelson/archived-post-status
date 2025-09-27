@@ -210,7 +210,7 @@ class CLI extends Feature {
 		if ( ! $force && 'archive' === $action ) {
 
 			// Get the archivable statuses.
-			// These are statuses that can be archied.
+			// These are statuses that can be archived.
 			$archivable_statuses = _aps_get_archivable_statuses();
 
 			// Check that the current status can be archived.

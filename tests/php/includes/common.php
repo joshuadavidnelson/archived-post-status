@@ -96,7 +96,7 @@ function _n_noop( $singular, $plural, $domain = null ) {
 }
 
 /**
- * MOve sanitize_title function.
+ * Mock sanitize_title() function.
  *
  * @since 0.4.0
  * @param mixed $title
