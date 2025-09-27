@@ -24,7 +24,7 @@ class PostEditorTest extends TestCase {
 		parent::set_up();
 		$this->feature = new ArchivedPostStatus\PostEditor();
 
-		// Setup common mocks
+		// Setup common mocks - using individual mocks as hooks registration doesn't need filters
 		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 123 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts' )

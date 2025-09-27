@@ -66,4 +66,142 @@ class TestCase extends BaseTestCase {
 
 		return $screen;
 	}
+
+	/**
+	 * Mock WordPress core functions with common patterns
+	 */
+	protected function mockWordPressCoreFunctions( array $config = [] ) {
+		$defaults = [
+			'current_user_can_edit_others_posts' => true,
+			'get_post_types' => [ 'post' => 'post', 'page' => 'page' ],
+			'wp_update_post' => true,
+			'get_post' => null, // Will be set per test if needed
+			'get_the_ID' => null, // Will be set per test if needed
+		];
+
+		$config = array_merge( $defaults, $config );
+
+		if ( isset( $config['current_user_can_edit_others_posts'] ) ) {
+			\WP_Mock::userFunction( 'current_user_can' )
+				->with( 'edit_others_posts' )
+				->andReturn( $config['current_user_can_edit_others_posts'] );
+		}
+
+		if ( isset( $config['get_post_types'] ) ) {
+			\WP_Mock::userFunction( 'get_post_types' )
+				->andReturn( $config['get_post_types'] );
+		}
+
+		if ( isset( $config['wp_update_post'] ) ) {
+			\WP_Mock::userFunction( 'wp_update_post' )
+				->andReturn( $config['wp_update_post'] );
+		}
+
+		if ( isset( $config['get_post'] ) ) {
+			\WP_Mock::userFunction( 'get_post' )
+				->andReturn( $config['get_post'] );
+		}
+
+		if ( isset( $config['get_the_ID'] ) ) {
+			\WP_Mock::userFunction( 'get_the_ID' )
+				->andReturn( $config['get_the_ID'] );
+		}
+	}
+
+	/**
+	 * Mock common APS plugin filters
+	 */
+	protected function mockAPSFilters( array $config = [] ) {
+		$defaults = [
+			'excluded_post_types' => [],
+			'excluded_post_types_return' => [],
+			'supported_post_types' => [ 'post', 'page' ],
+			'supported_post_types_return' => [ 'post', 'page' ],
+			'is_read_only' => true,
+			'is_read_only_return' => true,
+		];
+
+		$config = array_merge( $defaults, $config );
+
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( $config['excluded_post_types'] )
+			->reply( $config['excluded_post_types_return'] );
+
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( $config['supported_post_types'] )
+			->reply( $config['supported_post_types_return'] );
+
+		if ( isset( $config['is_read_only'] ) ) {
+			\WP_Mock::onFilter( 'aps_is_read_only' )
+				->with( $config['is_read_only'] )
+				->reply( $config['is_read_only_return'] );
+		}
+	}
+
+	/**
+	 * Mock common APS plugin functions
+	 */
+	protected function mockAPSFunctions( array $config = [] ) {
+		$defaults = [
+			'_aps_get_archivable_statuses' => [ 'publish' ],
+		];
+
+		$config = array_merge( $defaults, $config );
+
+		if ( isset( $config['_aps_get_archivable_statuses'] ) ) {
+			\WP_Mock::userFunction( '_aps_get_archivable_statuses' )
+				->andReturn( $config['_aps_get_archivable_statuses'] );
+		}
+	}
+
+	/**
+	 * Setup standard test environment with common mocks
+	 */
+	protected function setupStandardTestEnvironment( array $wp_config = [], array $filter_config = [], array $plugin_config = [] ) {
+		$this->mockWordPressCoreFunctions( $wp_config );
+		$this->mockAPSFilters( $filter_config );
+		$this->mockAPSFunctions( $plugin_config );
+	}
+
+	/**
+	 * Mock bulk edit permissions scenario
+	 */
+	protected function mockBulkEditPermissions( $can_edit = true ) {
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts' )
+			->andReturn( $can_edit );
+	}
+
+	/**
+	 * Mock post status retrieval
+	 */
+	protected function mockPostStatus( $post_id, $status ) {
+		\WP_Mock::userFunction( 'get_post_status' )
+			->with( $post_id )
+			->andReturn( $status );
+	}
+
+	/**
+	 * Mock post metadata operations with flexible expectations
+	 */
+	protected function mockPostMetaOperations( $post_id = null, $meta_expectations = 'flexible' ) {
+		if ( $meta_expectations === 'strict' && $post_id ) {
+			\WP_Mock::userFunction( 'add_post_meta' )
+				->with( $post_id, 'aps_pre_archive_status', \WP_Mock\Functions::anyOf() )
+				->andReturn( true );
+
+			\WP_Mock::userFunction( 'delete_post_meta' )
+				->with( $post_id, 'aps_pre_archive_status' )
+				->andReturn( true );
+
+			\WP_Mock::userFunction( 'get_post_meta' )
+				->with( $post_id, 'aps_pre_archive_status', true )
+				->andReturn( 'publish' );
+		} else {
+			// Flexible expectations for any meta operations
+			\WP_Mock::userFunction( 'add_post_meta' )->atLeast()->once()->andReturn( true );
+			\WP_Mock::userFunction( 'delete_post_meta' )->andReturn( true );
+			\WP_Mock::userFunction( 'get_post_meta' )->andReturn( 'publish' );
+		}
+	}
 }

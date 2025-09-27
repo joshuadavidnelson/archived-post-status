@@ -96,16 +96,8 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'post';
 
-		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
-		\WP_Mock::onFilter( 'aps_excluded_post_types' )
-			->with( [] )
-			->reply( [] );
-		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( [ 'post', 'page' ] )
-			->reply( [ 'post', 'page' ] );
-		\WP_Mock::onFilter( 'aps_is_read_only' )
-			->with( true )
-			->reply( true );
+		// Setup standard environment for supported post type
+		$this->setupStandardTestEnvironment();
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->once();
 
 		// Act
@@ -125,13 +117,11 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'attachment';
 
-		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ] );
-		\WP_Mock::onFilter( 'aps_excluded_post_types' )
-			->with( [] )
-			->reply( [ 'attachment' ] );
-		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( [ 'post', 'page' ] )
-			->reply( [ 'post', 'page' ] );
+		// Setup environment with excluded attachment post type
+		$this->setupStandardTestEnvironment(
+			[ 'get_post_types' => [ 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ] ],
+			[ 'excluded_post_types_return' => [ 'attachment' ] ]
+		);
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
 
 		// Act
@@ -151,16 +141,11 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'post';
 
-		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
-		\WP_Mock::onFilter( 'aps_excluded_post_types' )
-			->with( [] )
-			->reply( [] );
-		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( [ 'post', 'page' ] )
-			->reply( [ 'post', 'page' ] );
-		\WP_Mock::onFilter( 'aps_is_read_only' )
-			->with( true )
-			->reply( false );
+		// Setup environment for non-read-only scenario
+		$this->setupStandardTestEnvironment(
+			[],
+			[ 'is_read_only_return' => false ]
+		);
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
 
 		// Act
@@ -180,16 +165,8 @@ class PluginTest extends TestCase {
 		global $typenow;
 		$typenow = 'post';
 
-		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
-		\WP_Mock::onFilter( 'aps_excluded_post_types' )
-			->with( [] )
-			->reply( [] );
-		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( [ 'post', 'page' ] )
-			->reply( [ 'post', 'page' ] );
-		\WP_Mock::onFilter( 'aps_is_read_only' )
-			->with( true )
-			->reply( true );
+		// Setup standard environment (won't enqueue on non-edit pages)
+		$this->setupStandardTestEnvironment();
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
 
 		// Act

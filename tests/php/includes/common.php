@@ -600,3 +600,37 @@ if ( ! function_exists( 'remove_action' ) ) {
 		return true;
 	}
 }
+
+/**
+ * Mock check_admin_referer() function.
+ */
+if ( ! function_exists( 'check_admin_referer' ) ) {
+	function check_admin_referer( $action = -1, $query_arg = '_wpnonce', $die = true ) {
+		return true;
+	}
+}
+
+/**
+ * Test helper to create a standard WordPress post object
+ */
+function create_test_post( array $args = [] ) {
+	$defaults = [
+		'ID' => 123,
+		'post_type' => 'post',
+		'post_status' => 'publish',
+		'comment_status' => 'open',
+		'ping_status' => 'open',
+		'post_title' => 'Test Post'
+	];
+
+	return (object) array_merge( $defaults, $args );
+}
+
+/**
+ * Test helper to setup standard WordPress core function mocks
+ */
+function setup_standard_wp_mocks() {
+	\WP_Mock::userFunction( 'wp_is_post_revision' )->andReturn( false );
+	\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 123 );
+	\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+}
