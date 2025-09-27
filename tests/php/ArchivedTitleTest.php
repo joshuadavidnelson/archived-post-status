@@ -1,167 +1,337 @@
 <?php
 /**
- * Class ArchivedTitleTest
+ * ArchivedTitle Tests
+ *
+ * Focus on testing title modification behavior rather than implementation.
+ * Tests the actual output and filter integration.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
- * @subpackage ArchivedTitleTest
- *
  * @covers ArchivedPostStatus\ArchivedTitle
  */
 
 /**
- * Archived Title Tests
+ * ArchivedTitle test case extending FeatureTestCase
  *
  * @since 0.4.0
+ * @covers ArchivedPostStatus\ArchivedTitle
+ * @covers ArchivedPostStatus\Feature::is_active
+ * @covers ArchivedPostStatus\Feature::get_name
  */
-class ArchivedTitleTest extends TestCase {
+class ArchivedTitleTest extends FeatureTestCase {
 
 	/**
 	 * Set up the test.
 	 *
 	 * @since 0.4.0
 	 */
-	public function setUp(): void {
-		parent::setUp();
+	public function set_up() {
+		parent::set_up();
+		$this->feature = new ArchivedPostStatus\ArchivedTitle();
 
-		$this->class = new ArchivedPostStatus\ArchivedTitle;
-
-		// Mock WP post object.
-		$mock_post                 = \Mockery::mock( 'WP_Post' );
-		$mock_post->post_status    = 'archive';
-		$mock_post->post_type      = 'post';
-		$mock_post->comment_status = 'open';
-		$mock_post->ping_status    = 'open';
-		$mock_post->title          = 'Test Title';
-		$mock_post->ID             = 86;
-
-		$this->mock_post = $mock_post;
-
-		// Mock the get_post() function.
-		\WP_Mock::userFunction(
-			'get_post', array(
-				'return' => $this->mock_post,
-			)
-		);
-
-		//
-		\WP_Mock::userFunction(
-			'is_admin', array(
-				'return' => false,
-			)
-		);
-
+		// Setup common mocks for title functionality
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 123 );
 	}
 
 	/**
-	 * Test the ArchivedTitle::filter_title() function.
+	 * Test that the filter is properly registered
 	 *
-	 * @since 0.4.0
-	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 * @covers ArchivedPostStatus\ArchivedTitle::register
 	 */
-	public function test_filter_title() {
-
-		// expect filters
-		\WP_Mock::expectFilter( 'aps_title_label', 'Archived', $this->mock_post->ID, $this->mock_post->title );
-
-		\WP_Mock::expectFilter( 'aps_title_label_before', true, $this->mock_post->ID );
-
-		\WP_Mock::expectFilter( 'aps_title_separator', ': ', $this->mock_post->ID );
-
-		// Call the function.
-		$filtered_title = $this->class->filter_title( $this->mock_post->title, $this->mock_post->ID );
-
-		// Confirm the filter is applied.
-		$this->assertEquals( $filtered_title, 'Archived: '. $this->mock_post->title );
-
+	public function test_register_hooks() {
+		\WP_Mock::expectFilterAdded( 'the_title', [ $this->feature, 'filter_title' ], 10, 2 );
+		$this->feature->register();
+		\WP_Mock::assertHooksAdded();
 	}
 
 	/**
-	 * Test the ArchivedTitle::filter_title() filter with a custom label.
+	 * Test that archived posts get a label prefix by default
 	 *
-	 * @since 0.4.0
 	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
 	 */
-	public function test_aps_title_label_filter_custom_string() {
+	public function test_adds_label_prefix_to_archived_posts() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
 
-		$string = 'Resolved';
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false ); // Frontend context
 
-		// Confirm the filter is applied.
+		// Setup filter expectations with default behavior
 		\WP_Mock::onFilter( 'aps_title_label' )
-			->with( 'Archived', $this->mock_post->ID, $this->mock_post->title )
-			->reply( $string );
+			->with( 'Archived', 123, 'Test Post' )
+			->reply( 'Archived' );
 
-		// Call the function.
-		$filtered_title = $this->class->filter_title( $this->mock_post->title, $this->mock_post->ID );
-
-		// Confirm the filter is applied.
-		$this->assertEquals( $filtered_title, $string . ': '. $this->mock_post->title );
-
-	}
-
-	/**
-	 * Test the ArchivedTitle::filter_title() filter can
-	 * disable the label string by returning false.
-	 *
-	 * @since 0.4.0
-	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
-	 */
-	public function test_aps_title_label_filter_false() {
-
-		// Confirm the filter is applied.
-		\WP_Mock::onFilter( 'aps_title_label' )
-			->with( 'Archived', $this->mock_post->ID, $this->mock_post->title )
-			->reply( false );
-
-		// Call the function.
-		$filtered_title = $this->class->filter_title( $this->mock_post->title, $this->mock_post->ID );
-
-		// Confirm the filter is applied.
-		$this->assertEquals( $filtered_title, $this->mock_post->title );
-
-	}
-
-	/**
-	 * Test the title label before filter
-	 *
-	 * @since 0.4.0
-	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
-	 */
-	public function test_aps_title_label_before_filter() {
-
-		// Confirm the filter is applied.
 		\WP_Mock::onFilter( 'aps_title_label_before' )
-			->with( true, $this->mock_post->ID )
-			->reply( false );
+			->with( true, 123 )
+			->reply( true );
 
-		// Call the function.
-		$filtered_title = $this->class->filter_title( $this->mock_post->title, $this->mock_post->ID );
+		\WP_Mock::onFilter( 'aps_title_separator' )
+			->with( ': ', 123 )
+			->reply( ': ' );
 
-		// Confirm the filter is applied.
-		$this->assertEquals( $filtered_title, $this->mock_post->title . ' - Archived' );
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
 
+		// Assert
+		$this->assertEquals( 'Archived: Test Post', $result );
 	}
 
 	/**
-	 * Test the title separator filter.
+	 * Test leaves non-archived posts unchanged
 	 *
-	 * @since 0.4.0
 	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
 	 */
-	public function test_aps_title_separator_filter() {
+	public function test_leaves_non_archived_posts_unchanged() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'publish'
+		]);
 
-		$custom_sep = ' / ';
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
 
-		// Confirm the filter is applied.
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert
+		$this->assertEquals( 'Test Post', $result );
+	}
+
+	/**
+	 * Test skips modification in admin context
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_skips_modification_in_admin_context() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true ); // Admin context
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert
+		$this->assertEquals( 'Test Post', $result );
+	}
+
+	/**
+	 * Test custom label through filter
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_custom_label_through_filter() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )
+			->with( 'Archived', 123, 'Test Post' )
+			->reply( 'Old Content' );
+
+		\WP_Mock::onFilter( 'aps_title_label_before' )
+			->with( true, 123 )
+			->reply( true );
+
 		\WP_Mock::onFilter( 'aps_title_separator' )
-			->with( ': ', $this->mock_post->ID )
-			->reply( $custom_sep );
+			->with( ': ', 123 )
+			->reply( ': ' );
 
-		// Call the function.
-		$filtered_title = $this->class->filter_title( $this->mock_post->title, $this->mock_post->ID );
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
 
-		// Confirm the filter is applied.
-		$this->assertEquals( $filtered_title, 'Archived' . $custom_sep . $this->mock_post->title );
+		// Assert
+		$this->assertEquals( 'Old Content: Test Post', $result );
+	}
 
+	/**
+	 * Test disable label through filter
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_disable_label_through_filter() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )
+			->with( 'Archived', 123, 'Test Post' )
+			->reply( '' ); // Empty label disables modification
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert
+		$this->assertEquals( 'Test Post', $result );
+	}
+
+	/**
+	 * Test label after title
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_label_after_title() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )
+			->with( 'Archived', 123, 'Test Post' )
+			->reply( 'Archived' );
+
+		\WP_Mock::onFilter( 'aps_title_label_before' )
+			->with( true, 123 )
+			->reply( false ); // Label after title
+
+		\WP_Mock::onFilter( 'aps_title_separator' )
+			->with( ' - ', 123 )
+			->reply( ' - ' );
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert
+		$this->assertEquals( 'Test Post - Archived', $result );
+	}
+
+	/**
+	 * Test uses get_the_id when post_id not provided
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_uses_get_the_id_when_post_id_not_provided() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )
+			->with( 'Archived', 123, 'Test Post' )
+			->reply( 'Archived' );
+		\WP_Mock::onFilter( 'aps_title_label_before' )
+			->with( true, 123 )
+			->reply( true );
+		\WP_Mock::onFilter( 'aps_title_separator' )
+			->with( ': ', 123 )
+			->reply( ': ' );
+
+		// Act - call without post_id parameter
+		$result = $this->feature->filter_title( 'Test Post' );
+
+		// Assert
+		$this->assertEquals( 'Archived: Test Post', $result );
+	}
+
+	/**
+	 * Test handles null post gracefully
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_handles_null_post_gracefully() {
+		// Arrange
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( null );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert - should return unchanged title when post is null
+		$this->assertEquals( 'Test Post', $result );
+	}
+
+	/**
+	 * Test custom separator functionality
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_custom_separator() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )->with( 'Archived', 123, 'Test Post' )->reply( 'Archived' );
+		\WP_Mock::onFilter( 'aps_title_label_before' )->with( true, 123 )->reply( true );
+		\WP_Mock::onFilter( 'aps_title_separator' )->with( ': ', 123 )->reply( ' | ' );
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert
+		$this->assertEquals( 'Archived | Test Post', $result );
+	}
+
+	/**
+	 * Test empty label handling
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_empty_label_handling() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )->with( 'Archived', 123, 'Test Post' )->reply( '' );
+		\WP_Mock::onFilter( 'aps_title_label_before' )->with( true, 123 )->reply( true );
+		\WP_Mock::onFilter( 'aps_title_separator' )->with( ': ', 123 )->reply( ': ' );
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert - should return unchanged title when label is empty
+		$this->assertEquals( 'Test Post', $result );
+	}
+
+	/**
+	 * Test special characters in title and label
+	 *
+	 * @covers ArchivedPostStatus\ArchivedTitle::filter_title
+	 */
+	public function test_special_characters_handling() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )->with( 'Archived', 123, 'Tëst Pöst & Special Chars' )->reply( 'Archivé' );
+		\WP_Mock::onFilter( 'aps_title_label_before' )->with( true, 123 )->reply( true );
+		\WP_Mock::onFilter( 'aps_title_separator' )->with( ': ', 123 )->reply( ': ' );
+
+		// Act
+		$result = $this->feature->filter_title( 'Tëst Pöst & Special Chars', 123 );
+
+		// Assert
+		$this->assertEquals( 'Archivé: Tëst Pöst & Special Chars', $result );
 	}
 }
