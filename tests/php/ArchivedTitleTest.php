@@ -11,14 +11,12 @@
  */
 
 /**
- * ArchivedTitle test case extending FeatureTestCase
+ * Archived Title test case
  *
  * @since 0.4.0
  * @covers ArchivedPostStatus\ArchivedTitle
- * @covers ArchivedPostStatus\Feature::is_active
- * @covers ArchivedPostStatus\Feature::get_name
  */
-class ArchivedTitleTest extends FeatureTestCase {
+class ArchivedTitleTest extends TestCase {
 
 	/**
 	 * Set up the test.
