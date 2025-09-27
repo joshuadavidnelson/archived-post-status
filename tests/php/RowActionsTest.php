@@ -103,27 +103,21 @@ class RowActionsTest extends TestCase {
 			)
 		);
 
-		// Mock aps functions that are used in the class.
-		\WP_Mock::userFunction(
-			'aps_is_supported_post_type', array(
-				'return' => true,
-			)
-		);
-		\WP_Mock::userFunction(
-			'aps_current_user_can_archive', array(
-				'return' => true,
-			)
-		);
-		\WP_Mock::userFunction(
-			'aps_get_unarchive_post_link', array(
-				'return' => 'http://example.com/86/',
-			)
-		);
-		\WP_Mock::userFunction(
-			'aps_current_user_can_unarchive', array(
-				'return' => true,
-			)
-		);
+		// Mock WordPress core functions that aps_ functions wrap
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [ 'attachment' ] )
+			->reply( [] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', \Mockery::any() )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'read_private_posts', \Mockery::any() )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'aps_get_unarchive_post_link' )->andReturn( 'http://example.com/86/' );
 		\WP_Mock::userFunction(
 			'_aps_get_archivable_statuses', array(
 				'return' => [ 'publish' ],
@@ -149,7 +143,13 @@ class RowActionsTest extends TestCase {
 	 * @covers ArchivedPostStatus\RowActions::register
 	 */
 	public function test_register_hooks() {
-		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post', 'page' ] );
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [ 'attachment' ] )
+			->reply( [] );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
 
 		\WP_Mock::expectFilterAdded( 'post_row_actions', [ $this->class, 'row_actions' ], 10, 2 );
 		\WP_Mock::expectFilterAdded( 'page_row_actions', [ $this->class, 'row_actions' ], 10, 2 );
@@ -197,11 +197,11 @@ class RowActionsTest extends TestCase {
 	 */
 	public function test_row_actions_for_unarchivable_post() {
 
-		\WP_Mock::userFunction(
-			'aps_current_user_can_view', array(
-				'return_in_order' => [ true, false ],
-			)
-		);
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )
+			->andReturnUsing( function() {
+				static $call_count = 0;
+				return $call_count++ === 0 ? true : false;
+			} );
 
 		$mock_actions = [
 			'inline hide-if-no-js' => 'Quick Edit',
@@ -249,10 +249,17 @@ class RowActionsTest extends TestCase {
 		$archived_post->ID = 86;
 
 		// Override setUp mocks for archived post scenario
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true )->zeroOrMoreTimes();
-		\WP_Mock::userFunction( 'aps_current_user_can_unarchive' )->with( 86 )->andReturn( true )->zeroOrMoreTimes();
-		\WP_Mock::userFunction( 'aps_current_user_can_view' )->with( 86 )->andReturn( true )->zeroOrMoreTimes();
-		\WP_Mock::userFunction( 'aps_get_unarchive_post_link' )->with( 86 )->andReturn( 'http://example.com/unarchive' )->zeroOrMoreTimes();
+		\WP_Mock::userFunction( 'get_post_types' )->andReturn( [ 'post' => 'post', 'page' => 'page' ] )->zeroOrMoreTimes();
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page' ] );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 86 )
+			->andReturn( true )->zeroOrMoreTimes();
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'read_private_posts', 86 )
+			->andReturn( true )->zeroOrMoreTimes();
+		\WP_Mock::userFunction( 'aps_get_unarchive_post_link' )->andReturn( 'http://example.com/unarchive' )->zeroOrMoreTimes();
 		\WP_Mock::userFunction( '__' )->andReturn( 'Unarchive' )->zeroOrMoreTimes();
 		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing( function( $value ) { return $value; } )->zeroOrMoreTimes();
 
