@@ -2,7 +2,7 @@
 ---
 
 ## 0.4.0 - February X, 2025
-- Updated Tested to WordPress 6.7.1
+- Tested to WordPress 6.8.2
 - New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 - Added block editor support
 - Added bulk edit support
