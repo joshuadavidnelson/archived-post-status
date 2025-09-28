@@ -18,7 +18,6 @@
 		"env:shell": "wp-env run cli /bin/bash",
 		"test": "jest --verbose --runInBand --detectOpenHandles --forceExit",
 		"test:watch": "jest --watch",
-		"postenv:start": "./tests/bin/initialize.sh",
 		"test:coverage": "jest --coverage"
 	},
 	"devDependencies": {
