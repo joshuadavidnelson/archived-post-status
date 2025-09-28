@@ -7,3 +7,5 @@ node_modules
 vendor
 *.cache
 /coverage
+*/cypress/screenshots/*
+*/cypress/downloads/*
