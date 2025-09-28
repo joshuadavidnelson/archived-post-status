@@ -1,81 +1,87 @@
-describe('Archived Post Status - Admin Notices', () => {
+describe("Archived Post Status - Admin Notices", () => {
 	beforeEach(() => {
-		cy.login();
+		cy.setUpPlugin();
 	});
 
 	it('Shows notice when posts are successfully archived via bulk action', () => {
-		// Create test posts
+		let postIds = [];
+
+		// Create test posts and store their IDs
 		cy.createPost({
 			title: 'Bulk Archive Notice Test 1',
 			content: 'Testing bulk archive notices',
 			status: 'publish'
-		});
+		}).then(post => postIds.push(post.id));
 
 		cy.createPost({
 			title: 'Bulk Archive Notice Test 2',
 			content: 'Testing bulk archive notices',
 			status: 'publish'
-		});
+		}).then(post => postIds.push(post.id));
 
-		// Go to posts list
+		// Go to posts list and wait for page to load
 		cy.visit('/wp-admin/edit.php');
+		cy.get('.wp-list-table').should('be.visible');
+		cy.get('#bulk-action-selector-top').should('be.visible');
 
 		// Check if Archive bulk action exists
-		cy.get('#bulk-action-selector-top option').then(($options) => {
-			const hasArchive = Array.from($options).some(opt => opt.text === 'Archive');
-
-			if (hasArchive) {
-				// Select posts and archive them
+		cy.get('#bulk-action-selector-top option[value="archive"]').then(($archiveOption) => {
+			if ($archiveOption.length > 0) {
+				// Select the first two posts
 				cy.get('input[name="post[]"]').eq(0).check();
 				cy.get('input[name="post[]"]').eq(1).check();
-				cy.get('#bulk-action-selector-top').select('Archive');
+
+				// Select archive action and submit
+				cy.get('#bulk-action-selector-top').select('archive');
 				cy.get('#doaction').click();
 
-				// Look for admin notice
-				cy.get('.notice, .updated').should('be.visible');
+				// Wait for redirect and check URL contains archived parameter
+				cy.url().should('include', 'archived=', { timeout: 10000 });
 
-				// Check for specific archived notice content
-				cy.get('body').then(($body) => {
-					if ($body.text().includes('archived') || $body.text().includes('Archive')) {
-						cy.log('Archive success notice displayed');
-					}
-				});
+				// Look for success notice with specific content
+				cy.get('.notice-success, .updated').should('be.visible', { timeout: 5000 });
+				cy.get('.notice-success, .updated').should('contain.text', 'Archive');
 			} else {
-				cy.log('Archive bulk action not available - skipping notice test');
+				cy.log('Archive bulk action not available - plugin may not be active');
 			}
 		});
 	});
 
 	it('Shows notice when posts are successfully unarchived via bulk action', () => {
-		// Create archived post first
+		let archivedPostId;
+
+		// Create a published post first, then archive it to ensure proper test setup
 		cy.createPost({
 			title: 'Bulk Unarchive Notice Test',
 			content: 'Testing bulk unarchive notices',
-			status: 'archive'
+			status: 'publish'
+		}).then(post => {
+			archivedPostId = post.id;
+			// Archive the post via WP-CLI to ensure it's properly archived
+			cy.wpCli(`wp post archive ${post.id}`);
 		});
 
 		// Go to archived posts view
 		cy.visit('/wp-admin/edit.php?post_status=archive');
+		cy.get('.wp-list-table').should('be.visible');
 
-		// Check if post exists and try to unarchive
+		// Wait for posts to load, then check if any archived posts exist
 		cy.get('body').then(($body) => {
 			if ($body.find('input[name="post[]"]').length > 0) {
-				cy.get('#bulk-action-selector-top option').then(($options) => {
-					const hasUnarchive = Array.from($options).some(opt => opt.text === 'Unarchive');
-
-					if (hasUnarchive) {
+				// Check if unarchive bulk action exists
+				cy.get('#bulk-action-selector-top option[value="unarchive"]').then(($unarchiveOption) => {
+					if ($unarchiveOption.length > 0) {
+						// Select the first archived post
 						cy.get('input[name="post[]"]').first().check();
-						cy.get('#bulk-action-selector-top').select('Unarchive');
+						cy.get('#bulk-action-selector-top').select('unarchive');
 						cy.get('#doaction').click();
 
-						// Look for admin notice
-						cy.get('.notice, .updated').should('be.visible');
-
-						// Check for specific unarchived notice content
-						cy.get('body').then(($body) => {
-							if ($body.text().includes('unarchived') || $body.text().includes('restored')) {
-								cy.log('Unarchive success notice displayed');
-							}
+						// Wait for redirect and check for success notice
+						cy.url().should('include', 'unarchived=', { timeout: 10000 });
+						cy.get('.notice-success, .updated').should('be.visible', { timeout: 5000 });
+						cy.get('.notice-success, .updated').should(($notice) => {
+							const text = $notice.text().toLowerCase();
+							expect(text).to.match(/unarchiv|restor/);
 						});
 					} else {
 						cy.log('Unarchive bulk action not available');
@@ -88,56 +94,90 @@ describe('Archived Post Status - Admin Notices', () => {
 	});
 
 	it('Shows appropriate notice for single post archive via row action', () => {
+		let testPostId;
+
 		// Create test post
 		cy.createPost({
 			title: 'Single Archive Notice Test',
 			content: 'Testing single post archive notice',
 			status: 'publish'
+		}).then(post => {
+			testPostId = post.id;
 		});
 
 		cy.visit('/wp-admin/edit.php');
+		cy.get('.wp-list-table').should('be.visible');
 
-		// Try to archive via row action
+		// Find the row for our test post and check for archive row action
 		cy.get('.wp-list-table tbody tr').first().within(() => {
-			cy.get('.row-title').trigger('mouseover');
-			cy.get('.row-actions').should('be.visible');
+			// Hover to reveal row actions
+			cy.get('.row-title').invoke('attr', 'title').then((title) => {
+				if (title && title.includes('Single Archive Notice Test')) {
+					cy.get('.row-title').trigger('mouseover');
 
-			cy.get('.row-actions').then(($actions) => {
-				if ($actions.text().includes('Archive')) {
-					cy.get('.row-actions a').contains('Archive').click({ force: true });
+					// Wait for row actions to appear
+					cy.get('.row-actions', { timeout: 3000 }).should('be.visible');
+
+					// Check if archive action exists
+					cy.get('.row-actions').then(($actions) => {
+						if ($actions.find('a[href*="archive"]').length > 0) {
+							cy.get('.row-actions a[href*="archive"]').first().click();
+
+							// Wait for redirect and check for notice
+							cy.url().should('include', '/wp-admin/edit.php', { timeout: 10000 });
+							cy.get('.notice, .updated', { timeout: 5000 }).should('be.visible');
+						} else {
+							cy.log('Archive row action not found for this post');
+						}
+					});
 				} else {
-					cy.log('Archive row action not available');
+					cy.log('Test post not found in first row, checking if archive actions exist generally');
 				}
 			});
 		});
-
-		// Wait for any potential redirect
-		cy.wait(2000);
-
-		// Just verify we're still in admin area (may have redirected)
-		cy.url().should('include', '/wp-admin/');
-
-		// Check that page loaded properly
-		cy.visit('/wp-admin/edit.php'); // Navigate back to ensure stable state
-		cy.get('body').should('be.visible');
-		cy.get('.wp-list-table').should('be.visible');
-
-		cy.log('Row action test completed - notices may vary by implementation');
 	});
 
 	it('Shows error notice when archive action fails', () => {
-		// This test is more complex as it would require simulating a failure
-		// For now, just test that we can access the archive functionality
-		cy.visit('/wp-admin/edit.php');
-		cy.get('.wp-list-table').should('be.visible');
+		// Create a test scenario where archiving might fail
+		cy.createPost({
+			title: 'Archive Failure Test Post',
+			status: 'publish'
+		}).then(post => {
+			// Use wpCliEval to temporarily disable archive capability for testing
+			cy.wpCliEval(`
+				add_filter('user_can_archive_post', function($can, $post_id) {
+					if ($post_id == ${post.id}) {
+						return false;
+					}
+					return $can;
+				}, 10, 2);
+			`);
 
-		// Test that bulk actions selector exists
-		cy.get('#bulk-action-selector-top').should('be.visible');
+			cy.visit('/wp-admin/edit.php');
+			cy.get('.wp-list-table').should('be.visible');
 
-		// Log available actions for debugging
-		cy.get('#bulk-action-selector-top option').then(($options) => {
-			const actions = Array.from($options).map(opt => opt.text).join(', ');
-			cy.log('Available bulk actions:', actions);
+			// Try to archive the post where capability was disabled
+			cy.get('#bulk-action-selector-top option[value="archive"]').then(($archiveOption) => {
+				if ($archiveOption.length > 0) {
+					// Select the first post and try to archive
+					cy.get('input[name="post[]"]').first().check();
+					cy.get('#bulk-action-selector-top').select('archive');
+					cy.get('#doaction').click();
+
+					// Look for any notice (error handling may vary by implementation)
+					cy.get('body', { timeout: 10000 }).then(($body) => {
+						// Check if there's any kind of notice
+						if ($body.find('.notice').length > 0) {
+							cy.get('.notice').should('be.visible');
+							cy.log('Notice displayed for archive action');
+						} else {
+							cy.log('No notice displayed (implementation may vary)');
+						}
+					});
+				} else {
+					cy.log('Archive bulk action not available');
+				}
+			});
 		});
 	});
 

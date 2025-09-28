@@ -1,4 +1,7 @@
 describe('Archived Post Status - User Roles and Permissions', () => {
+	beforeEach(() => {
+		cy.setUpPlugin();
+	});
 
 	it('Administrator can archive and unarchive posts', () => {
 		cy.login(); // Login as default admin

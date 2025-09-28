@@ -1,6 +1,6 @@
-describe('Archived Post Status - Admin Post List and Bulk Actions', () => {
+describe("Archived Post Status - Admin Post List and Bulk Actions", () => {
 	beforeEach(() => {
-		cy.login();
+		cy.setUpPlugin();
 	});
 
 	it('Can archive posts using bulk actions', () => {
