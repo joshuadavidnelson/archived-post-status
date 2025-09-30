@@ -1,35 +1,47 @@
+# Development and testing files
 /tests/
+/coverage/
+/vendor/
 /bin/
+/docs/
+/.github/
+/.wordpress-org/
+
+# Configuration files
 .editorconfig
 .gitignore
 .gitattributes
 .distignore
-/.wordpress-org/
+.babelrc
+.wp-env.json
+.phpcs.xml.dist
+.gitbook.yaml
+.travis.yml
+
+# Composer and npm files
 composer.json
 composer.lock
-code-of-conduct.md
-contributing.md
 package.json
 package-lock.json
-.wp-env.json
-.git
-/.github/
-.travis.yml
-.DS_Store
-.wp-env.json
-Thumbs.db
-bin
 node_modules
-phpunit.xml
-phpstan.neon
-README.md
-tests
-.babelrc
-.phpcs.xml
-webpack.config.js
-.gitbook.yaml
-/docs/
 
+# Documentation
+code-of-conduct.md
+contributing.md
+README.md
+
+# Test and build configuration
+phpunit.xml.dist
+phpstan.neon.dist
+jest.config.js
+webpack.config.js
+
+# System files
+.DS_Store
+Thumbs.db
+.git
+
+# File patterns
 *.cache
 *.log
 *.map
