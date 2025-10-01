@@ -1,6 +1,6 @@
 <?php
 /**
- * Archived Date meta field.
+ * CLI commands for managing archived post status.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
@@ -15,7 +15,7 @@ use WP_CLI;
 use WP_CLI\Utils;
 
 /**
- * All the functionality needed to support the "Archived Date" field.
+ * All the functionality needed to support CLI commands for archived posts.
  *
  * @since 0.4.0
  */

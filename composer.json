@@ -2,7 +2,7 @@
   "name": "joshuadavidnelson/archived-post-status",
   "version": "0.4.0",
   "type": "wordpress-plugin",
-  "description": "A plugin gives you the power to archive your WordPress content.",
+  "description": "This plugin gives you the power to archive your WordPress content.",
   "homepage": "https://archivedpoststat.us/",
   "license": "GPL-2.0-or-later",
   "support": {

@@ -197,7 +197,7 @@ function aps_register_archive_post_status() {
 		),
 	);
 
-	// Regiester the post status.
+	// Register the post status.
 	register_post_status( 'archive', $args );
 }
 
@@ -328,7 +328,7 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
 /**
  * Get the link to un/archive a post.
  *
- * Modled after the core `get_delete_post_link()` function.
+ * Modeled after the core `get_delete_post_link()` function.
  *
  * @see https://developer.wordpress.org/reference/functions/get_delete_post_link/
  *
@@ -390,7 +390,7 @@ function aps_get_unarchive_post_link( $post = 0, $context = 'display' ) {
 /**
  * Get the link to an archived post.
  *
- * Modled after the core `get_preview_post_link()` function.
+ * Modeled after the core `get_preview_post_link()` function.
  *
  * @see https://developer.wordpress.org/reference/functions/get_preview_post_link/
  *
