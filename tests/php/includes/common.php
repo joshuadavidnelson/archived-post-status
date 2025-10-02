@@ -171,8 +171,6 @@ function register_post_status( $post_status, $args = array() ) {
 	return true;
 }
 
-
-
 /**
  * Mock get_post() function.
  */
@@ -471,57 +469,14 @@ function get_userdata( $user_id ) {
 }
 
 /**
- * Mock esc_html__() function.
- *
- * @since 0.4.0
- * @param string $text
- * @param string $domain
- * @return string
- */
-if ( ! function_exists( 'esc_html__' ) ) {
-	function esc_html__( $text, $domain = 'default' ) {
-		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
-	}
-}
-
-/**
- * Mock esc_html_e() function.
- *
- * @since 0.4.0
- * @param string $text
- * @param string $domain
- * @return void
- */
-if ( ! function_exists( 'esc_html_e' ) ) {
-	function esc_html_e( $text, $domain = 'default' ) {
-		echo htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
-	}
-}
-
-/**
- * Mock esc_url() function.
- *
- * @since 0.4.0
- * @param string $url
- * @return string
- */
-if ( ! function_exists( 'esc_url' ) ) {
-	function esc_url( $url ) {
-		return filter_var( $url, FILTER_SANITIZE_URL ) ?: $url;
-	}
-}
-
-/**
  * Mock wp_kses_post() function.
  *
  * @since 0.4.0
  * @param string $data
  * @return string
  */
-if ( ! function_exists( 'wp_kses_post' ) ) {
-	function wp_kses_post( $data ) {
-		return strip_tags( $data, '<a><strong><em><br><p><ul><ol><li>' );
-	}
+function wp_kses_post( $data ) {
+	return strip_tags( $data, '<a><strong><em><br><p><ul><ol><li>' );
 }
 
 /**
@@ -532,82 +487,36 @@ if ( ! function_exists( 'wp_kses_post' ) ) {
  * @param int $decimals
  * @return string
  */
-if ( ! function_exists( 'number_format_i18n' ) ) {
-	function number_format_i18n( $number, $decimals = 0 ) {
-		return number_format( $number, $decimals );
-	}
-}
-
-/**
- * Mock absint() function.
- *
- * @since 0.4.0
- * @param mixed $maybeint
- * @return int
- */
-if ( ! function_exists( 'absint' ) ) {
-	function absint( $maybeint ) {
-		return abs( intval( $maybeint ) );
-	}
-}
-
-/**
- * Mock str_contains() function for older PHP versions.
- *
- * @since 0.4.0
- * @param string $haystack
- * @param string $needle
- * @return bool
- */
-if ( ! function_exists( 'str_contains' ) ) {
-	function str_contains( $haystack, $needle ) {
-		return $needle !== '' && strpos( $haystack, $needle ) !== false;
-	}
+function number_format_i18n( $number, $decimals = 0 ) {
+	return number_format( $number, $decimals );
 }
 
 /**
  * Mock delete_post_meta() function.
  */
-if ( ! function_exists( 'delete_post_meta' ) ) {
-	function delete_post_meta( $post_id, $meta_key, $meta_value = '' ) {
-		return true;
-	}
+function delete_post_meta( $post_id, $meta_key, $meta_value = '' ) {
+	return true;
 }
 
 /**
  * Mock get_post_timestamp() function.
  */
-if ( ! function_exists( 'get_post_timestamp' ) ) {
-	function get_post_timestamp( $post = null, $field = 'date' ) {
-		return time();
-	}
+function get_post_timestamp( $post = null, $field = 'date' ) {
+	return time();
 }
 
 /**
  * Mock get_current_user_id() function.
  */
-if ( ! function_exists( 'get_current_user_id' ) ) {
-	function get_current_user_id() {
-		return 1;
-	}
+function get_current_user_id() {
+	return 1;
 }
 
 /**
  * Mock remove_action() function.
  */
-if ( ! function_exists( 'remove_action' ) ) {
-	function remove_action( $hook_name, $callback, $priority = 10 ) {
-		return true;
-	}
-}
-
-/**
- * Mock check_admin_referer() function.
- */
-if ( ! function_exists( 'check_admin_referer' ) ) {
-	function check_admin_referer( $action = -1, $query_arg = '_wpnonce', $die = true ) {
-		return true;
-	}
+function remove_action( $hook_name, $callback, $priority = 10 ) {
+	return true;
 }
 
 /**
