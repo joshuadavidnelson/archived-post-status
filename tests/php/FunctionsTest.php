@@ -51,6 +51,7 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_archived_label_string
 	 */
 	public function test_archived_label_string_default() {
+
 		// Arrange
 		\WP_Mock::onFilter( 'aps_archived_label_string' )
 			->with( 'Archived' )
@@ -69,6 +70,7 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_archived_label_string
 	 */
 	public function test_archived_label_string_custom() {
+
 		// Arrange
 		\WP_Mock::onFilter( 'aps_archived_label_string' )
 			->with( 'Archived' )
@@ -87,6 +89,7 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_get_supported_post_types
 	 */
 	public function test_supported_post_types() {
+
 		// Arrange
 		\WP_Mock::userFunction( 'get_post_types' )
 			->andReturn( [ 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ] );
@@ -94,6 +97,7 @@ class FunctionsTest extends TestCase {
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
 			->with( \Mockery::type( 'array' ) )
 			->reply( [ 'post', 'page' ] );
+
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( \Mockery::type( 'array' ) )
 			->reply( [ 'attachment' ] );
@@ -113,6 +117,7 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_is_supported_post_type
 	 */
 	public function test_is_supported_post_type() {
+
 		// Arrange
 		\WP_Mock::userFunction( 'aps_get_supported_post_types' )
 			->andReturn( [ 'post', 'page' ] );
@@ -129,6 +134,7 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_current_user_can_view
 	 */
 	public function test_current_user_can_view() {
+
 		// Arrange
 		\WP_Mock::userFunction( 'current_user_can' )
 			->andReturn( true );
@@ -316,7 +322,7 @@ class FunctionsTest extends TestCase {
 		// Pass false to the filter.
 		WP_Mock::onFilter( 'aps_is_read_only' )
 			->with( true )
-			->reply( true );
+			->reply( false );
 
 		// Act & Assert
 		$this->assertTrue( aps_current_user_can_view() );
@@ -501,8 +507,11 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_current_user_can_archive
 	 */
 	public function test_current_user_can_archive() {
+
 		// Arrange
-		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( false );
+		\WP_Mock::userFunction( 'aps_is_read_only' )
+			->andReturn( false );
+
 		\WP_Mock::userFunction( 'current_user_can' )
 			->andReturn( true );
 
@@ -520,6 +529,7 @@ class FunctionsTest extends TestCase {
 	 * @covers ::_aps_nonce_key
 	 */
 	public function test_nonce_key_generation() {
+
 		// Act
 		$result = _aps_nonce_key( 'archive', 123 );
 
@@ -536,6 +546,7 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_get_supported_post_types
 	 */
 	public function test_register_archive_post_status() {
+
 		// Arrange
 		\WP_Mock::userFunction( 'register_post_status' )
 			->with( 'archive', \Mockery::type( 'array' ) )
@@ -554,17 +565,24 @@ class FunctionsTest extends TestCase {
 	 * @covers ::aps_get_supported_post_types
 	 */
 	public function test_get_supported_post_types() {
+
 		// Arrange
 		\WP_Mock::userFunction( 'get_post_types' )
 			->with( [ 'public' => true ] )
 			->andReturn( [ 'post', 'page', 'attachment' ] );
+
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( [ 'attachment' ] )
 			->reply( [ 'attachment' ] );
-		\WP_Mock::userFunction( 'post_type_exists' )->andReturn( true );
-		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing( function( $value ) {
-			return $value;
-		} );
+
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( function( $value ) {
+				return $value;
+			} );
+
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
 			->with( [ 'post', 'page' ] )
 			->reply( [ 'post', 'page' ] );
