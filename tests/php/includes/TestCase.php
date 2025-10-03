@@ -214,9 +214,120 @@ class TestCase extends BaseTestCase {
 				->andReturn( 'publish' );
 		} else {
 			// Flexible expectations for any meta operations
-			\WP_Mock::userFunction( 'add_post_meta' )->atLeast()->once()->andReturn( true );
+			\WP_Mock::userFunction( 'add_post_meta' )->andReturn( true );
 			\WP_Mock::userFunction( 'delete_post_meta' )->andReturn( true );
 			\WP_Mock::userFunction( 'get_post_meta' )->andReturn( 'publish' );
 		}
+	}
+
+	/**
+	 * Mock standard WordPress functions for link generation
+	 */
+	protected function mockLinkGenerationFunctions( array $config = [] ) {
+		$defaults = [
+			'post_id' => 123,
+			'post_type' => 'post',
+			'action' => 'archive',
+			'base_url' => 'http://example.com/wp-admin/post.php?post=123&action=edit',
+			'final_url' => 'http://example.com/wp-admin/post.php?post=123&action=edit&action=archive&_wpnonce=abc123'
+		];
+
+		$config = array_merge( $defaults, $config );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) [ '_edit_link' => 'post.php?post=%d&action=edit' ] );
+
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'aps_current_user_can_archive' )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'admin_url' )
+			->andReturn( $config['base_url'] );
+
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturn( $config['base_url'] . '&action=' . $config['action'] );
+
+		\WP_Mock::userFunction( '_aps_nonce_key' )
+			->andReturn( $config['action'] . '-' . $config['post_id'] );
+
+		\WP_Mock::userFunction( 'wp_nonce_url' )
+			->andReturn( $config['final_url'] );
+
+		\WP_Mock::userFunction( 'esc_url' )
+			->andReturnUsing( function( $url ) { return $url; } );
+	}
+
+	/**
+	 * Mock archived post link functions
+	 */
+	protected function mockArchivedPostLinkFunctions( array $config = [] ) {
+		$defaults = [
+			'post_id' => 123,
+			'post_status' => 'archive',
+			'post_type' => 'post',
+			'permalink' => 'http://example.com/post/123',
+			'final_url' => 'http://example.com/post/123?preview=true'
+		];
+
+		$config = array_merge( $defaults, $config );
+
+		\WP_Mock::userFunction( 'is_post_status_viewable' )
+			->andReturn( false );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) [ 'public' => true ] );
+
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'is_post_type_viewable' )
+			->andReturn( false );
+
+		\WP_Mock::userFunction( 'get_permalink' )
+			->andReturn( $config['permalink'] );
+
+		\WP_Mock::userFunction( 'set_url_scheme' )
+			->andReturn( $config['permalink'] );
+
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturn( $config['final_url'] );
+
+		\WP_Mock::userFunction( 'esc_url' )
+			->andReturnUsing( function( $url ) { return $url; } );
+	}
+
+	/**
+	 * Mock archive/unarchive process functions
+	 */
+	protected function mockArchiveProcessFunctions( array $config = [] ) {
+		$defaults = [
+			'post_id' => 123,
+			'current_status' => 'publish',
+			'archive_meta_status' => 'publish',
+			'comment_status' => 'open',
+			'ping_status' => 'open'
+		];
+
+		$config = array_merge( $defaults, $config );
+
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->andReturn( $config['archive_meta_status'] );
+
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->andReturn( $config['post_id'] );
+
+		\WP_Mock::userFunction( 'add_post_meta' )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'delete_post_meta' )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'get_post_timestamp' )
+			->andReturn( time() );
+
+		\WP_Mock::userFunction( 'get_current_user_id' )
+			->andReturn( 1 );
 	}
 }

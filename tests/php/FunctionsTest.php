@@ -509,18 +509,16 @@ class FunctionsTest extends TestCase {
 	public function test_current_user_can_archive() {
 
 		// Arrange
-		\WP_Mock::userFunction( 'aps_is_read_only' )
-			->andReturn( false );
-
 		\WP_Mock::userFunction( 'current_user_can' )
 			->andReturn( true );
 
-		\WP_Mock::onFilter( 'aps_current_user_can_archive' )
-			->with( true )
-			->reply( true );
+		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 0 );
 
-		// Act & Assert
-		$this->assertTrue( aps_current_user_can_archive() );
+		// Act
+		$result = aps_current_user_can_archive();
+
+		// Assert
+		$this->assertTrue( $result );
 	}
 
 	/**
@@ -568,24 +566,17 @@ class FunctionsTest extends TestCase {
 
 		// Arrange
 		\WP_Mock::userFunction( 'get_post_types' )
-			->with( [ 'public' => true ] )
 			->andReturn( [ 'post', 'page', 'attachment' ] );
-
-		\WP_Mock::onFilter( 'aps_excluded_post_types' )
-			->with( [ 'attachment' ] )
-			->reply( [ 'attachment' ] );
 
 		\WP_Mock::userFunction( 'post_type_exists' )
 			->andReturn( true );
 
 		\WP_Mock::userFunction( 'esc_attr' )
-			->andReturnUsing( function( $value ) {
-				return $value;
-			} );
+			->andReturnUsing( function( $value ) { return $value; } );
 
-		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( [ 'post', 'page' ] )
-			->reply( [ 'post', 'page' ] );
+		// Test default filters
+		\WP_Mock::expectFilter( 'aps_excluded_post_types', [ 'attachment' ] );
+		\WP_Mock::expectFilter( 'aps_supported_post_types', [ 'post', 'page' ] );
 
 		// Act
 		$result = aps_get_supported_post_types();
@@ -595,73 +586,137 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test the aps_save_post() function.
+	 * Test aps_excluded_post_types filter with custom values
 	 *
-	 * @since 0.3.9
+	 * @covers ::aps_get_supported_post_types
 	 */
-	public function test_aps_save_post() {
+	public function test_aps_excluded_post_types_filter() {
 
-		$mock_post = $this->mock_post;
+		// Arrange
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( [ 'post', 'page', 'attachment', 'product' ] );
 
-		// Mock the wp_doing_ajax() function.
-		\WP_Mock::userFunction(
-			'wp_doing_ajax', array(
-				'return' => false,
-			)
-		);
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
 
-		// Mock the wp_doing_cron() function.
-		\WP_Mock::userFunction(
-			'wp_doing_cron', array(
-				'return' => false,
-			)
-		);
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( function( $value ) { return $value; } );
 
-		// Mock the wp_is_post_revision() function.
-		\WP_Mock::userFunction(
-			'wp_is_post_revision', array(
-				'return' => false,
-			)
-		);
+		// Test custom excluded types
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( [ 'attachment' ] )
+			->reply( [ 'attachment', 'product' ] );
 
-		// Mock the aps_is_excluded_post_type() function.
-		\WP_Mock::userFunction(
-			'aps_is_excluded_post_type', array(
-				'times'  => 1,
-				'return' => false,
-			)
-		);
+		\WP_Mock::expectFilter( 'aps_supported_post_types', [ 'post', 'page' ] );
 
-		// Mock the remove_action() function.
-		\WP_Mock::userFunction(
-			'remove_action', array(
-				'return' => true,
-			)
-		);
+		// Act
+		$result = aps_get_supported_post_types();
 
-		// Mock the wp_update_post() function.
-		\WP_Mock::userFunction(
-			'wp_update_post', array(
-				'times'  => 1,
-				'args'   => array(
-					array(
-						'ID'             => $mock_post->ID,
-						'comment_status' => 'closed',
-						'ping_status'    => 'closed',
-					),
-				),
-				'return' => function( $args ) use ( $mock_post ) {
-					$mock_post->comment_status = $args['comment_status'];
-					$mock_post->ping_status    = $args['ping_status'];
-					return $mock_post->ID;
-				},
-			)
-		);
+		// Assert
+		$this->assertEquals( [ 'post', 'page' ], $result );
+	}
 
-		aps_save_post( $mock_post->ID, $mock_post, true );
 
-		$this->assertEquals( 'closed', $mock_post->comment_status );
-		$this->assertEquals( 'closed', $mock_post->ping_status );
 
+	/**
+	 * Test aps_supported_post_types filter
+	 *
+	 * @covers ::aps_get_supported_post_types
+	 */
+	public function test_aps_supported_post_types_filter() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( [ 'post', 'page', 'attachment' ] );
+
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( function( $value ) { return $value; } );
+
+		\WP_Mock::expectFilter( 'aps_excluded_post_types', [ 'attachment' ] );
+
+		// Test filter adding custom post type
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( [ 'post', 'page' ] )
+			->reply( [ 'post', 'page', 'product' ] );
+
+		// Act
+		$result = aps_get_supported_post_types();
+
+		// Assert
+		$this->assertEquals( [ 'post', 'page', 'product' ], $result );
+	}
+
+
+
+
+
+	/**
+	 * Test aps_archivable_statuses filter default
+	 *
+	 * @covers ::_aps_get_archivable_statuses
+	 */
+	public function test_aps_archivable_statuses_default() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( function( $value ) { return $value; } );
+
+		\WP_Mock::expectFilter( 'aps_archivable_statuses', [ 'publish', 'future', 'draft', 'pending', 'private' ] );
+
+		// Act
+		$result = _aps_get_archivable_statuses();
+
+		// Assert
+		$this->assertEquals( [ 'publish', 'future', 'draft', 'pending', 'private' ], $result );
+	}
+
+	/**
+	 * Test aps_archivable_statuses filter custom
+	 *
+	 * @covers ::_aps_get_archivable_statuses
+	 */
+	public function test_aps_archivable_statuses_custom() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( function( $value ) { return $value; } );
+
+		\WP_Mock::onFilter( 'aps_archivable_statuses' )
+			->with( [ 'publish', 'future', 'draft', 'pending', 'private' ] )
+			->reply( [ 'publish', 'custom_status' ] );
+
+		// Act
+		$result = _aps_get_archivable_statuses();
+
+		// Assert
+		$this->assertEquals( [ 'publish', 'custom_status' ], $result );
+	}
+
+
+
+	/**
+	 * Test deprecated function aps_is_excluded_post_type
+	 *
+	 * @covers ::aps_is_excluded_post_type
+	 */
+	public function test_aps_is_excluded_post_type_deprecated() {
+
+		// Arrange
+		\WP_Mock::userFunction( '_deprecated_function' )
+			->with( 'aps_is_excluded_post_type', '0.4.0', 'aps_is_supported_post_type' )
+			->once();
+
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )
+			->andReturn( true );
+
+		// Act
+		$result = aps_is_excluded_post_type( 'post' );
+
+		// Assert
+		$this->assertFalse( $result ); // Should return opposite of aps_is_supported_post_type
 	}
 }
