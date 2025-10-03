@@ -94,28 +94,25 @@ To access the shell interface of your local development: `npm run env:shell`
 
 ### Tests and checks
 
-Github actions will run phpunit tests, coding standard checks, and static anaylsis. You can run these checks locally via:
+Github actions will run phpunit tests, coding standard checks, and static anaylsis. You can run these checks locally as outlined below.
+
+First, install composer dependencies by running `composer install`
 
 #### PHPUnit Tests
 
 PHP Unit tests go in the `/tests/php/` folder.
 
-To run tests:
-
-1. Install composer dependencies via `composer install`
-2. Run `./vendor/bin/phpunit` or use the composer script: `composer run phpunit`
+To run tests in the terminal with `./vendor/bin/phpunit` or use the composer script: `composer run phpunit`
 
 #### PHP Coding Standards
 
 This project follows WordPress Coding Standards. To check your code:
 
-1. Install composer dependencies via `composer install`
-2. Run PHP Code Sniffer: `./vendor/bin/phpcs` or use the composer script: `composer run phpcs`
-3. To automatically fix coding standard issues: `./vendor/bin/phpcbf` or use the composer script: `composer run phpcbf`
+1. Run PHP Code Sniffer: `./vendor/bin/phpcs` or use the composer script: `composer run phpcs`
+2. To automatically fix coding standard issues: `./vendor/bin/phpcbf` or use the composer script: `composer run phpcbf`
 
 #### PHP Stan
 
-PHPStan is used for static analysis to catch potential issues. To run PHPStan:
+PHPStan is used for static analysis to catch potential issues.
 
-1. Install composer dependencies via `composer install`
-2. Run PHPStan: `./vendor/bin/phpstan analyse --memory-limit=2048M` or use the composer script: `composer run phpstan`
+To run PHPStan in the terminal `./vendor/bin/phpstan analyse --memory-limit=2048M` or use the composer script: `composer run phpstan`
