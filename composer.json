@@ -40,7 +40,8 @@
     "phpcompatibility/phpcompatibility-wp": "^2.1",
     "szepeviktor/phpstan-wordpress": "^2.0",
     "sirbrillig/phpcs-variable-analysis": "^2.12",
-    "automattic/vipwpcs": "^3.0"
+    "automattic/vipwpcs": "^3.0",
+    "doctrine/instantiator": "^1.5"
   },
   "prefer-stable": true,
   "config": {
