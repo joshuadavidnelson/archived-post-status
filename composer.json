@@ -26,7 +26,7 @@
       "./vendor/bin/phpcs"
     ],
     "lint": [
-      "find *.php includes/ -type f -name '*.php' -print0 | xargs -0 -L1 -P4 -- php -l"
+      "find *.php src/ -type f -name '*.php' -print0 | xargs -0 -L1 -P4 -- php -l"
     ]
   },
   "require-dev": {
