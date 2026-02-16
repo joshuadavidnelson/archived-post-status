@@ -3,8 +3,8 @@ Contributors:      joshuadnelson, fjarrett
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
-Tested up to:      6.6.2
-Stable tag:        0.3.11
+Tested up to:      6.69.1
+Stable tag:        0.3.12
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -173,6 +173,12 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
+= 0.3.12 - Feb 16, 2026 =
+- Tested up to WordPress 6.9.1
+- Tested up to PHP 8.4
+- Move over to composer for phpcs, phpstan, and linting checks
+- Upgrade Github actions to actions/checkout@v4 running on php 8.4
+
 = 0.3.11 - June 15, 2024 =
 - Fix release and versioning issues that shipped with 0.3.10
 
@@ -274,6 +280,12 @@ Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com
 Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
+
+= 0.3.12 - Feb 16, 2026 =
+- Tested up to WordPress 6.9.1
+- Tested up to PHP 8.4
+- Move over to composer for phpcs, phpstan, and linting checks
+- Upgrade Github actions to actions/checkout@v4 running on php 8.4
 
 = 0.3.11 - June 15, 2024 =
 - Fix release and versioning issues that shipped with 0.3.10
