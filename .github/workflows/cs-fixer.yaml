@@ -13,7 +13,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
     - name: "Checkout repository"
-      uses: "actions/checkout@v4"
+      uses: "actions/checkout@v6"
     - name: "Install PHPCS"
       run: |
         composer require --no-plugins --dev wp-coding-standards/wpcs
@@ -33,7 +33,7 @@ jobs:
         fi
     - name: "Create pull request"
       if: "${{ steps.list_diff.outputs.exit_status == '1' }}"
-      uses: "peter-evans/create-pull-request@v4"
+      uses: "peter-evans/create-pull-request@v6"
       with:
         add-paths: |
           *.php
