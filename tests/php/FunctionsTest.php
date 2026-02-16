@@ -15,6 +15,13 @@
 class FunctionsTest extends TestCase {
 
 	/**
+	 * Mock post object.
+	 *
+	 * @var \Mockery\MockInterface
+	 */
+	private $mock_post;
+
+	/**
 	 * Set up the test.
 	 *
 	 * @since 0.3.9
@@ -27,6 +34,16 @@ class FunctionsTest extends TestCase {
 				'return' => 'Archived',
 			)
 		);
+
+		// Mock WP post object.
+		$this->mock_post = \Mockery::mock( 'WP_Post' );
+		$this->mock_post->post_title = 'Test Post';
+		$this->mock_post->post_status = 'archive';
+		$this->mock_post->post_type = 'post';
+		$this->mock_post->comment_status = 'open';
+		$this->mock_post->ping_status    = 'open';
+		$this->mock_post->ID = 86;
+
 	}
 
 	/**
@@ -168,7 +185,7 @@ class FunctionsTest extends TestCase {
 			)
 		);
 
-		// Pass false to the filter.
+		// Use the filter to change the default capability.
 		WP_Mock::onFilter( 'aps_default_read_capability' )
 			->with( 'read_private_posts' )
 			->reply( 'read' );
@@ -194,11 +211,11 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test the aps_is_read_only() function filters.
+	 * Test the aps_is_read_only filter.
 	 *
 	 * @since 0.3.9
 	 */
-	public function test_aps_is_read_only_filters() {
+	public function test_aps_is_read_only_filter() {
 
 		// Pass false to the filter.
 		WP_Mock::onFilter( 'aps_is_read_only' )
@@ -217,18 +234,11 @@ class FunctionsTest extends TestCase {
 	 */
 	public function test_aps_the_title() {
 
-		// Mock WP post object.
-		$mock_post = \Mockery::mock( 'WP_Post' );
-		$mock_post->post_title = 'Test Title';
-		$mock_post->post_status = 'archive';
-		$mock_post->post_type = 'post';
-		$mock_post->ID = 86;
-
 		// Mock functions.
 		\WP_Mock::userFunction(
 			'get_post', array(
 				'times'  => 1,
-				'return' => $mock_post,
+				'return' => $this->mock_post,
 			)
 		);
 		\WP_Mock::userFunction(
@@ -237,9 +247,123 @@ class FunctionsTest extends TestCase {
 			)
 		);
 
-		$new_title = aps_the_title( $mock_post->post_title, $mock_post->ID );
+		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
 
-		$this->assertEquals( 'Archived: ' . $mock_post->post_title, $new_title );
+		$this->assertEquals( 'Archived: ' . $this->mock_post->post_title, $new_title );
+
+	}
+
+	/**
+	 * Test the aps_title_label filter.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_the_title_label_filter() {
+
+		// Mock functions.
+		\WP_Mock::userFunction(
+			'get_post',
+			array(
+				'times'  => 2,
+				'return' => $this->mock_post,
+			)
+		);
+		\WP_Mock::userFunction(
+			'is_admin',
+			array(
+				'return' => false,
+			)
+		);
+
+		$new_label = 'Archived Post';
+
+		// Use the filter to change the title label.
+		\WP_Mock::onFilter( 'aps_title_label' )
+			->with(
+				'Archived',
+				$this->mock_post->ID,
+				$this->mock_post->post_title
+			)
+			->reply( $new_label );
+
+		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
+
+		$this->assertEquals( $new_label . ': ' . $this->mock_post->post_title, $new_title );
+
+		// Use the filter to remove the label by returning empty string
+		\WP_Mock::onFilter( 'aps_title_label' )
+			->with(
+				'Archived',
+				$this->mock_post->ID,
+				$this->mock_post->post_title
+			)
+			->reply( '' );
+
+		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
+
+		$this->assertEquals( $this->mock_post->post_title, $new_title );
+
+	}
+
+	/**
+	 * Test the aps_title_label_before filter.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_the_title_label_before_filter() {
+
+		// Mock functions.
+		\WP_Mock::userFunction(
+			'get_post', array(
+				'times'  => 1,
+				'return' => $this->mock_post,
+			)
+		);
+		\WP_Mock::userFunction(
+			'is_admin', array(
+				'return' => false,
+			)
+		);
+
+		// Use the filter to change the title label location.
+		\WP_Mock::onFilter( 'aps_title_label_before' )
+			->with( true, $this->mock_post->ID )
+			->reply( false );
+
+		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
+
+		$this->assertEquals( $this->mock_post->post_title . ' - Archived', $new_title );
+
+	}
+
+	/**
+	 * Test the aps_title_separator filter.
+	 *
+	 * @since 0.3.9
+	 */
+	public function test_aps_title_separator_filter() {
+
+		// Mock functions.
+		\WP_Mock::userFunction(
+			'get_post', array(
+				'times'  => 1,
+				'return' => $this->mock_post,
+			)
+		);
+		\WP_Mock::userFunction(
+			'is_admin', array(
+				'return' => false,
+			)
+		);
+
+		// Use the filter to change the title separator.
+		\WP_Mock::onFilter( 'aps_title_separator' )
+			->with( ': ', $this->mock_post->ID )
+			->reply( ' ~ ' );
+
+		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
+
+		$this->assertEquals( 'Archived ~ ' . $this->mock_post->post_title, $new_title );
 
 	}
 
@@ -260,19 +384,20 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test the aps_is_excluded_post_type() function filters.
+	 * Test the aps_excluded_post_types filter.
 	 *
 	 * @since 0.3.9
 	 */
-	public function test_aps_is_excluded_post_type_filter() {
+	public function test_aps_excluded_post_types_filter() {
 
-		// Pass false to the filter.
-		WP_Mock::onFilter( 'aps_excluded_post_types' )
+		// Use the filter to change the default.
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( 'attachment' )
-			->reply( array( ) );
+			->reply( array( 'post' ) );
 
 		// Confirm the filter is applied.
 		$this->assertFalse( aps_is_excluded_post_type( 'attachment' ) );
+		$this->assertTrue( aps_is_excluded_post_type( 'post' ) );
 
 	}
 
@@ -299,13 +424,8 @@ class FunctionsTest extends TestCase {
 			)
 		);
 
-		// Mock WP post object.
-		$mock_post = \Mockery::mock( 'WP_Post' );
-		$mock_post->post_status = 'archive';
-		$mock_post->post_type = 'post';
-
 		$mock_post_states = array( 'some-state' => 'Some state' );
-		$new_post_states = aps_display_post_states( $mock_post_states, $mock_post );
+		$new_post_states = aps_display_post_states( $mock_post_states, $this->mock_post );
 
 		$this->assertArrayHasKey( 'archive', $new_post_states );
 		$this->assertEquals( 'Archived', $new_post_states['archive'] );
@@ -319,13 +439,21 @@ class FunctionsTest extends TestCase {
 	 */
 	public function test_aps_save_post() {
 
-		// Mock WP post object.
-		$mock_post = \Mockery::mock( 'WP_Post' );
-		$mock_post->post_status = 'archive';
-		$mock_post->post_type = 'post';
-		$mock_post->comment_status = 'open';
-		$mock_post->ping_status    = 'open';
-		$mock_post->ID = 86;
+		$mock_post = $this->mock_post;
+
+		// Mock the wp_doing_ajax() function.
+		\WP_Mock::userFunction(
+			'wp_doing_ajax', array(
+				'return' => false,
+			)
+		);
+
+		// Mock the wp_doing_cron() function.
+		\WP_Mock::userFunction(
+			'wp_doing_cron', array(
+				'return' => false,
+			)
+		);
 
 		// Mock the wp_is_post_revision() function.
 		\WP_Mock::userFunction(
@@ -355,7 +483,7 @@ class FunctionsTest extends TestCase {
 				'times'  => 1,
 				'args'   => array(
 					array(
-						'ID' => $mock_post->ID,
+						'ID'             => $mock_post->ID,
 						'comment_status' => 'closed',
 						'ping_status'    => 'closed',
 					),
