@@ -3,7 +3,7 @@ Contributors:      joshuadnelson, fjarrett
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
-Tested up to:      6.69.1
+Tested up to:      6.9.1
 Stable tag:        0.3.12
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
