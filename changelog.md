@@ -6,7 +6,7 @@
 - Tested up to WordPress 6.9.1
 - Tested up to PHP 8.4
 - Move over to composer for phpcs, phpstan, and linting checks
-- Upgrade Github actions to actions/checkout@v4 running on php 8.4
+- Upgrade Github actions to actions/checkout@v6 running on php 8.4
 
 ## 0.3.11 - June 15, 2024
 
