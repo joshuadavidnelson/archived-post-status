@@ -15,7 +15,7 @@
     "env:stop": "wp-env stop"
   },
   "devDependencies": {
-    "@types/node": "^18.0.0",
+    "@types/node": "^24.0.0",
     "@wordpress/env": "^10.39.0"
   }
 }
