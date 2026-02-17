@@ -393,8 +393,8 @@ function aps_load_post_screen() {
 
 	// translators: Error message when trying to edit an Archived post.
 	wp_die(
-		__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
-		__( 'WordPress &rsaquo; Error' )
+		esc_html( __( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ) ),
+		esc_html( __( 'WordPress Error', 'archived-post-status' ) )
 	);
 }
 add_action( 'load-post.php', 'aps_load_post_screen' );
@@ -442,10 +442,10 @@ function aps_save_post( $post_id, $post, $update ) {
 	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 		return;
 	}
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+	if ( wp_doing_ajax() ) {
 		return;
 	}
-	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+	if ( wp_doing_cron() ) {
 		return;
 	}
 	if ( wp_is_post_revision( $post_id ) ) {

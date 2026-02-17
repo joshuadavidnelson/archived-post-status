@@ -1,49 +1,84 @@
 <?xml version="1.0"?>
-<ruleset name="WordPress Coding Standards based custom ruleset for your plugin">
-	<description>Generally-applicable sniffs for WordPress plugins.</description>
+<ruleset name="Archived Post Status - VIP Coding Standards">
+	<description>VIP coding standards for WordPress plugin development</description>
 
 	<!-- What to scan -->
 	<file>.</file>
 	<exclude-pattern>/vendor/</exclude-pattern>
 	<exclude-pattern>/node_modules/</exclude-pattern>
+	<exclude-pattern>/.github/</exclude-pattern>
+	<exclude-pattern>/.wordpress-org/</exclude-pattern>
+	<exclude-pattern>/languages/</exclude-pattern>
+	<exclude-pattern>/bin/</exclude-pattern>
+	<exclude-pattern>/assets/</exclude-pattern>
 
 	<!-- How to scan -->
-	<!-- Usage instructions: https://github.com/squizlabs/PHP_CodeSniffer/wiki/Usage -->
-	<!-- Annotated ruleset: https://github.com/squizlabs/PHP_CodeSniffer/wiki/Annotated-ruleset.xml -->
-	<arg value="sp"/> <!-- Show sniff and progress -->
-	<arg name="basepath" value="./"/><!-- Strip the file paths down to the relevant bit -->
+	<arg value="sp"/>
+	<arg name="basepath" value="./"/>
 	<arg name="colors"/>
 	<arg name="extensions" value="php"/>
-	<arg name="parallel" value="8"/><!-- Enables parallel processing when available for faster results. -->
+	<arg name="parallel" value="8"/>
 
 	<!-- Rules: Check PHP version compatibility -->
-	<!-- https://github.com/PHPCompatibility/PHPCompatibility#sniffing-your-code-for-compatibility-with-specific-php-versions -->
-	<config name="testVersion" value="5.3-"/>
-	<!-- https://github.com/PHPCompatibility/PHPCompatibilityWP -->
-	<rule ref="PHPCompatibilityWP"/>
-
-	<!-- Rules: WordPress Coding Standards -->
-	<!-- https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
-	<!-- https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties -->
-	<config name="minimum_supported_wp_version" value="4.6"/>
-	<rule ref="WordPress">
-		<exclude name="WordPress.VIP"/>
+	<config name="testVersion" value="8.1-"/>
+	<rule ref="PHPCompatibilityWP">
+		<include-pattern>*\.php$</include-pattern>
 	</rule>
+
+	<!-- Rules: VIP Coding Standards -->
+	<config name="minimum_supported_wp_version" value="5.9"/>
+	<rule ref="WordPress-VIP-Go">
+		<!-- Exclude overly strict prefix rules that don't recognize -->
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
+		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules"/>
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound"/>
+		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get"/>
+		<!-- Exclude JS scanning rules that cause deprecation warnings -->
+		<exclude name="WordPressVIPMinimum.JS"/>
+	</rule>
+
+	<!-- Variable Analysis -->
+	<rule ref="VariableAnalysis"/>
+
+	<!-- Override prefix rules to accept our prefixes -->
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
-			<!-- Value: replace the function, class, and variable prefixes used. Separate multiple prefixes with a comma. -->
-			<property name="prefixes" type="array" value="my-plugin"/>
+			<property name="prefixes" type="array">
+				<element value="archived_post_status"/>
+				<element value="aps"/>
+				<element value="aps_"/>
+				<element value="_aps"/>
+				<element value="ArchivedPostStatus"/>
+				<element value="APS"/>
+			</property>
 		</properties>
+		<!-- Exclude test mock functions from prefix requirements -->
+		<exclude-pattern>tests/php/includes/*</exclude-pattern>
 	</rule>
+
+	<!-- Text domain -->
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<!-- Value: replace the text domain used. -->
-			<property name="text_domain" type="array" value="my-plugin"/>
+			<property name="text_domain" type="array">
+				<element value="archived-post-status"/>
+			</property>
 		</properties>
 	</rule>
+
+	<!-- File naming -->
+	<rule ref="WordPress.Files.FileName">
+		<properties>
+			<property name="strict_class_file_names" value="false"/>
+		</properties>
+	</rule>
+	<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
+		<exclude-pattern>*\.php$</exclude-pattern>
+	</rule>
+
+	<!-- Control structure spacing -->
 	<rule ref="WordPress.WhiteSpace.ControlStructureSpacing">
 		<properties>
-			<property name="blank_line_check" value="true"/>
+			<property name="blank_line_check" value="false"/>
 		</properties>
 	</rule>
 </ruleset>
