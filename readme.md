@@ -94,7 +94,7 @@ To access the shell interface of your local development: `npm run env:shell`
 
 ### Tests and checks
 
-Github actions will run phpunit tests, coding standard checks, and static anaylsis. You can run these checks locally as outlined below.
+Github actions will run phpunit tests, coding standard checks, and static analysis. You can run these checks locally as outlined below.
 
 First, install composer dependencies by running `composer install`
 
