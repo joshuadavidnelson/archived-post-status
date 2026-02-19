@@ -17,7 +17,7 @@
  * Version:     0.4.0
  * Plugin URI:  https://archivedpoststat.us/
  * Requires at least: 5.9
- * Tested up to: 6.8.2
+ * Tested up to: 6.9
  * Requires PHP: 8.1
  * Author:      Joshua David Nelson
  * Author URI:  https://joshuadnelson.com

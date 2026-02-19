@@ -4,7 +4,7 @@ Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
-Tested up to:      6.9.1
+Tested up to:      6.9
 Stable tag:        0.4.0
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
