@@ -186,14 +186,14 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test the aps_current_user_can_archive() function.
+	 * Test archive capability check with default permissions
 	 *
 	 * @since 0.4.0
 	 * @covers aps_current_user_can_archive
 	 */
-	public function aps_current_user_can_archive() {
+	public function test_current_user_can_archive_with_default_capability() {
 
-		// Mock the current_user_can() function.
+		// Arrange - Mock user has edit_others_posts capability
 		\WP_Mock::userFunction(
 			'current_user_can', array(
 				'times'  => 1,
@@ -203,51 +203,48 @@ class FunctionsTest extends TestCase {
 			)
 		);
 
-		// Confirm the filter is applied.
 		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 0 );
 
-		// Confirm the default condition is true.
+		// Act & Assert - User with proper capability can archive
 		$this->assertTrue( aps_current_user_can_archive() );
-
 	}
 
 	/**
-	 * Test the aps_current_user_can_archive() filter.
+	 * Test archive capability check with custom capability filter
 	 *
 	 * @since 0.4.0
 	 * @covers aps_current_user_can_archive
 	 */
-	public function test_aps_current_user_can_archive_filter() {
+	public function test_current_user_can_archive_with_custom_capability_filter() {
 
-		// Mock the current_user_can() function.
+		// Arrange - User only has basic read capability
 		\WP_Mock::userFunction(
 			'current_user_can', array(
 				'times'  => 1,
 				'return' => function( $capability, ...$args ) {
-					return $capability === 'edit_others_posts';
+					return $capability === 'read'; // Only has read, not edit_others_posts
 				},
 			)
 		);
 
-		// Pass false to the filter.
+		// Filter changes required capability to 'read'
 		WP_Mock::onFilter( 'aps_default_archive_capability' )
 			->with( 'edit_others_posts', 0 )
 			->reply( 'read' );
 
-		// Confirm the filter is applied.
-		$this->assertFalse( aps_current_user_can_archive() );
-
+		// Act & Assert - User can now archive with reduced capability
+		$this->assertTrue( aps_current_user_can_archive() );
 	}
 
 	/**
-	 * Test the aps_current_user_can_unarchive() function.
+	 * Test unarchive capability check with default permissions
 	 *
 	 * @since 0.4.0
 	 * @covers aps_current_user_can_unarchive
 	 */
-	public function aps_current_user_can_unarchive() {
+	public function test_current_user_can_unarchive_with_default_capability() {
 
-		// Mock the current_user_can() function.
+		// Arrange - Mock user has edit_others_posts capability
 		\WP_Mock::userFunction(
 			'current_user_can', array(
 				'times'  => 1,
@@ -257,40 +254,37 @@ class FunctionsTest extends TestCase {
 			)
 		);
 
-		// Confirm the filter is applied.
 		\WP_Mock::expectFilter( 'aps_user_unarchive_capability', 'edit_others_posts', 0 );
 
-		// Confirm the default condition is true.
+		// Act & Assert - User with proper capability can unarchive
 		$this->assertTrue( aps_current_user_can_unarchive() );
-
 	}
 
 	/**
-	 * Test the aps_current_user_can_unarchive() filter.
+	 * Test unarchive capability check with custom capability filter
 	 *
 	 * @since 0.4.0
 	 * @covers aps_current_user_can_unarchive
 	 */
-	public function test_aps_current_user_can_unarchive_filter() {
+	public function test_current_user_can_unarchive_with_custom_capability_filter() {
 
-		// Mock the current_user_can() function.
+		// Arrange - User only has basic read capability
 		\WP_Mock::userFunction(
 			'current_user_can', array(
 				'times'  => 1,
 				'return' => function( $capability, ...$args ) {
-					return $capability === 'edit_others_posts';
+					return $capability === 'read'; // Only has read, not edit_others_posts
 				},
 			)
 		);
 
-		// Pass false to the filter.
+		// Filter changes required capability to 'read'
 		WP_Mock::onFilter( 'aps_user_unarchive_capability' )
 			->with( 'edit_others_posts', 0 )
 			->reply( 'read' );
 
-		// Confirm the filter is applied.
-		$this->assertFalse( aps_current_user_can_unarchive() );
-
+		// Act & Assert - User can now unarchive with reduced capability
+		$this->assertTrue( aps_current_user_can_unarchive() );
 	}
 
 
@@ -312,20 +306,20 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test the aps_is_read_only filter.
+	 * Test read-only mode can be disabled via filter
 	 *
 	 * @since 0.3.9
 	 * @covers aps_is_read_only
 	 */
-	public function test_aps_is_read_only_filter() {
+	public function test_read_only_mode_can_be_disabled_via_filter() {
 
-		// Pass false to the filter.
+		// Arrange - Filter disables read-only mode
 		WP_Mock::onFilter( 'aps_is_read_only' )
 			->with( true )
 			->reply( false );
 
-		// Act & Assert
-		$this->assertTrue( aps_current_user_can_view() );
+		// Act & Assert - Read-only mode should be disabled
+		$this->assertFalse( aps_is_read_only() );
 	}
 
 	/**
@@ -468,58 +462,36 @@ class FunctionsTest extends TestCase {
 
 	}
 
-	/**
-	 * Test the aps_is_excluded_post_type() function.
-	 *
-	 * @covers ::aps_is_read_only
-	 */
-	public function test_is_read_only() {
-		// Arrange
-		\WP_Mock::onFilter( 'aps_is_read_only' )
-			->with( false )
-			->reply( true ); // Changed to match expected behavior
 
-		// Act & Assert
-		$this->assertTrue( aps_is_read_only() ); // Changed expectation
-	}
 
 	/**
-	 * Test the aps_excluded_post_types filter.
+	 * Test the legacy aps_excluded_post_types filter still works via deprecated function
 	 *
 	 * @since 0.3.9
+	 * @covers ::aps_is_excluded_post_type
 	 */
 	public function test_aps_excluded_post_types_filter() {
 
-		// Use the filter to change the default.
-		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+		// Mock the deprecated function notice
+		\WP_Mock::userFunction( '_deprecated_function' )
+			->with( 'aps_is_excluded_post_type', '0.4.0', 'aps_is_supported_post_type' )
+			->twice();
+
+		// Mock aps_is_supported_post_type to return expected values
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
 			->with( 'attachment' )
-			->reply( array( 'post' ) );
+			->andReturn( true );  // attachment is now supported
 
-		// Confirm the filter is applied.
-		$this->assertFalse( aps_is_excluded_post_type( 'attachment' ) );
-		$this->assertTrue( aps_is_excluded_post_type( 'post' ) );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )
+			->andReturn( false ); // post is now excluded via filter
 
+		// Act & Assert - deprecated function should return opposite of aps_is_supported_post_type
+		$this->assertFalse( aps_is_excluded_post_type( 'attachment' ) ); // supported = not excluded
+		$this->assertTrue( aps_is_excluded_post_type( 'post' ) ); // not supported = excluded
 	}
 
-	/**
-	 * Test the aps_display_post_states() function.
-	 *
-	 * @covers ::aps_current_user_can_archive
-	 */
-	public function test_current_user_can_archive() {
 
-		// Arrange
-		\WP_Mock::userFunction( 'current_user_can' )
-			->andReturn( true );
-
-		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 0 );
-
-		// Act
-		$result = aps_current_user_can_archive();
-
-		// Assert
-		$this->assertTrue( $result );
-	}
 
 	/**
 	 * Test nonce key generation
@@ -558,11 +530,11 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test aps_get_supported_post_types default behavior
+	 * Test supported post types returns expected defaults
 	 *
 	 * @covers ::aps_get_supported_post_types
 	 */
-	public function test_get_supported_post_types() {
+	public function test_get_supported_post_types_returns_defaults() {
 
 		// Arrange
 		\WP_Mock::userFunction( 'get_post_types' )
@@ -574,23 +546,24 @@ class FunctionsTest extends TestCase {
 		\WP_Mock::userFunction( 'esc_attr' )
 			->andReturnUsing( function( $value ) { return $value; } );
 
-		// Test default filters
+		// Default behavior excludes only attachments
 		\WP_Mock::expectFilter( 'aps_excluded_post_types', [ 'attachment' ] );
 		\WP_Mock::expectFilter( 'aps_supported_post_types', [ 'post', 'page' ] );
 
 		// Act
 		$result = aps_get_supported_post_types();
 
-		// Assert
+		// Assert - Should support standard content types but exclude attachments
 		$this->assertEquals( [ 'post', 'page' ], $result );
+		$this->assertNotContains( 'attachment', $result );
 	}
 
 	/**
-	 * Test aps_excluded_post_types filter with custom values
+	 * Test excluded post types filter allows custom exclusions
 	 *
 	 * @covers ::aps_get_supported_post_types
 	 */
-	public function test_aps_excluded_post_types_filter() {
+	public function test_excluded_post_types_filter_allows_custom_exclusions() {
 
 		// Arrange
 		\WP_Mock::userFunction( 'get_post_types' )
@@ -602,7 +575,7 @@ class FunctionsTest extends TestCase {
 		\WP_Mock::userFunction( 'esc_attr' )
 			->andReturnUsing( function( $value ) { return $value; } );
 
-		// Test custom excluded types
+		// Filter adds custom exclusion for product post type
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( [ 'attachment' ] )
 			->reply( [ 'attachment', 'product' ] );
@@ -612,18 +585,18 @@ class FunctionsTest extends TestCase {
 		// Act
 		$result = aps_get_supported_post_types();
 
-		// Assert
+		// Assert - Should exclude both attachment and product
 		$this->assertEquals( [ 'post', 'page' ], $result );
+		$this->assertNotContains( 'attachment', $result );
+		$this->assertNotContains( 'product', $result );
 	}
 
-
-
 	/**
-	 * Test aps_supported_post_types filter
+	 * Test supported post types filter allows adding custom types
 	 *
 	 * @covers ::aps_get_supported_post_types
 	 */
-	public function test_aps_supported_post_types_filter() {
+	public function test_supported_post_types_filter_allows_adding_custom_types() {
 
 		// Arrange
 		\WP_Mock::userFunction( 'get_post_types' )
@@ -637,7 +610,7 @@ class FunctionsTest extends TestCase {
 
 		\WP_Mock::expectFilter( 'aps_excluded_post_types', [ 'attachment' ] );
 
-		// Test filter adding custom post type
+		// Filter adds custom post type to supported list
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
 			->with( [ 'post', 'page' ] )
 			->reply( [ 'post', 'page', 'product' ] );
@@ -645,8 +618,9 @@ class FunctionsTest extends TestCase {
 		// Act
 		$result = aps_get_supported_post_types();
 
-		// Assert
+		// Assert - Should include custom product post type
 		$this->assertEquals( [ 'post', 'page', 'product' ], $result );
+		$this->assertContains( 'product', $result );
 	}
 
 
