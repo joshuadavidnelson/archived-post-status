@@ -175,7 +175,7 @@ class RowActions extends Feature {
 		// Past tense the action for the query args.
 		$actioned = $action . 'd';
 
-		wp_redirect(
+		wp_safe_redirect(
 			add_query_arg(
 				array(
 					$actioned => 1,
@@ -184,7 +184,7 @@ class RowActions extends Feature {
 				$sendback
 			)
 		);
-		exit;
+		exit();
 	}
 
 	/**

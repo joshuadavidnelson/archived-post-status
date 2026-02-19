@@ -19,6 +19,13 @@
 class ArchivedTitleTest extends TestCase {
 
 	/**
+	 * The feature instance being tested.
+	 *
+	 * @var ArchivedPostStatus\ArchivedTitle
+	 */
+	private $feature;
+
+	/**
 	 * Set up the test.
 	 *
 	 * @since 0.4.0

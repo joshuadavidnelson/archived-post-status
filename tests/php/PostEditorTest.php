@@ -16,6 +16,13 @@
 class PostEditorTest extends TestCase {
 
 	/**
+	 * The feature instance being tested.
+	 *
+	 * @var ArchivedPostStatus\PostEditor
+	 */
+	private $feature;
+
+	/**
 	 * Set up the test.
 	 *
 	 * @since 0.4.0

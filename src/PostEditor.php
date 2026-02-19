@@ -167,7 +167,7 @@ class PostEditor extends Feature {
 		}
 
 		// Get action and message from URL parameters
-		$action  = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL parameter to determine admin action, not processing form data
+		$action  = isset( $_GET['action'] ) ? sanitize_text_field( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL parameter to determine admin action, not processing form data
 		$message = isset( $_GET['message'] ) ? absint( $_GET['message'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL parameter to determine admin message, not processing form data
 
 		// If this is an unarchive action, allow it.

@@ -79,8 +79,8 @@ require ARCHIVED_POST_STATUS_DIR . '/src/Plugin.php';
  *
  * @since 0.4.0
  */
-function run_archived_post_status() {
+function aps_run_plugin() {
 	$plugin = new ArchivedPostStatus\Plugin( ARCHIVED_POST_STATUS_PLUGIN, ARCHIVED_POST_STATUS_VERSION );
 	$plugin->run();
 }
-add_action( 'plugins_loaded', 'run_archived_post_status', 10, 0 );
+add_action( 'plugins_loaded', 'aps_run_plugin', 10, 0 );

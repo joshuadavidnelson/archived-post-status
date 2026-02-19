@@ -16,6 +16,13 @@
 class AdminNoticesTest extends TestCase {
 
 	/**
+	 * The feature instance being tested.
+	 *
+	 * @var ArchivedPostStatus\AdminNotices
+	 */
+	private $feature;
+
+	/**
 	 * Set up the test.
 	 *
 	 * @since 0.4.0

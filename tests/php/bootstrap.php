@@ -16,7 +16,7 @@ require_once __DIR__ . '/includes/common.php';
 require_once __DIR__ . '/includes/TestCase.php';
 
 // Load plugin files.
-require_once PLUGIN_PATH . '/archived-post-status.php';
+require_once APS_PLUGIN_PATH . '/archived-post-status.php';
 
 // Initialize and run the plugin.
-run_archived_post_status();
+aps_run_archived_post_status();

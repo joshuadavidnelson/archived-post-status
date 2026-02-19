@@ -17,6 +17,20 @@
 class RowActionsTest extends TestCase {
 
 	/**
+	 * The RowActions instance being tested.
+	 *
+	 * @var ArchivedPostStatus\RowActions
+	 */
+	private $class;
+
+	/**
+	 * Mock post object.
+	 *
+	 * @var \Mockery\MockInterface
+	 */
+	private $mock_post;
+
+	/**
 	 * Set up the test.
 	 *
 	 * @since 0.4.0

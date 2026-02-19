@@ -19,6 +19,13 @@
 class SavePostTest extends TestCase {
 
 	/**
+	 * The feature instance being tested.
+	 *
+	 * @var ArchivedPostStatus\SavePost
+	 */
+	private $feature;
+
+	/**
 	 * Set up the test.
 	 *
 	 * @since 0.4.0
