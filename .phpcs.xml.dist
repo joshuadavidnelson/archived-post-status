@@ -34,10 +34,6 @@
 		<!-- Exclude specific sniffs -->
 		<!-- Disable filename rule -->
 		<exclude name="WordPress.Files.FileName" />
-		<!-- Disable class filename rule -->
-		<exclude name="WordPress.Files.ClassFileName" />
-		<!-- Disable short ternary rule -->
-		<exclude name="WordPress.PHP.DisallowShortTernary" />
 		<!-- Exclude overly strict prefix rules that don't recognize -->
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
 		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules"/>
