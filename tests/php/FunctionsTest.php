@@ -522,4 +522,283 @@ class FunctionsTest extends TestCase {
 		// Assert
 		$this->assertFalse( $result ); // Should return opposite of aps_is_supported_post_type
 	}
+
+	/**
+	 * Test aps_status_arg_public filter default behavior on frontend with viewing capability
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_aps_status_arg_public_frontend_with_capability() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Expect true when frontend user can view archived content
+		\WP_Mock::expectFilter( 'aps_status_arg_public', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_private', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_protected', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_exclude_from_search', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_all_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_status_list', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_dashicon', 'dashicons-archive' );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies expectations
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test aps_status_arg_public filter default behavior on frontend without viewing capability
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_aps_status_arg_public_frontend_without_capability() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( false );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Expect false when frontend user cannot view archived content
+		\WP_Mock::expectFilter( 'aps_status_arg_public', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_private', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_protected', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_exclude_from_search', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_all_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_status_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_dashicon', 'dashicons-archive' );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies expectations
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test aps_status_arg_private filter default behavior in admin
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_aps_status_arg_private_admin() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Expect false private when in admin
+		\WP_Mock::expectFilter( 'aps_status_arg_public', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_private', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_protected', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_exclude_from_search', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_all_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_status_list', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_dashicon', 'dashicons-archive' );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies expectations
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test aps_status_arg_protected filter always defaults to false
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_aps_status_arg_protected_default() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Protected should always default to false
+		\WP_Mock::expectFilter( 'aps_status_arg_protected', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_public', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_private', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_exclude_from_search', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_all_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_status_list', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_dashicon', 'dashicons-archive' );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies expectations
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test aps_status_arg_exclude_from_search filter behavior in admin with capability
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_aps_status_arg_exclude_from_search_admin_with_capability() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Should not exclude from search when admin user can view
+		\WP_Mock::expectFilter( 'aps_status_arg_exclude_from_search', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_public', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_private', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_protected', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_all_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_status_list', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_dashicon', 'dashicons-archive' );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies expectations
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test aps_status_arg_show_in_admin_all_list filter always defaults to false
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_aps_status_arg_show_in_admin_all_list_default() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Should always default to false
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_all_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_public', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_private', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_protected', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_exclude_from_search', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_status_list', true );
+		\WP_Mock::expectFilter( 'aps_status_arg_dashicon', 'dashicons-archive' );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies expectations
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test aps_status_arg_dashicon filter default value
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_aps_status_arg_dashicon_default() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Should default to dashicons-archive
+		\WP_Mock::expectFilter( 'aps_status_arg_dashicon', 'dashicons-archive' );
+		\WP_Mock::expectFilter( 'aps_status_arg_public', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_private', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_protected', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_exclude_from_search', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_all_list', false );
+		\WP_Mock::expectFilter( 'aps_status_arg_show_in_admin_status_list', true );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies expectations
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test status argument filters can be modified via filters
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_status_argument_filters_can_be_modified() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Override default values via filters
+		\WP_Mock::onFilter( 'aps_status_arg_public' )->with( false )->reply( true );
+		\WP_Mock::onFilter( 'aps_status_arg_private' )->with( false )->reply( true );
+		\WP_Mock::onFilter( 'aps_status_arg_protected' )->with( false )->reply( true );
+		\WP_Mock::onFilter( 'aps_status_arg_exclude_from_search' )->with( false )->reply( true );
+		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_all_list' )->with( false )->reply( true );
+		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_status_list' )->with( true )->reply( false );
+		\WP_Mock::onFilter( 'aps_status_arg_dashicon' )->with( 'dashicons-archive' )->reply( 'dashicons-lock' );
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies filter modifications
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test status argument filters handle edge case with non-boolean values
+	 *
+	 * @covers aps_register_archive_post_status
+	 */
+	public function test_status_argument_filters_type_casting() {
+
+		// Arrange
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( [ 'post' ] );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( [] );
+		\WP_Mock::userFunction( 'register_post_status' )->once();
+
+		// Test type casting with non-boolean values
+		\WP_Mock::onFilter( 'aps_status_arg_public' )->with( false )->reply( 'yes' ); // Should cast to true
+		\WP_Mock::onFilter( 'aps_status_arg_private' )->with( false )->reply( 0 ); // Should cast to false
+		\WP_Mock::onFilter( 'aps_status_arg_protected' )->with( false )->reply( 1 ); // Should cast to true
+		\WP_Mock::onFilter( 'aps_status_arg_exclude_from_search' )->with( false )->reply( '' ); // Should cast to false
+		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_all_list' )->with( false )->reply( 'false' ); // Should cast to true
+		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_status_list' )->with( true )->reply( null ); // Should cast to false
+		\WP_Mock::onFilter( 'aps_status_arg_dashicon' )->with( 'dashicons-archive' )->reply( 123 ); // Should cast to string
+
+		// Act
+		aps_register_archive_post_status();
+
+		// Assert - WP_Mock verifies filters received expected types
+		$this->addToAssertionCount( 1 );
+	}
 }
