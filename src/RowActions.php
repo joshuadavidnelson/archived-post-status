@@ -151,11 +151,6 @@ class RowActions extends Feature {
 			wp_die( __( 'Invalid post type.', 'archived-post-status' ) );
 		}
 
-		if ( ! aps_current_user_can_archive( $post_id ) ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() handles escaping internally
-			wp_die( __( 'Sorry, you are not allowed to archive this item.', 'archived-post-status' ) );
-		}
-
 		$user_id = wp_check_post_lock( $post_id );
 		if ( $user_id ) {
 			$user = get_userdata( $user_id );
