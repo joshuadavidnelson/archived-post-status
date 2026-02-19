@@ -51,7 +51,8 @@
     "sirbrillig/phpcs-variable-analysis": "^2.12",
     "automattic/vipwpcs": "^3.0",
     "doctrine/instantiator": "^1.5",
-    "php-stubs/wordpress-stubs": "^6.9"
+    "php-stubs/wordpress-stubs": "^6.9",
+    "johnbillion/wp-compat": "^1.4"
   },
   "prefer-stable": true,
   "config": {
