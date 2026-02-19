@@ -16,8 +16,8 @@ jobs:
     - name: Run plugin check
       uses: wordpress/plugin-check-action@v1
       with:
-        exclude-directories: 'vendor,node_modules,tests,.github,.git,.wordpress-org'
-        exclude-files: 'package.json,package-lock.json,composer.json,composer.lock,contributing.md,code-of-conduct.md,phpstan.neon.dist,phpunit.xml.dist,readme.md,changelog.md,.phpcs.xml.dist,.gitbook.yaml'
+        exclude-directories: 'vendor,node_modules,tests,.github,.git,.wordpress-org,bin,reports'
+        exclude-files: 'package.json,package-lock.json,composer.json,composer.lock,contributing.md,code-of-conduct.md,phpstan.neon.dist,phpunit.xml.dist,readme.md,changelog.md,.phpcs.xml.dist,.gitbook.yaml,jest.config.js,LICENSE'
         ignore-codes: |
           hidden_files
           WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
