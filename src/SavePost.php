@@ -52,10 +52,10 @@ class SavePost extends Feature {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 			return;
 		}
-		if ( wp_doing_ajax() ) {
+		if ( \wp_doing_ajax() ) {
 			return;
 		}
-		if ( wp_doing_cron() ) {
+		if ( \wp_doing_cron() ) {
 			return;
 		}
 		if ( \wp_is_post_revision( $post_id ) ) {

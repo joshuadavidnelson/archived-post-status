@@ -33,6 +33,14 @@ class SavePostTest extends TestCase {
 	public function set_up() {
 		parent::set_up();
 		$this->feature = new ArchivedPostStatus\SavePost();
+
+		// mock wp_doing_ajax
+		\WP_Mock::userFunction( 'wp_doing_ajax' )
+			->andReturn( false );
+
+		// mock wp_doing_cron
+		\WP_Mock::userFunction( 'wp_doing_cron' )
+			->andReturn( false );
 	}
 
 	/**
