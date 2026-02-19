@@ -20,3 +20,4 @@ jobs:
         exclude-files: 'package.json,package-lock.json,composer.json,composer.lock,contributing.md,code-of-conduct.md,phpstan.neon.dist,phpunit.xml.dist,readme.md,changelog.md,.phpcs.xml.dist,.gitbook.yaml'
         ignore-codes: |
           hidden_files
+          WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
