@@ -59,7 +59,7 @@ class BulkEditTest extends TestCase {
 
 		$new_actions = $this->class->bulk_actions( $mock_actions );
 
-		foreach( $mock_actions as $key => $value ) {
+		foreach ( $mock_actions as $key => $value ) {
 
 			$this->assertArrayHasKey( $key, $new_actions );
 		}
@@ -87,7 +87,7 @@ class BulkEditTest extends TestCase {
 
 		$new_actions = $this->class->bulk_actions( $mock_actions );
 
-		foreach( $mock_actions as $key => $value ) {
+		foreach ( $mock_actions as $key => $value ) {
 			$this->assertArrayHasKey( $key, $new_actions );
 		}
 		$this->assertArrayHasKey( 'unarchive', $new_actions );

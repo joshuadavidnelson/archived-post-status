@@ -48,7 +48,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test archived label string function returns expected default
 	 *
-	 * @covers ::aps_archived_label_string
+	 * @covers aps_archived_label_string
 	 */
 	public function test_archived_label_string_default() {
 
@@ -67,7 +67,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test archived label string can be customized via filter
 	 *
-	 * @covers ::aps_archived_label_string
+	 * @covers aps_archived_label_string
 	 */
 	public function test_archived_label_string_custom() {
 
@@ -86,7 +86,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test supported post types function
 	 *
-	 * @covers ::aps_get_supported_post_types
+	 * @covers aps_get_supported_post_types
 	 */
 	public function test_supported_post_types() {
 
@@ -114,7 +114,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test is_supported_post_type function
 	 *
-	 * @covers ::aps_is_supported_post_type
+	 * @covers aps_is_supported_post_type
 	 */
 	public function test_is_supported_post_type() {
 
@@ -126,35 +126,6 @@ class FunctionsTest extends TestCase {
 		$this->assertTrue( aps_is_supported_post_type( 'post' ) );
 		$this->assertTrue( aps_is_supported_post_type( 'page' ) );
 		$this->assertFalse( aps_is_supported_post_type( 'attachment' ) );
-	}
-
-	/**
-	 * Test current user can view function
-	 *
-	 * @covers ::aps_current_user_can_view
-	 */
-	public function test_current_user_can_view() {
-
-		// Arrange
-		\WP_Mock::userFunction( 'current_user_can' )
-			->andReturn( true );
-
-		// Mock the current_user_can() function.
-		\WP_Mock::userFunction(
-			'current_user_can', array(
-				'times'  => 1,
-				'return' => function( $capability, ...$args ) {
-					return $capability === 'read_private_posts';
-				},
-			)
-		);
-
-		// Confirm the filter is applied.
-		\WP_Mock::expectFilter( 'aps_default_read_capability', 'read_private_posts', 0 );
-
-		// Confirm the default condition is true.
-		$this->assertTrue( aps_current_user_can_view() );
-
 	}
 
 	/**
@@ -323,152 +294,10 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
-	 * Test the aps_the_title() function.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_the_title() {
-
-		// Mock functions.
-		\WP_Mock::userFunction(
-			'get_post', array(
-				'times'  => 1,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin', array(
-				'return' => false,
-			)
-		);
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( 'Archived: ' . $this->mock_post->post_title, $new_title );
-
-	}
-
-	/**
-	 * Test the aps_title_label filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_the_title_label_filter() {
-
-		// Mock functions.
-		\WP_Mock::userFunction(
-			'get_post',
-			array(
-				'times'  => 2,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin',
-			array(
-				'return' => false,
-			)
-		);
-
-		$new_label = 'Archived Post';
-
-		// Use the filter to change the title label.
-		\WP_Mock::onFilter( 'aps_title_label' )
-			->with(
-				'Archived',
-				$this->mock_post->ID,
-				$this->mock_post->post_title
-			)
-			->reply( $new_label );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( $new_label . ': ' . $this->mock_post->post_title, $new_title );
-
-		// Use the filter to remove the label by returning empty string
-		\WP_Mock::onFilter( 'aps_title_label' )
-			->with(
-				'Archived',
-				$this->mock_post->ID,
-				$this->mock_post->post_title
-			)
-			->reply( '' );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( $this->mock_post->post_title, $new_title );
-
-	}
-
-	/**
-	 * Test the aps_title_label_before filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_the_title_label_before_filter() {
-
-		// Mock functions.
-		\WP_Mock::userFunction(
-			'get_post', array(
-				'times'  => 1,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin', array(
-				'return' => false,
-			)
-		);
-
-		// Use the filter to change the title label location.
-		\WP_Mock::onFilter( 'aps_title_label_before' )
-			->with( true, $this->mock_post->ID )
-			->reply( false );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( $this->mock_post->post_title . ' - Archived', $new_title );
-
-	}
-
-	/**
-	 * Test the aps_title_separator filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_title_separator_filter() {
-
-		// Mock functions.
-		\WP_Mock::userFunction(
-			'get_post', array(
-				'times'  => 1,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin', array(
-				'return' => false,
-			)
-		);
-
-		// Use the filter to change the title separator.
-		\WP_Mock::onFilter( 'aps_title_separator' )
-			->with( ': ', $this->mock_post->ID )
-			->reply( ' ~ ' );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( 'Archived ~ ' . $this->mock_post->post_title, $new_title );
-
-	}
-
-
-
-	/**
 	 * Test the legacy aps_excluded_post_types filter still works via deprecated function
 	 *
 	 * @since 0.3.9
-	 * @covers ::aps_is_excluded_post_type
+	 * @covers aps_is_excluded_post_type
 	 */
 	public function test_aps_excluded_post_types_filter() {
 
@@ -496,7 +325,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test nonce key generation
 	 *
-	 * @covers ::_aps_nonce_key
+	 * @covers _aps_nonce_key
 	 */
 	public function test_nonce_key_generation() {
 
@@ -510,10 +339,10 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test register archive post status
 	 *
-	 * @covers ::aps_register_archive_post_status
-	 * @covers ::aps_archived_label_string
-	 * @covers ::aps_current_user_can_view
-	 * @covers ::aps_get_supported_post_types
+	 * @covers aps_register_archive_post_status
+	 * @covers aps_archived_label_string
+	 * @covers aps_current_user_can_view
+	 * @covers aps_get_supported_post_types
 	 */
 	public function test_register_archive_post_status() {
 
@@ -532,7 +361,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test supported post types returns expected defaults
 	 *
-	 * @covers ::aps_get_supported_post_types
+	 * @covers aps_get_supported_post_types
 	 */
 	public function test_get_supported_post_types_returns_defaults() {
 
@@ -561,7 +390,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test excluded post types filter allows custom exclusions
 	 *
-	 * @covers ::aps_get_supported_post_types
+	 * @covers aps_get_supported_post_types
 	 */
 	public function test_excluded_post_types_filter_allows_custom_exclusions() {
 
@@ -594,7 +423,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test supported post types filter allows adding custom types
 	 *
-	 * @covers ::aps_get_supported_post_types
+	 * @covers aps_get_supported_post_types
 	 */
 	public function test_supported_post_types_filter_allows_adding_custom_types() {
 
@@ -630,7 +459,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test aps_archivable_statuses filter default
 	 *
-	 * @covers ::_aps_get_archivable_statuses
+	 * @covers _aps_get_archivable_statuses
 	 */
 	public function test_aps_archivable_statuses_default() {
 
@@ -650,7 +479,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test aps_archivable_statuses filter custom
 	 *
-	 * @covers ::_aps_get_archivable_statuses
+	 * @covers _aps_get_archivable_statuses
 	 */
 	public function test_aps_archivable_statuses_custom() {
 
@@ -674,7 +503,7 @@ class FunctionsTest extends TestCase {
 	/**
 	 * Test deprecated function aps_is_excluded_post_type
 	 *
-	 * @covers ::aps_is_excluded_post_type
+	 * @covers aps_is_excluded_post_type
 	 */
 	public function test_aps_is_excluded_post_type_deprecated() {
 

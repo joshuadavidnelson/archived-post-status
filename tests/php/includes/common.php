@@ -186,7 +186,7 @@ function get_post( $post = null, $output = OBJECT, $filter = 'raw' ) {
  * Mock wp_die() function.
  */
 function wp_die( $message = '', $title = '', $args = array() ) {
-	throw new Exception( $message );
+	throw new Exception( esc_html( $message ) );
 }
 
 /**
@@ -430,7 +430,7 @@ function wp_get_referer() {
 }
 
 /**
- * Mock wp_redirect() function.
+ * Mock wp_safe_redirect() function.
  *
  * @since 0.4.0
  * @param string $location
@@ -438,7 +438,7 @@ function wp_get_referer() {
  * @param string $x_redirect_by
  * @return bool
  */
-function wp_redirect( $location, $status = 302, $x_redirect_by = 'WordPress' ) {
+function wp_safe_redirect( $location, $status = 302, $x_redirect_by = 'WordPress' ) { // phpcs:ignore WordPressVIPMinimum.Security.ExitAfterRedirect.NoExitInConditional
 	return true;
 }
 
@@ -476,7 +476,7 @@ function get_userdata( $user_id ) {
  * @return string
  */
 function wp_kses_post( $data ) {
-	return strip_tags( $data, '<a><strong><em><br><p><ul><ol><li>' );
+	return strip_tags( $data, '<a><strong><em><br><p><ul><ol><li>' ); // phpcs:ignore WordPressVIPMinimum.Functions.StripTags.StripTagsTwoParameters
 }
 
 /**
