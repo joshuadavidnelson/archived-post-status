@@ -35,30 +35,20 @@ class SavePost extends Feature {
 	public function register() {
 
 		// Close ping and comment status on archived posts.
-		\add_action( 'save_post', array( $this, 'save_post' ), 10, 3 );
+		\add_action( 'save_post', array( $this, 'save_post' ), 10, 2 );
 	}
 
 	/**
 	 * Close comments and pings when content is Archived.
 	 *
 	 * @since 0.4.0
-	 * @param int     $post_id
+	 * @param int      $post_id
 	 * @param \WP_Post $post
-	 * @param bool    $update
 	 */
-	public function save_post( $post_id, \WP_Post $post, $update ) {
+	public function save_post( $post_id, \WP_Post $post ) {
 
 		// Bail out if running an autosave, ajax, cron, or revision.
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-			return;
-		}
-		if ( \wp_doing_ajax() ) {
-			return;
-		}
-		if ( \wp_doing_cron() ) {
-			return;
-		}
-		if ( \wp_is_post_revision( $post_id ) ) {
+		if ( \wp_doing_ajax() || \wp_doing_cron() || \wp_is_post_revision( $post_id ) ) {
 			return;
 		}
 
@@ -86,7 +76,7 @@ class SavePost extends Feature {
 			\wp_update_post( $args );
 
 			// Add hook back again
-			\add_action( 'save_post', array( $this, 'save_post' ), 10, 3 );
+			\add_action( 'save_post', array( $this, 'save_post' ), 10, 2 );
 		}
 	}
 }

@@ -49,7 +49,7 @@ class SavePostTest extends TestCase {
 	 * @covers ArchivedPostStatus\SavePost::register
 	 */
 	public function test_register_hooks() {
-		\WP_Mock::expectActionAdded( 'save_post', [ $this->feature, 'save_post' ], 10, 3 );
+		\WP_Mock::expectActionAdded( 'save_post', [ $this->feature, 'save_post' ], 10, 2 );
 		$this->feature->register();
 		\WP_Mock::assertHooksAdded();
 	}
@@ -95,7 +95,7 @@ class SavePostTest extends TestCase {
 			->once();
 
 		// Act
-		$this->feature->save_post( 123, $post, true );
+		$this->feature->save_post( 123, $post );
 
 		// Assert - WP_Mock verifies ->once() expectation was satisfied
 		$this->addToAssertionCount( 1 );
@@ -121,7 +121,7 @@ class SavePostTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
 		// Act
-		$this->feature->save_post( 123, $post, true );
+		$this->feature->save_post( 123, $post );
 
 		// Assert - WP_Mock verifies ->never() expectation was satisfied
 		$this->addToAssertionCount( 1 );
@@ -145,7 +145,7 @@ class SavePostTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
 		// Act
-		$this->feature->save_post( 123, $post, true );
+		$this->feature->save_post( 123, $post );
 
 		// Assert - WP_Mock verifies ->never() expectation was satisfied
 		$this->addToAssertionCount( 1 );
@@ -176,7 +176,7 @@ class SavePostTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
 		// Act
-		$this->feature->save_post( 123, $post, true );
+		$this->feature->save_post( 123, $post );
 
 		// Assert - WP_Mock verifies ->never() expectation was satisfied
 		$this->addToAssertionCount( 1 );
@@ -200,7 +200,7 @@ class SavePostTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
 		// Act
-		$this->feature->save_post( 123, $post, true );
+		$this->feature->save_post( 123, $post );
 
 		// Assert
 		$this->assertTrue( true );
@@ -227,7 +227,7 @@ class SavePostTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_update_post' )->once();
 
 		// Act & Assert - WP_Mock verifies ->once() expectations were satisfied
-		$this->feature->save_post( 123, $post, true );
+		$this->feature->save_post( 123, $post );
 		$this->addToAssertionCount( 1 );
 	}
 
@@ -253,7 +253,7 @@ class SavePostTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_update_post' )->once();
 
 		// Act
-		$this->feature->save_post( 123, $post, true );
+		$this->feature->save_post( 123, $post );
 
 		// Assert - WP_Mock verifies ->once() expectations were satisfied
 		$this->addToAssertionCount( 1 );
