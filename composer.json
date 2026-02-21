@@ -25,9 +25,6 @@
     "composer/installers": "^2.0"
   },
   "scripts": {
-    "test": [
-      "./vendor/bin/phpunit"
-    ],
     "phpstan": [
       "./vendor/bin/phpstan analyse --memory-limit=2048M"
     ],
@@ -36,6 +33,9 @@
     ],
     "lint": [
       "find *.php src/ tests/ -type f -name '*.php' -print0 | xargs -0 -L1 -P4 -- php -l"
+    ],
+    "phpunit": [
+      "./vendor/bin/phpunit"
     ]
   },
   "require-dev": {
