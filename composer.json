@@ -32,7 +32,7 @@
       "./vendor/bin/phpcs"
     ],
     "lint": [
-      "find *.php src/ tests/ -type f -name '*.php' -print0 | xargs -0 -L1 -P4 -- php -l"
+      "./vendor/bin/parallel-lint *.php src/ tests/"
     ],
     "phpunit": [
       "./vendor/bin/phpunit"
@@ -52,7 +52,8 @@
     "automattic/vipwpcs": "^3.0",
     "doctrine/instantiator": "^1.5",
     "php-stubs/wordpress-stubs": "^6.9",
-    "johnbillion/wp-compat": "^1.4"
+    "johnbillion/wp-compat": "^1.4",
+    "php-parallel-lint/php-parallel-lint": "^1.4"
   },
   "prefer-stable": true,
   "config": {
