@@ -42,6 +42,9 @@
     ],
     "phpunit:coverage-html": [
       "./vendor/bin/phpunit --coverage-html coverage"
+    ],
+    "phpcbf": [
+      "./vendor/bin/phpcbf"
     ]
   },
   "require-dev": {
