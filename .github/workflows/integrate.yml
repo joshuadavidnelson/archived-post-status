@@ -42,6 +42,7 @@ jobs:
   code-quality:
     name: "Code quality checks"
     runs-on: "ubuntu-latest"
+    needs: syntax-check
     env:
       PHP_VERSION: "8.4"
     steps:
