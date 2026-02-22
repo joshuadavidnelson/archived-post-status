@@ -36,6 +36,12 @@
     ],
     "phpunit": [
       "./vendor/bin/phpunit"
+    ],
+    "phpunit:coverage": [
+      "./vendor/bin/phpunit --coverage-text"
+    ],
+    "phpunit:coverage-html": [
+      "./vendor/bin/phpunit --coverage-html coverage"
     ]
   },
   "require-dev": {
