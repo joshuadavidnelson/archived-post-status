@@ -17,6 +17,8 @@
 .phpcs.xml.dist
 .gitbook.yaml
 .travis.yml
+.gitbook.yaml
+phpmd.xml
 
 # Composer and npm files
 composer.json
@@ -26,9 +28,7 @@ package-lock.json
 node_modules
 
 # Documentation
-code-of-conduct.md
-contributing.md
-README.md
+*.md
 
 # Test and build configuration
 phpunit.xml.dist
