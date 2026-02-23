@@ -94,6 +94,7 @@ class Plugin {
 		 */
 		do_action( 'aps_init' );
 
+		$this->upgrade_check();
 		$this->load_dependencies();
 		$this->set_locale();
 		$this->define_hooks();
@@ -104,6 +105,36 @@ class Plugin {
 		 * @since 0.4.0
 		 */
 		do_action( 'aps_loaded' );
+	}
+
+	/**
+	 * Upgrade check.
+	 *
+	 * @since 0.4.0
+	 * @access private
+	 */
+	private static function upgrade_check() {
+
+		// let's only run these checks on the admin page load.
+		if ( ! \is_admin() ) {
+			return;
+		}
+
+		// Get the current version option.
+		$current_version = \get_option( 'archived_post_status_version', false );
+
+		// Update the previous version, if applicable.
+		if ( $current_version && ARCHIVED_POST_STATUS_VERSION !== $current_version ) {
+			\update_option( 'archived_post_status_previous_version', $current_version, false );
+		}
+
+		// Check if we're upgrading from a previous version.
+		if ( false === $current_version || ARCHIVED_POST_STATUS_VERSION !== $current_version ) {
+			// do things on update.
+
+			// Save current version.
+			\update_option( 'archived_post_status_version', ARCHIVED_POST_STATUS_VERSION, false );
+		}
 	}
 
 	/**
