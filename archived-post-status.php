@@ -41,26 +41,24 @@ define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN )
 
 /**
  * The code that runs during plugin activation.
- * This action is documented in src/Activator.php
  *
  * @since 0.4.0
  * @return void
  */
 function aps_activate() {
-	require_once plugin_dir_path( __FILE__ ) . 'src/Activator.php';
-	ArchivedPostStatus\Activator::activate();
+	// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules -- Required during plugin activation to set up rewrite rules.
+	flush_rewrite_rules();
 }
 
 /**
  * The code that runs during plugin deactivation.
- * This action is documented in src/Deactivator.php
  *
  * @since 0.4.0
  * @return void
  */
 function aps_deactivate() {
-	require_once plugin_dir_path( __FILE__ ) . 'src/Deactivator.php';
-	ArchivedPostStatus\Deactivator::deactivate();
+	// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules -- Required during plugin deactivation to clean up rewrite rules.
+	flush_rewrite_rules();
 }
 register_activation_hook( __FILE__, 'aps_activate' );
 register_deactivation_hook( __FILE__, 'aps_deactivate' );
