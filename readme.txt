@@ -13,6 +13,8 @@ Use an "Archive" status to unpublish content without having to trash it.
 
 == Description ==
 
+> **New** expanded user interface, easier ways to archive and unarchive. Learn more on the [new documentation site](https://docs.archivedpoststat.us/).
+
 This plugin gives you the power to archive your WordPress content.
 
 WordPress supports a publishing workflow by marking content with a post status:
