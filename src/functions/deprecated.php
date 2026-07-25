@@ -14,7 +14,8 @@
  *     {@see \ArchivedPostStatus\Status\PostStatusValue::resolved_slug()} so
  *     the filter is consulted at every consumer site.
  *   - The "unarchive capability rename" was a phantom — no rename occurred.
- *   - `aps_status_arg_private` — reverted to the stable default (`true`).
+ *   - `aps_status_arg_private` — kept at the 0.4.0 default `! is_admin()`,
+ *     set in {@see \ArchivedPostStatus\Status\PostStatus}.
  *   - `aps_status_arg_public` — kept at the 0.4.0 default
  *     `! is_admin() && aps_current_user_can_view()` (Option C).
  *

@@ -110,13 +110,14 @@ final class Notices implements HookableInterface {
 					'dismissible'        => true,
 				)
 			);
-		} else {
-			// Fallback for WordPress < 6.4.0
-			printf(
-				'<div id="message" class="notice notice-success is-dismissible"><p>%s</p></div>',
-				wp_kses_post( $combined_message )
-			);
+			return;
 		}
+
+		// Fallback for WordPress < 6.4.0
+		printf(
+			'<div id="message" class="notice notice-success is-dismissible"><p>%s</p></div>',
+			wp_kses_post( $combined_message )
+		);
 	}
 
 	/**

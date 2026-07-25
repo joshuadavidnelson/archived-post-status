@@ -31,6 +31,10 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * No business logic, no database queries, no script enqueues.
  *
  * @since 0.4.0
+ *
+ * @SuppressWarnings("PHPMD.CouplingBetweenObjects") -- composition root; the
+ * coupling to every hookable class is inherent to a Plugin::hookables()
+ * wiring list. A declarative-provider refactor is deferred (roadmap #5).
  */
 final class Plugin {
 

@@ -58,9 +58,10 @@ class CommandRunner {
 
 			if ( $counting ) {
 				$progress->tick();
-			} else {
-				$status = $this->emit( $result );
+				continue;
 			}
+
+			$status = $this->emit( $result );
 		}
 
 		if ( $counting ) {

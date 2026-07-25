@@ -89,8 +89,8 @@
     <rule ref="rulesets/cleancode.xml/ElseExpression" />
     <rule ref="rulesets/cleancode.xml/StaticAccess">
         <properties>
-            <!-- Allow WordPress static access patterns and ServiceManager singleton -->
-            <property name="exceptions" value="WP_Query,WP_Error,WP_CLI,ArchivedPostStatus\ServiceManager" />
+            <!-- Allow WordPress static access patterns -->
+            <property name="exceptions" value="WP_Query,WP_Error,WP_CLI" />
         </properties>
     </rule>
 
