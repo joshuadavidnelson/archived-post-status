@@ -27,7 +27,6 @@ class BulkActionResultTest extends TestCase {
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::count
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::locked
-	 * @covers ArchivedPostStatus\Admin\BulkActionResult::invalid
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::ids
 	 */
 	public function test_fresh_result_has_zero_counts_and_no_ids() {
@@ -35,7 +34,6 @@ class BulkActionResultTest extends TestCase {
 
 		$this->assertSame( 0, $result->count() );
 		$this->assertSame( 0, $result->locked() );
-		$this->assertSame( 0, $result->invalid() );
 		$this->assertSame( array(), $result->ids() );
 	}
 
@@ -72,29 +70,11 @@ class BulkActionResultTest extends TestCase {
 
 		$this->assertSame( 2, $result->locked() );
 		$this->assertSame( 0, $result->count() );
-		$this->assertSame( 0, $result->invalid() );
-	}
-
-	/**
-	 * record_invalid() only increments the invalid counter.
-	 *
-	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_invalid
-	 * @covers ArchivedPostStatus\Admin\BulkActionResult::invalid
-	 * @covers ArchivedPostStatus\Admin\BulkActionResult::count
-	 */
-	public function test_record_invalid_increments_only_invalid_counter() {
-		$result = new BulkActionResult();
-
-		$result->record_invalid();
-
-		$this->assertSame( 1, $result->invalid() );
-		$this->assertSame( 0, $result->count() );
-		$this->assertSame( 0, $result->locked() );
 	}
 
 	/**
 	 * apply_to_url() always adds the action's query arg with the success count.
-	 * When locked/invalid/ids are all zero/empty, only the action key is added.
+	 * When locked/ids are all zero/empty, only the action key is added.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::apply_to_url
 	 */
@@ -116,27 +96,24 @@ class BulkActionResultTest extends TestCase {
 		$this->assertContains( array( 'archived', 2 ), $captured );
 		// … the ids list is added as a comma-joined string …
 		$this->assertContains( array( 'ids', '7,8' ), $captured );
-		// … and no locked/invalid args are appended when those counters are 0.
+		// … and no locked arg is appended when that counter is 0.
 		foreach ( $captured as $pair ) {
 			$this->assertNotSame( 'locked', $pair[0] );
-			$this->assertNotSame( 'invalid', $pair[0] );
 		}
 		$this->assertStringContainsString( 'archived=2', $final_url );
 	}
 
 	/**
 	 * apply_to_url() includes 'locked=N' when at least one locked post was
-	 * recorded, and 'invalid=N' when at least one invalid post was recorded.
-	 * The unarchive action contributes its own query_arg ('unarchived').
+	 * recorded. The unarchive action contributes its own query_arg ('unarchived').
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::apply_to_url
 	 */
-	public function test_apply_to_url_adds_locked_and_invalid_args_when_recorded() {
+	public function test_apply_to_url_adds_locked_arg_when_recorded() {
 		$result = new BulkActionResult();
 		$result->record( 5 );
 		$result->record_locked();
 		$result->record_locked();
-		$result->record_invalid();
 
 		$captured = array();
 		\WP_Mock::userFunction( 'add_query_arg' )
@@ -149,7 +126,6 @@ class BulkActionResultTest extends TestCase {
 
 		$this->assertContains( array( 'unarchived', 1 ), $captured );
 		$this->assertContains( array( 'locked', 2 ), $captured );
-		$this->assertContains( array( 'invalid', 1 ), $captured );
 		$this->assertContains( array( 'ids', '5' ), $captured );
 	}
 

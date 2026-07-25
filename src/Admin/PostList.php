@@ -81,7 +81,6 @@ final class PostList implements HookableInterface {
 		// Skip-reason buckets emitted by BulkActionResult on the redirect URL.
 		// NoticeBuilder reads these to render per-reason "X skipped" lines.
 		$vars[] = 'locked';
-		$vars[] = 'invalid';
 		$vars[] = 'denied';
 		$vars[] = 'not_found';
 		$vars[] = 'wrong_status';

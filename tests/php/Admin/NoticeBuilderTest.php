@@ -103,7 +103,7 @@ class NoticeBuilderTest extends TestCase {
 	// `build_archive_notice( int $count, array<int> $ids, string $post_type )`
 	// returns a translation-ready string. With at least one id, the message
 	// is suffixed with an Undo anchor pointing at the `unarchive` bulk
-	// action; without ids (e.g. a count-only locked/invalid recovery flow),
+	// action; without ids (e.g. a count-only locked-post recovery flow),
 	// only the count message comes back.
 
 	/**
@@ -302,7 +302,7 @@ class NoticeBuilderTest extends TestCase {
 	// -----------------------------------------------------------------------
 	//
 	// `build_notices( string $post_type )` reads the `archived`,
-	// `unarchived`, `locked`, `invalid`, `ids` query vars and assembles
+	// `unarchived`, `locked`, `ids` query vars and assembles
 	// the corresponding notice strings in order. Returns an empty array
 	// when no counters are set. The render layer in `Notices::display_notices`
 	// then concatenates and emits the array.
@@ -322,8 +322,8 @@ class NoticeBuilderTest extends TestCase {
 
 	/**
 	 * `archived=1`, `ids=123` → exactly one notice in the array (the
-	 * archive notice). The locked / invalid branches must NOT contribute
-	 * because their counters are absent.
+	 * archive notice). The locked branch must NOT contribute because its
+	 * counter is absent.
 	 *
 	 * @covers ArchivedPostStatus\Admin\NoticeBuilder::build_notices
 	 */
@@ -334,8 +334,6 @@ class NoticeBuilderTest extends TestCase {
 			->with( 'unarchived', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'locked', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'invalid', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'denied', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
@@ -355,14 +353,6 @@ class NoticeBuilderTest extends TestCase {
 	}
 
 	/**
-	 * All four counters set → all four notice strings in the returned
-	 * array, in the documented order (archived, unarchived, locked,
-	 * invalid). The order matters because `Notices::render_notices` joins
-	 * them with a single space and the user reads them top-to-bottom.
-	 *
-	 * @covers ArchivedPostStatus\Admin\NoticeBuilder::build_notices
-	 */
-	/**
 	 * Phase 1 (C2 + H4): the denied / not_found / wrong_status query vars
 	 * each contribute their own translation-ready notice line. The
 	 * builder NEVER performs capability checks (H4) — the denied count
@@ -377,8 +367,6 @@ class NoticeBuilderTest extends TestCase {
 			->with( 'unarchived', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'locked', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'invalid', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'denied', false )->andReturn( '2' );
 		\WP_Mock::userFunction( 'get_query_var' )
@@ -407,15 +395,21 @@ class NoticeBuilderTest extends TestCase {
 		$this->assertStringContainsString( 'status is not eligible', $joined );
 	}
 
-	public function test_build_notices_returns_all_four_notices_when_all_counters_set() {
+	/**
+	 * Three counters set (archived, unarchived, locked) → three notice
+	 * strings in the returned array, in the documented order. The order
+	 * matters because `Notices::render_notices` joins them with a single
+	 * space and the user reads them top-to-bottom.
+	 *
+	 * @covers ArchivedPostStatus\Admin\NoticeBuilder::build_notices
+	 */
+	public function test_build_notices_returns_three_notices_when_archived_unarchived_and_locked_set() {
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'archived', false )->andReturn( '2' );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'unarchived', false )->andReturn( '1' );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'locked', false )->andReturn( '3' );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'invalid', false )->andReturn( '4' );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'denied', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
@@ -426,8 +420,8 @@ class NoticeBuilderTest extends TestCase {
 			->with( 'ids', false )->andReturn( '10,20' );
 
 		// Cover both _n branches: build_archive sees count=2 (plural),
-		// build_unarchive sees count=1 (singular), locked/invalid see
-		// their own counts. Return the singular/plural based on count.
+		// build_unarchive sees count=1 (singular), locked sees its own
+		// count. Return the singular/plural based on count.
 		\WP_Mock::userFunction( '_n' )->andReturnUsing(
 			static function ( $singular, $plural, $count ) {
 				return 1 === (int) $count ? $singular : $plural;
@@ -453,10 +447,9 @@ class NoticeBuilderTest extends TestCase {
 
 		$result = $this->builder->build_notices( 'post' );
 
-		$this->assertCount( 4, $result );
+		$this->assertCount( 3, $result );
 		$this->assertStringContainsString( 'moved to the Archive', $result[0] );
 		$this->assertStringContainsString( 'restored from the Archive', $result[1] );
 		$this->assertStringContainsString( 'somebody is editing', $result[2] );
-		$this->assertStringContainsString( 'invalid post status', $result[3] );
 	}
 }

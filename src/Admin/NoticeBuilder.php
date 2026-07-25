@@ -7,7 +7,7 @@ namespace ArchivedPostStatus\Admin;
  *
  * Pure value-builder: no WordPress hook registration, no HTML rendering.
  * Reads the bulk-result counters from the query vars (`archived`,
- * `unarchived`, `locked`, `invalid`, `denied`, `not_found`,
+ * `unarchived`, `locked`, `denied`, `not_found`,
  * `wrong_status`, `skipped`, `ids`) and returns an array of formatted,
  * translation-ready notice strings.
  *
@@ -42,7 +42,7 @@ final class NoticeBuilder {
 	 *
 	 * @var string[]
 	 */
-	private const BUCKET_NAMES = array( 'locked', 'invalid', 'denied', 'not_found', 'wrong_status' );
+	private const BUCKET_NAMES = array( 'locked', 'denied', 'not_found', 'wrong_status' );
 
 	/**
 	 * Build notices from query variables.
@@ -98,9 +98,6 @@ final class NoticeBuilder {
 			'locked' =>
 				/* translators: %s: Number of locked posts */
 				_n( '%s post not archived, somebody is editing it.', '%s posts not archived, somebody is editing them.', $count, 'archived-post-status' ),
-			'invalid' =>
-				/* translators: %s: Number of invalid posts */
-				_n( '%s post not archived, invalid post status.', '%s posts not archived, invalid post status.', $count, 'archived-post-status' ),
 			'denied' =>
 				/* translators: %s: Number of posts skipped because the user lacks the capability */
 				_n( '%s post skipped: you are not allowed to perform this action on it.', '%s posts skipped: you are not allowed to perform this action on them.', $count, 'archived-post-status' ),

@@ -24,7 +24,6 @@ final class BulkActionResult {
 
 	private int $count        = 0;
 	private int $locked       = 0;
-	private int $invalid      = 0;
 	private int $denied       = 0;
 	private int $not_found    = 0;
 	private int $wrong_status = 0;
@@ -46,13 +45,6 @@ final class BulkActionResult {
 	 */
 	public function record_locked(): void {
 		++$this->locked;
-	}
-
-	/**
-	 * Record a post that was skipped because its status is not valid for the action.
-	 */
-	public function record_invalid(): void {
-		++$this->invalid;
 	}
 
 	/**
@@ -100,7 +92,7 @@ final class BulkActionResult {
 	 * (e.g. already archived, or in a status that the
 	 * `aps_archivable_statuses` filter excludes).
 	 *
-	 * Distinct from {@see record_invalid()} (locked) and {@see record_denied()}
+	 * Distinct from {@see record_locked()} (post lock) and {@see record_denied()}
 	 * (capability) so the notice can explain the exact reason.
 	 *
 	 * The $post_id parameter is part of the locked public signature and is
@@ -120,7 +112,7 @@ final class BulkActionResult {
 	 * Apply result counts to a redirect URL as query args.
 	 *
 	 * Adds the action's query arg (e.g. 'archived=3'), and optional
-	 * 'locked', 'invalid', 'denied', 'not_found', 'wrong_status', and
+	 * 'locked', 'denied', 'not_found', 'wrong_status', and
 	 * 'ids' args when applicable. Also emits a single aggregate
 	 * `skipped=N` arg = sum of every skip bucket so the notice layer
 	 * can render a one-line "N skipped" header.
@@ -136,10 +128,6 @@ final class BulkActionResult {
 
 		if ( $this->locked ) {
 			$url = add_query_arg( 'locked', $this->locked, $url );
-		}
-
-		if ( $this->invalid ) {
-			$url = add_query_arg( 'invalid', $this->invalid, $url );
 		}
 
 		if ( $this->denied ) {
@@ -163,7 +151,6 @@ final class BulkActionResult {
 
 	public function count(): int             { return $this->count; }
 	public function locked(): int            { return $this->locked; }
-	public function invalid(): int           { return $this->invalid; }
 	public function denied_count(): int      { return $this->denied; }
 	public function not_found_count(): int   { return $this->not_found; }
 	public function wrong_status_count(): int { return $this->wrong_status; }
@@ -175,7 +162,6 @@ final class BulkActionResult {
 	 */
 	public function skipped_count(): int {
 		return $this->locked
-			+ $this->invalid
 			+ $this->denied
 			+ $this->not_found
 			+ $this->wrong_status;

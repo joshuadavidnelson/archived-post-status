@@ -218,11 +218,11 @@ class BulkActionHandlerTest extends TestCase {
 
 	/**
 	 * A post whose status is not in the archivable list (e.g. 'trash') gets
-	 * counted as 'invalid' and skipped. The redirect surfaces `invalid=N`.
+	 * counted as 'wrong_status' and skipped. The redirect surfaces `wrong_status=N`.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 */
-	public function test_bulk_archive_records_invalid_post_when_status_not_archivable() {
+	public function test_bulk_archive_records_wrong_status_when_status_not_archivable() {
 		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
@@ -243,15 +243,11 @@ class BulkActionHandlerTest extends TestCase {
 				}
 			);
 
-		// The persist call must never run for an invalid-status post.
+		// The persist call must never run for a wrong-status post.
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
 		$this->handler->handle( 'http://example.com/wp-admin/edit.php', 'archive', array( 8 ) );
 
-		// After C2: the wrong-status bucket replaces the legacy `invalid` bucket
-		// for status-disqualification skips. (The legacy `invalid` field on
-		// BulkActionResult is preserved for any direct callers but no longer
-		// populated by the bulk-archive flow.)
 		$this->assertSame( 1, $captured['wrong_status'] ?? null, 'wrong_status counter should be 1' );
 		$this->assertSame( 0, $captured['archived'] ?? null, 'archived counter should be 0' );
 	}

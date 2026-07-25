@@ -56,6 +56,10 @@ final class HookLoader {
 	 * and calls the appropriate WordPress registration function.
 	 *
 	 * @since 0.4.0
+	 *
+	 * @SuppressWarnings("PHPMD.ElseExpression") -- symmetric action-vs-filter
+	 * dispatch; the else is the clearest form for a two-way branch where
+	 * both arms call an equivalent WordPress registration function.
 	 */
 	public function run(): void {
 		foreach ( $this->hookables as $hookable ) {

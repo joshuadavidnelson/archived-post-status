@@ -89,7 +89,7 @@ class NoticesTest extends TestCase {
 
 	/**
 	 * display_notices() does not emit a notice when no query vars are set
-	 * (no archived/unarchived/locked/invalid counters).
+	 * (no archived/unarchived/locked counters).
 	 *
 	 * Migrated from AdminNoticesTest::test_notices_without_query_vars.
 	 *
@@ -144,8 +144,6 @@ class NoticesTest extends TestCase {
 			->with( 'unarchived', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'locked', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'invalid', false )->andReturn( false );
 		// Phase 1 new buckets — NoticeBuilder reads them too.
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'denied', false )->andReturn( false );
@@ -288,13 +286,14 @@ class NoticesTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// locked / invalid / unarchive notice branches
+	// locked / unarchive notice branches
 	// -----------------------------------------------------------------------
 	//
-	// build_notices() produces four kinds of notice: archived, unarchived,
-	// locked, and invalid. The existing test_archive_notice_* tests cover
-	// the first one. The three below pin the other branches so a regression
-	// in the counter pluralization or the message string surfaces in CI.
+	// build_notices() produces several kinds of notice: archived, unarchived,
+	// and locked (plus the Phase 1 reason buckets covered in NoticeBuilderTest).
+	// The existing test_archive_notice_* tests cover the first one. The
+	// tests below pin the other branches so a regression in the counter
+	// pluralization or the message string surfaces in CI.
 
 	/**
 	 * When the `locked` query var is set (one or more posts were skipped
@@ -313,8 +312,6 @@ class NoticesTest extends TestCase {
 			->with( 'unarchived', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'locked', false )->andReturn( '2' );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'invalid', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'denied', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
@@ -339,48 +336,6 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
-	 * When the `invalid` query var is set (posts were skipped because
-	 * their status wasn't in the archivable list), the notice surfaces
-	 * the count + the "invalid post status" message.
-	 *
-	 * @covers ArchivedPostStatus\Admin\Notices::display_notices
-	 */
-	public function test_notice_for_invalid_posts_includes_count_and_invalid_status_message() {
-		\WP_Mock::userFunction( 'get_current_screen' )
-			->andReturn( (object) array( 'base' => 'edit', 'post_type' => 'post' ) );
-
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'archived', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'unarchived', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'locked', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'invalid', false )->andReturn( '1' );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'denied', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'not_found', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'wrong_status', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'ids', false )->andReturn( false );
-
-		\WP_Mock::userFunction( '_n' )->andReturn( '1 post not archived, invalid post status.' );
-		\WP_Mock::userFunction( 'number_format_i18n' )->andReturn( '1' );
-
-		global $post_type;
-		$post_type = 'post';
-
-		ob_start();
-		$this->notices->display_notices();
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( 'not archived', $output );
-		$this->assertStringContainsString( 'invalid post status', $output );
-	}
-
-	/**
 	 * Single-post unarchive flow: the success notice includes an edit
 	 * link back to the now-restored post, since the user is likely to
 	 * want to keep editing it. The link only appears for single-id
@@ -398,8 +353,6 @@ class NoticesTest extends TestCase {
 			->with( 'unarchived', false )->andReturn( '1' );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'locked', false )->andReturn( false );
-		\WP_Mock::userFunction( 'get_query_var' )
-			->with( 'invalid', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'denied', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
