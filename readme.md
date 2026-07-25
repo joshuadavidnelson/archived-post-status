@@ -42,6 +42,27 @@ Whatever the reason, incorporating the 'Archive' status can be a useful addition
 * Ideal for sites where certain kinds of content is not meant to be evergreen
 * Archive content is hidden from public view, only users with Editor or higher roles can see archived content.
 
+## New in 0.4.0
+
+0.4.0 is a major feature release and a full rewrite of the plugin's internals. Archiving is now available everywhere you work, and archived posts remember where they came from, so restoring one puts it back the way it was.
+
+* **Archive from the block editor** - an "Archive" button in the post summary panel, with a confirmation prompt.
+* **Archive from the classic editor** - an "Archive" link next to "Move to Trash" in the Publish box.
+* **Bulk archive and unarchive** - available in the Bulk actions dropdown. Posts that can't be processed are skipped rather than stopping the batch, with a notice explaining why, and successful archives come with an Undo link.
+* **Inline row actions** - hover a post to reveal "Archive", or "Unarchive" when viewing the Archived filter. Replaces the 0.3.x status dropdown in Quick Edit.
+* **"Archived" admin column** - a sortable column showing who archived each post and when.
+* **Archive metadata** - the previous post status, previous comment and ping status, archive date, and archiving user are recorded on archive and restored on unarchive.
+* **WP-CLI** - `wp post archive <id>...` and `wp post unarchive <id>...`, with `--force`, `--status=<status>`, and `--defer-term-counting` flags.
+* **`aps_archive_post()` / `aps_unarchive_post()`** - API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with matching pre-filters and post-actions.
+* **Front-end protection** - visitors without permission to view archived content get a 404 for a single archived post.
+* **Per-action capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, each filterable via a matching `aps_default_*_capability` filter.
+* **Settings groundwork** - settings are stored in a single `aps_settings` option (currently just `is_read_only`). There is no settings screen yet; the admin UI is planned for a future release.
+* **Deprecated** `aps_is_excluded_post_type()` in favor of `! aps_is_supported_post_type( $post_type )`.
+* **Removed** the `aps_save_post()` and `aps_is_frontend()` globals - calling either now fatals. Comment and ping closing moved to `Status\PostStatusGuard`, so `remove_action( 'save_post', 'aps_save_post', 10 )` silently does nothing; the only supported opt-out is dropping the post type from `aps_supported_post_types`.
+* **Fixed** the `aps_post_status_slug` filter, which 0.3.x only applied when registering the status. Sites using that filter need a one-off database migration - see [changelog.md](changelog.md) before updating.
+
+Full details in [changelog.md](changelog.md).
+
 **Pull requests welcome, please follow [these guidelines](/code-of-conduct.md).**
 
 **Please see [issues reported](https://github.com/joshuadavidnelson/archived-post-status/issues) there before going to the plugin forum.**
