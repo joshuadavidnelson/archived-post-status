@@ -1,19 +1,55 @@
 # Archived Post Status Changelog
 ---
 
-## 0.4.0 - Feb X, 2026
+## 0.4.0 - July 25, 2026
 
-- New documenation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
-- Added block editor support
-- Added bulk edit support
-- Added WP Cli command
-- Replaced Quick Edit dropdown with Inline Row Action support
-- New core `aps_archive_post` and `aps_unarchive_post` functions, modeling the way WordPress handles "trashing" a post.
-- Update classic editor support, new "Archive" link next to "Trash" in post editor
-- Deprecated `aps_is_excluded_post_type`, using new `aps_is_supported_post_type` instead.
-- Expanded filters and documentation blocks
-- Refactored the core plugin into feature classes
-- Added basic php unit tests
+The biggest release since the plugin was first published. Archiving is now available everywhere you work — the block editor, the classic editor, the posts list, bulk actions, and WP-CLI — and archived posts remember where they came from, so restoring one puts it back the way it was.
+
+New documentation site at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
+
+### Added
+
+- **Block editor support** - an "Archive" button in the editor's post summary panel, with a confirmation prompt before it runs.
+- **Classic editor support** - an "Archive" link next to "Move to Trash" in the Publish box.
+- **Bulk archive and unarchive** - "Archive" and "Unarchive" now appear in the Bulk actions dropdown on the posts list. Posts that can't be processed are skipped instead of stopping the whole batch, and a notice tells you why each one was skipped: someone else is editing it, you don't have permission, it no longer exists, or its status isn't eligible.
+- **Undo** - the "moved to the Archive" notice includes an Undo link that restores everything you just archived back to its previous status.
+- **Inline row actions** - hover any post in the list to reveal "Archive", or "Unarchive" when viewing the Archived filter. This replaces the "Archived" option that 0.3.x injected into the status dropdown in Quick Edit and the post editor.
+- **"Archived" admin column** - when you filter the posts list by Archived, a sortable column shows who archived each post and when.
+- **Archive metadata** - archiving now records the previous post status, the previous comment and ping status, the archive date, and the user who archived it. Unarchiving restores all of it. (Posts archived before 0.4.0 have no metadata and still restore to Draft.)
+- **WP-CLI commands** - `wp post archive <id>...` and `wp post unarchive <id>...`, each accepting one or more IDs. `wp post archive` takes `--force` to skip the eligible-status check, `wp post unarchive` takes `--status=<status>` to restore to a specific status, and both take `--defer-term-counting` for large batches.
+- **`aps_archive_post()` and `aps_unarchive_post()`** - real API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with `aps_pre_archive_post` / `aps_pre_unarchive_post` short-circuit filters and `aps_archived_post` / `aps_unarchived_post` actions.
+- **Front-end protection** - a visitor who isn't allowed to see archived content now gets a 404 when they request a single archived post. The check runs consistently for every visitor, including a post's own author, rather than varying with WordPress's private-post rules.
+- **Per-action capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, filterable through `aps_default_archive_capability`, `aps_default_unarchive_capability`, and `aps_default_edit_capability` (defaults `edit_others_posts`, `edit_others_posts`, and `edit_post`). Viewing is unchanged - `aps_default_read_capability`, default `read_private_posts`.
+- **Settings groundwork** - settings are now stored in a single `aps_settings` option, which currently holds one value, `is_read_only`. There is no settings screen yet; the admin UI is planned for a future release and all behavior stays filter-driven in 0.4.0.
+- More filters throughout: `aps_supported_post_types`, `aps_archivable_statuses`, `aps_is_classic_editor`, `aps_enable_archive_meta`, `aps_status_arg_dashicon`, `aps_status_arg_protected`, `aps_unarchive_post_status`, `aps_unarchive_post_comment_status`, `aps_unarchive_post_ping_status`, `aps_archived_post_link`, `aps_get_archive_post_link`, and `aps_get_unarchive_post_link`. See the [documentation site](https://docs.archivedpoststat.us/) for the full reference.
+
+### Changed
+
+- The plugin was rebuilt from a single procedural file into small, focused, namespaced classes under `src/`, loaded by a lightweight autoloader. Composer is a development tool only - no extra dependencies ship to your site.
+- Archived posts are now kept out of the default "All" view on the posts list, the same way Trash is. Use the "Archived" filter link to see them.
+- **The `aps_save_post()` function has been removed.** Closing comments and pings on an archived post now happens in `Status\PostStatusGuard`, so `remove_action( 'save_post', 'aps_save_post', 10 )` no longer unhooks anything and fails silently. There is no filter to switch that behavior off in 0.4.0 - the only supported opt-out is to drop the post type with `aps_supported_post_types` or `aps_excluded_post_types`, which turns off archiving for that type entirely.
+- **The `aps_is_frontend()` function has been removed.** 0.3.x defined it only so it could hook itself to `aps_status_arg_exclude_from_search`, and 0.4.0 computes that default directly instead. Any code calling `aps_is_frontend()` will fatal - use `! is_admin()` in its place.
+- Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
+
+### Deprecated
+
+- `aps_is_excluded_post_type()` - use `! aps_is_supported_post_type( $post_type )` instead. The old function still works and now emits a standard WordPress deprecation notice.
+
+### Fixed
+
+- **The `aps_post_status_slug` filter is now honored at every point the plugin checks or writes the status.** Under 0.3.x the filter only changed the slug the status was registered under - every internal comparison and every database write still used the literal `archive`. 0.4.0 resolves the filtered slug at all of those points. If you use this filter, read the upgrade note below before updating.
+
+### Upgrade note for sites using the `aps_post_status_slug` filter
+
+This only applies if you changed the status slug with the `aps_post_status_slug` filter. Everyone else can update normally.
+
+Because 0.3.x saved the literal `archive` to the database no matter what your filter returned, posts archived before this update still carry that old value and will no longer be recognized as archived once you upgrade. **Back up your database first**, then run a one-off query to bring the old rows in line:
+
+```sql
+UPDATE wp_posts SET post_status = 'archived' WHERE post_status = 'archive';
+```
+
+Replace `archived` with whatever slug your filter returns, and replace the `wp_` prefix with your site's actual table prefix if it differs.
 
 ## 0.3.12 - Feb 16, 2026
 
