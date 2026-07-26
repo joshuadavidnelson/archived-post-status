@@ -113,6 +113,22 @@ class PostStatusTest extends TestCase {
 			'exclude_from_search is false in admin when user can view' => array(
 				true, true, 'aps_status_arg_exclude_from_search', false,
 			),
+			// Frontend + can view → the filter receives true. The SUT default
+			// `! ( is_admin() && aps_current_user_can_view() )` is true off the
+			// admin side, matching 0.3.12's effective `! is_admin()` — continuity,
+			// not drift. Pins the filter value only; see the admin sibling row
+			// for what actually consumes this arg.
+			'exclude_from_search is true on frontend even when user can view' => array(
+				false, true, 'aps_status_arg_exclude_from_search', true,
+			),
+			// Admin + cannot view → exclude_from_search defaults to true; the one
+			// arm whose value drifted (0.3.12's parameterless `aps_is_frontend`
+			// forced `! is_admin()` = false here). Only `post_status => 'any'`
+			// queries read this arg — the find-posts AJAX picker and similar
+			// internals, not the Posts screen, which never consults it.
+			'exclude_from_search is true in admin when user cannot view' => array(
+				true, false, 'aps_status_arg_exclude_from_search', true,
+			),
 			// Default is fixed at false regardless of context.
 			'show_in_admin_all_list always defaults to false' => array(
 				true, true, 'aps_status_arg_show_in_admin_all_list', false,
