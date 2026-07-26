@@ -41,6 +41,10 @@ class CommandRunner {
 	 * results below the count limit (progress bar above it), and exit with
 	 * the aggregated status code.
 	 *
+	 * The status is accumulated across every item (`max()`), so a batch
+	 * exits non-zero if ANY item failed — independent of ordering and of
+	 * which output branch ran.
+	 *
 	 * @param Command                $command    The command to run against each id.
 	 * @param array<int, string|int> $args       Post IDs passed positionally.
 	 * @param array<string, mixed>   $assoc_args Associative CLI flags.
@@ -57,11 +61,15 @@ class CommandRunner {
 			$result = $command->run( (int) $obj_id, $assoc_args );
 
 			if ( $counting ) {
+				// The progress bar suppresses per-post output above the
+				// limit, but never the exit code: a failure anywhere in
+				// the batch still has to reach the caller.
+				$status = max( $status, $result->is_success ? 0 : 1 );
 				$progress->tick();
 				continue;
 			}
 
-			$status = $this->emit( $result );
+			$status = max( $status, $this->emit( $result ) );
 		}
 
 		if ( $counting ) {
