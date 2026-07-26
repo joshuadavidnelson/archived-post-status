@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - stable
+      - develop
 
 jobs:
   syntax-check:
@@ -41,6 +42,7 @@ jobs:
   code-quality:
     name: "Code quality checks"
     runs-on: "ubuntu-latest"
+    needs: syntax-check
     env:
       PHP_VERSION: "8.4"
     steps:
@@ -69,3 +71,125 @@ jobs:
 
     - name: "Run PHPStan"
       run: "composer phpstan"
+
+    - name: "Run PHPMD"
+      run: "composer run phpmd"
+
+  code-analysis:
+    name: "Code Analysis & Metrics"
+    runs-on: "ubuntu-latest"
+    needs: [syntax-check, code-quality]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+    - name: "Checkout"
+      uses: "actions/checkout@v6"
+
+    - name: "Install PHP"
+      uses: "shivammathur/setup-php@v2"
+      with:
+        php-version: '8.4'
+
+    - name: "Cache Composer dependencies"
+      uses: "actions/cache@v4"
+      with:
+        path: vendor
+        key: composer-8.4-${{ hashFiles('composer.lock') }}
+        restore-keys: composer-8.4-
+
+    - name: "Install dependencies"
+      run: composer install --no-dev --optimize-autoloader
+
+    - name: "Check if quality checks passed"
+      id: quality-status
+      run: |
+        if [[ "${{ needs.syntax-check.result }}" == "success" && "${{ needs.code-quality.result }}" == "success" ]]; then
+          echo "quality_passed=true" >> $GITHUB_OUTPUT
+        else
+          echo "quality_passed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: "Find existing code analysis comment"
+      if: always()
+      id: find-comment
+      uses: peter-evans/find-comment@v3
+      with:
+        issue-number: ${{ github.event.number }}
+        comment-author: 'github-actions[bot]'
+        body-includes: '📊 Code Metrics Report'
+
+    - name: "Update comment for failed quality checks"
+      if: steps.quality-status.outputs.quality_passed == 'false' && steps.find-comment.outputs.comment-id != ''
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        comment-id: ${{ steps.find-comment.outputs.comment-id }}
+        edit-mode: replace
+        body: |
+          ## 📊 Code Metrics Report
+
+          ⏳ Code analysis will be posted once quality checks pass.
+
+          **Current Status:** Quality checks failed - please fix issues and re-run checks.
+
+    - name: "Generate PHPMetrics Report"
+      if: steps.quality-status.outputs.quality_passed == 'true'
+      run: composer run phpmetrics
+
+    - name: "Parse metrics and create/update comment"
+      if: steps.quality-status.outputs.quality_passed == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          let metricsContent = '## 📊 Code Metrics Report\\n\\n';
+
+          if (fs.existsSync('reports/metrics.json')) {
+            try {
+              const metrics = JSON.parse(fs.readFileSync('reports/metrics.json'));
+
+              metricsContent += `**✅ Quality Checks:** All passed\\n\\n`;
+              metricsContent += `**Complexity Metrics:**\\n`;
+              metricsContent += `- Average Complexity: ${metrics.averageComplexity || 'N/A'}\\n`;
+              metricsContent += `- Max Complexity: ${metrics.maxComplexity || 'N/A'}\\n\\n`;
+              metricsContent += `**Quality Metrics:**\\n`;
+              metricsContent += `- Maintainability Index: ${metrics.maintainabilityIndex || 'N/A'}\\n`;
+              metricsContent += `- Technical Debt: ${metrics.technicalDebt || 'N/A'}\\n\\n`;
+            } catch (e) {
+              metricsContent += `**✅ Quality Checks:** All passed\\n\\n`;
+              metricsContent += `**Metrics:** Report generated successfully (JSON parse error)\\n\\n`;
+            }
+          } else {
+            metricsContent += `**✅ Quality Checks:** All passed\\n\\n`;
+            metricsContent += `**Metrics:** Report generated successfully\\n\\n`;
+          }
+
+          metricsContent += `[📈 View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+          const commentId = '${{ steps.find-comment.outputs.comment-id }}';
+
+          if (commentId) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: commentId,
+              body: metricsContent
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: metricsContent
+            });
+          }
+
+    - name: "Upload PHPMetrics Report"
+      if: steps.quality-status.outputs.quality_passed == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpmetrics-report-${{ github.sha }}
+        path: reports/metrics/
+        retention-days: 30

@@ -12,8 +12,104 @@ WP_Mock::bootstrap();
 
 define( 'APS_PLUGIN_PATH', dirname( __DIR__, 2 ) );
 
-require_once __DIR__ . '/includes/common.php';
+// Mock WordPress constants
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+	define( 'HOUR_IN_SECONDS', 3600 );
+}
+
+if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+	define( 'DAY_IN_SECONDS', 86400 );
+}
+
+if ( ! defined( 'WEEK_IN_SECONDS' ) ) {
+	define( 'WEEK_IN_SECONDS', 604800 );
+}
+
+// WP function polyfills (Phase 5 of 0.4.0 cleanup split common.php into
+// Support/WpPolyfills.php + Support/Fixtures.php).
+require_once __DIR__ . '/Support/WpPolyfills.php';
+require_once __DIR__ . '/Support/Fixtures.php';
+
+// Mock WordPress classes that might be needed in tests
+if ( ! class_exists( 'WP_Post' ) ) {
+	class WP_Post {
+		public $ID;
+		public $post_status;
+		public $post_type;
+		public $comment_status;
+		public $ping_status;
+		public $post_title;
+		public $post_content;
+		public $post_excerpt;
+		public $post_name;
+		public $post_date;
+		public $post_author;
+
+		public function __construct( array $data = [] ) {
+			foreach ( $data as $key => $value ) {
+				if ( property_exists( $this, $key ) ) {
+					$this->$key = $value;
+				}
+			}
+		}
+	}
+}
+
+if ( ! class_exists( 'WP_Query' ) ) {
+	class WP_Query {
+		public $posts = [];
+		public $post_count = 0;
+		public $found_posts = 0;
+
+		public function __construct( $args = [] ) {
+			// Mock constructor
+		}
+
+		public function have_posts() {
+			return $this->post_count > 0;
+		}
+
+		public function the_post() {
+			// Mock method
+		}
+	}
+}
+
+if ( ! class_exists( 'wpdb' ) ) {
+	class wpdb {
+		public $posts;
+		public $prefix = 'wp_';
+
+		public function __construct() {
+			$this->posts = $this->prefix . 'posts';
+		}
+
+		public function prepare( $query, ...$args ) {
+			return $query;
+		}
+
+		public function get_var( $query ) {
+			return 0;
+		}
+	}
+}
+
 require_once __DIR__ . '/includes/TestCase.php';
 
+// Shared test-support traits (Phase 5 of 0.4.0 cleanup).
+// Loaded here so any test class can `use ArchivedPostStatus\Tests\Support\BoundaryStubs;`
+// without each suite re-requiring the file.
+require_once __DIR__ . '/Support/BoundaryStubs.php';
+
 // Load plugin files.
-require_once APS_PLUGIN_PATH . '/src/archived-post-status.php';
+require_once APS_PLUGIN_PATH . '/archived-post-status.php';
+
+// aps_run_plugin() at suite start: this fires the production plugin's
+// bootstrap pipeline (autoloader + Plugin::hookables() composition) so the
+// hookables graph is constructed exactly once for the entire PHPUnit run.
+// Tests that inspect the WP_Mock filter / action registry rely on the
+// production hook registration having happened by the time `set_up()` runs.
+// Calling here — at the file end, after every helper class and WP-Mock
+// constant is in scope — keeps the suite-level side effect explicit and
+// localized rather than scattered across per-test bootstraps.
+aps_run_plugin();

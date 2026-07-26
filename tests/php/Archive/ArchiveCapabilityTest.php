@@ -1,0 +1,168 @@
+<?php
+/**
+ * Archive\ArchiveCapability Tests
+ *
+ * @since 0.4.0
+ * @package ArchivedPostStatus
+ * @covers ArchivedPostStatus\Archive\ArchiveCapability
+ *
+ * Phase 3A extraction (0.4.0): mirrors the facade tests in FunctionsTest
+ * (`test_archive_capability_filter_replaces_capability_passed_to_current_user_can`,
+ * `test_unarchive_capability_filter_replaces_capability_passed_to_current_user_can`,
+ * `test_archive_capability_defaults_to_edit_others_posts_when_no_filter_registered`)
+ * but exercises the lifted SUT directly. The two filters are decoupled — a
+ * site may grant archive rights to one role and reserve unarchive for
+ * another — so the test surface mirrors that split.
+ */
+
+use ArchivedPostStatus\Archive\ArchiveCapability;
+
+/**
+ * @since 0.4.0
+ * @covers ArchivedPostStatus\Archive\ArchiveCapability
+ */
+class ArchiveCapabilityTest extends TestCase {
+
+	/**
+	 * Default-path archive: without any filter override, the SUT sends the
+	 * default `'edit_others_posts'` through to `current_user_can()`.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveCapability::can_archive
+	 */
+	public function test_can_archive_defaults_to_edit_others_posts() {
+		$received_capability = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 0 );
+
+		$result = ArchiveCapability::can_archive();
+
+		$this->assertTrue( $result );
+		$this->assertSame( 'edit_others_posts', $received_capability );
+	}
+
+	/**
+	 * Filter-override archive: `aps_default_archive_capability` replaces the
+	 * cap that `current_user_can()` sees.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveCapability::can_archive
+	 */
+	public function test_can_archive_filter_replaces_capability() {
+		$received_capability = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::onFilter( 'aps_default_archive_capability' )
+			->with( 'edit_others_posts', 0 )
+			->reply( 'manage_archives' );
+
+		ArchiveCapability::can_archive();
+
+		$this->assertSame( 'manage_archives', $received_capability );
+	}
+
+	/**
+	 * Default-path unarchive: separate filter, same default capability. Two
+	 * separate filter names is a deliberate design choice — sites may grant
+	 * a role one direction but not the other.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveCapability::can_unarchive
+	 */
+	public function test_can_unarchive_defaults_to_edit_others_posts() {
+		$received_capability = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_unarchive_capability', 'edit_others_posts', 0 );
+
+		$result = ArchiveCapability::can_unarchive();
+
+		$this->assertTrue( $result );
+		$this->assertSame( 'edit_others_posts', $received_capability );
+	}
+
+	/**
+	 * Filter-override unarchive: `aps_default_unarchive_capability` replaces
+	 * the cap that `current_user_can()` sees.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveCapability::can_unarchive
+	 */
+	public function test_can_unarchive_filter_replaces_capability() {
+		$received_capability = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::onFilter( 'aps_default_unarchive_capability' )
+			->with( 'edit_others_posts', 0 )
+			->reply( 'manage_archives' );
+
+		ArchiveCapability::can_unarchive();
+
+		$this->assertSame( 'manage_archives', $received_capability );
+	}
+
+	/**
+	 * Edge case: a non-zero post id passes through both filter and
+	 * `current_user_can()` for archive checks. Covers the
+	 * post-id-as-second-arg contract callers rely on.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveCapability::can_archive
+	 */
+	public function test_can_archive_passes_post_id_to_filter_and_current_user_can() {
+		$received_post_id = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_post_id ) {
+					$received_post_id = $post_id;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 17 );
+
+		ArchiveCapability::can_archive( 17 );
+
+		$this->assertSame( 17, $received_post_id );
+	}
+}

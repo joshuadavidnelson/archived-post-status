@@ -4,6 +4,11 @@ Thumbs.db
 *.tar.gz
 *.zip
 node_modules
-dist
 vendor
 *.cache
+/coverage
+/reports
+/refactoring plan.md
+/Settings Reference.md
+.claude/
+.dev/
