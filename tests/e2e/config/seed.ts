@@ -1,5 +1,5 @@
 /**
- * Content seeding + inspection helpers shared by every Phase 2B spec.
+ * Content seeding + inspection helpers shared by every spec.
  *
  * Everything here goes through the admin-authenticated `requestUtils` fixture,
  * so a spec can seed state regardless of which role its browser context is
