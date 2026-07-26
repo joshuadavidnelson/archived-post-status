@@ -48,6 +48,19 @@ final class NoticeBuilder {
 	private const BUCKET_NAMES = array( 'locked', 'denied', 'not_found', 'wrong_status' );
 
 	/**
+	 * Label of the undo link appended to the archive success notice. Exposed
+	 * so callers (and tests) have a single source of truth instead of
+	 * duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function undo_label(): string {
+		/* translators: label for the undo link appended to the archive success notice. */
+		return __( 'Undo', 'archived-post-status' );
+	}
+
+	/**
 	 * Build notices from query variables.
 	 *
 	 * @since 0.4.0
@@ -93,8 +106,11 @@ final class NoticeBuilder {
 	 * @param string $bucket Bucket name (must be one of {@see BUCKET_NAMES}).
 	 * @param int    $count  Non-zero post count for this bucket.
 	 * @return string The translation-ready notice line.
+	 *
+	 * Public (rather than private) so tests can pin the exact per-bucket
+	 * copy from one source instead of duplicating it.
 	 */
-	private function format_bucket_notice( string $bucket, int $count ): string {
+	public function format_bucket_notice( string $bucket, int $count ): string {
 		$message = match ( $bucket ) {
 			'locked' =>
 				/* translators: %s: Number of locked posts */
@@ -147,7 +163,7 @@ final class NoticeBuilder {
 			$message   .= sprintf(
 				' <a href="%s">%s</a>',
 				esc_url( $undo_url ),
-				__( 'Undo', 'archived-post-status' )
+				self::undo_label()
 			);
 		}
 

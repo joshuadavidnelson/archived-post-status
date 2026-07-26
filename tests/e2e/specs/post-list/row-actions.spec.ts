@@ -28,6 +28,7 @@ import {
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
+import { pluginStrings } from '../../config/strings';
 
 /**
  * Reveal a row's action links, which the list table keeps off-screen until the
@@ -51,6 +52,11 @@ async function clickRowAction(
 
 test.describe( 'post list: row actions', () => {
 	const created: number[] = [];
+	let strings: Awaited< ReturnType< typeof pluginStrings > >;
+
+	test.beforeAll( async ( { requestUtils } ) => {
+		strings = await pluginStrings( requestUtils );
+	} );
 
 	test.afterEach( async ( { requestUtils } ) => {
 		await deletePosts( requestUtils, created.splice( 0 ) );
@@ -71,12 +77,12 @@ test.describe( 'post list: row actions', () => {
 		await admin.visitAdminPage( 'edit.php', postListQuery() );
 
 		const action = rowActionLocator( page, post.id, 'archive' );
-		await expect( action ).toHaveText( 'Archive' );
+		await expect( action ).toHaveText( strings.archive_row_action );
 
 		await clickRowAction( page, post.id, 'archive' );
 
 		await expect(
-			noticeWith( page, '1 post moved to the Archive.' )
+			noticeWith( page, strings.archived_notice_one )
 		).toBeVisible();
 		expect( ( await postState( requestUtils, post.id ) ).post_status ).toBe(
 			ARCHIVED_STATUS_SLUG
@@ -101,12 +107,12 @@ test.describe( 'post list: row actions', () => {
 		);
 
 		const action = rowActionLocator( page, post.id, 'unarchive' );
-		await expect( action ).toHaveText( 'Unarchive' );
+		await expect( action ).toHaveText( strings.unarchive_row_action );
 
 		await clickRowAction( page, post.id, 'unarchive' );
 
 		await expect(
-			noticeWith( page, '1 post restored from the Archive.' )
+			noticeWith( page, strings.unarchived_notice_one )
 		).toBeVisible();
 		expect( ( await postState( requestUtils, post.id ) ).post_status ).toBe(
 			'publish'

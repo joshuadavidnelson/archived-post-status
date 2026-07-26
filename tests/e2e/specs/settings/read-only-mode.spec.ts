@@ -18,7 +18,7 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
 /**
  * Internal dependencies
  */
-import { postListQuery } from '../../config/admin';
+import { editUrl, postListQuery } from '../../config/admin';
 import {
 	archivePost,
 	deletePosts,
@@ -27,10 +27,8 @@ import {
 	setPluginSettings,
 	uniqueTitle,
 } from '../../config/seed';
+import { pluginStrings } from '../../config/strings';
 import { wpCli } from '../../config/wp-cli';
-
-const READ_ONLY_MESSAGE =
-	"You can't edit this item because it has been Archived. Please change the post status and try again.";
 
 /**
  * Handle of the list-table script, as WordPress renders its `<script>` id.
@@ -39,6 +37,13 @@ const EDIT_SCREEN_SCRIPT = 'script#aps-edit-screen-js';
 
 test.describe( 'settings: read-only mode', () => {
 	const created: number[] = [];
+	let READ_ONLY_MESSAGE: string;
+
+	test.beforeAll( async ( { requestUtils } ) => {
+		( { read_only_message: READ_ONLY_MESSAGE } = await pluginStrings(
+			requestUtils
+		) );
+	} );
 
 	test.afterEach( async ( { requestUtils } ) => {
 		await deletePosts( requestUtils, created.splice( 0 ) );
@@ -56,10 +61,8 @@ test.describe( 'settings: read-only mode', () => {
 		created.push( post.id );
 		await archivePost( requestUtils, post.id );
 
-		const editUrl = `/wp-admin/post.php?post=${ post.id }&action=edit`;
-
 		// Default (no stored setting): read-only is on.
-		let response = await page.goto( editUrl );
+		let response = await page.goto( editUrl( post.id ) );
 		expect( response?.status() ).toBe( 500 );
 		await expect( page.locator( 'body' ) ).toContainText(
 			READ_ONLY_MESSAGE
@@ -68,7 +71,7 @@ test.describe( 'settings: read-only mode', () => {
 		// Stored false: the very next request behaves differently — no cache
 		// bust, no restart.
 		await setPluginSettings( requestUtils, false );
-		response = await page.goto( editUrl );
+		response = await page.goto( editUrl( post.id ) );
 		expect( response?.status() ).toBe( 200 );
 		await expect( page.locator( 'body' ) ).not.toContainText(
 			READ_ONLY_MESSAGE
@@ -76,7 +79,7 @@ test.describe( 'settings: read-only mode', () => {
 
 		// Stored true: back to blocked.
 		await setPluginSettings( requestUtils, true );
-		response = await page.goto( editUrl );
+		response = await page.goto( editUrl( post.id ) );
 		expect( response?.status() ).toBe( 500 );
 		await expect( page.locator( 'body' ) ).toContainText(
 			READ_ONLY_MESSAGE

@@ -25,6 +25,7 @@ import {
 	setArchiveMeta,
 	uniqueTitle,
 } from '../../config/seed';
+import { pluginStrings } from '../../config/strings';
 import { wpCli } from '../../config/wp-cli';
 
 /**
@@ -51,6 +52,11 @@ const ARCHIVED_VIEW = postListQuery( { postStatus: ARCHIVED_STATUS_SLUG } );
 
 test.describe( 'post list: archived column', () => {
 	const created: number[] = [];
+	let strings: Awaited< ReturnType< typeof pluginStrings > >;
+
+	test.beforeAll( async ( { requestUtils } ) => {
+		strings = await pluginStrings( requestUtils );
+	} );
 
 	test.afterEach( async ( { requestUtils } ) => {
 		await deletePosts( requestUtils, created.splice( 0 ) );
@@ -74,7 +80,7 @@ test.describe( 'post list: archived column', () => {
 
 		await admin.visitAdminPage( 'edit.php', ARCHIVED_VIEW );
 		await expect( page.locator( `th#${ COLUMN_KEY }` ) ).toContainText(
-			'Archived'
+			strings.archived_column_label
 		);
 	} );
 
@@ -113,7 +119,9 @@ test.describe( 'post list: archived column', () => {
 			`td.column-${ COLUMN_KEY }`
 		);
 
-		await expect( cell ).toContainText( 'Archived by admin' );
+		await expect( cell ).toContainText(
+			strings.attribution_template.replace( '%1$s', 'admin' )
+		);
 		await expect( cell.locator( '.aps-archive-datetime' ) ).toHaveText(
 			FIXED_TIMESTAMP_DISPLAY
 		);
@@ -146,7 +154,12 @@ test.describe( 'post list: archived column', () => {
 			`td.column-${ COLUMN_KEY }`
 		);
 
-		await expect( cell ).toContainText( 'Archived by system' );
+		await expect( cell ).toContainText(
+			strings.attribution_template.replace(
+				'%1$s',
+				strings.system_attribution
+			)
+		);
 		await expect( cell.locator( '.aps-archive-datetime' ) ).not.toBeEmpty();
 	} );
 

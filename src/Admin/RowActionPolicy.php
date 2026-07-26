@@ -27,6 +27,30 @@ use ArchivedPostStatus\Status\PostStatusValue;
 final class RowActionPolicy {
 
 	/**
+	 * Label of the Archive row action. Exposed so callers (and tests) have a
+	 * single source of truth instead of duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function archive_label(): string {
+		/* translators: label for the "Archive" row action link. */
+		return __( 'Archive', 'archived-post-status' );
+	}
+
+	/**
+	 * Label of the Unarchive row action. Exposed so callers (and tests) have
+	 * a single source of truth instead of duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function unarchive_label(): string {
+		/* translators: label for the "Unarchive" row action link. */
+		return __( 'Unarchive', 'archived-post-status' );
+	}
+
+	/**
 	 * Compute the row-actions array for a given post + screen + caller-supplied baseline.
 	 *
 	 * The screen argument is accepted for forward compatibility — the
@@ -77,7 +101,7 @@ final class RowActionPolicy {
 				'<a href="%s" title="%s">%s</a>',
 				aps_get_archive_post_link( $post->ID ),
 				esc_attr( __( 'Archive this post', 'archived-post-status' ) ),
-				__( 'Archive', 'archived-post-status' )
+				self::archive_label()
 			);
 
 			return $actions;
@@ -101,7 +125,7 @@ final class RowActionPolicy {
 				'<a href="%s" title="%s">%s</a>',
 				aps_get_unarchive_post_link( $post->ID ),
 				esc_attr( __( 'Unarchive this post', 'archived-post-status' ) ),
-				__( 'Unarchive', 'archived-post-status' )
+				self::unarchive_label()
 			);
 		}
 

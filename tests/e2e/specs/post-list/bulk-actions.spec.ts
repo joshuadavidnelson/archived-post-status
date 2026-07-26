@@ -49,6 +49,7 @@ import {
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
+import { pluginStrings } from '../../config/strings';
 
 const ARCHIVED_VIEW = postListQuery( { postStatus: ARCHIVED_STATUS_SLUG } );
 
@@ -68,6 +69,11 @@ async function expectNoInvalidBucket(
 
 test.describe( 'post list: bulk actions', () => {
 	const created: number[] = [];
+	let strings: Awaited< ReturnType< typeof pluginStrings > >;
+
+	test.beforeAll( async ( { requestUtils } ) => {
+		strings = await pluginStrings( requestUtils );
+	} );
 
 	test.afterEach( async ( { requestUtils } ) => {
 		await deletePosts( requestUtils, created.splice( 0 ) );
@@ -97,7 +103,7 @@ test.describe( 'post list: bulk actions', () => {
 		const params = await applyBulkAction( page, 'archive' );
 
 		await expect(
-			noticeWith( page, '2 posts moved to the Archive.' )
+			noticeWith( page, strings.archived_notice_many )
 		).toBeVisible();
 		expect( params.get( 'archived' ) ).toBe( '2' );
 		// The form submits ids in list-table order, so compare as a set.
@@ -115,14 +121,14 @@ test.describe( 'post list: bulk actions', () => {
 
 		// Undo restores the status each post held before archiving.
 		const undo = noticeLocator( page ).getByRole( 'link', {
-			name: 'Undo',
+			name: strings.undo_label,
 		} );
 		await expect( undo ).toBeVisible();
 
 		await Promise.all( [ page.waitForURL( /edit\.php/ ), undo.click() ] );
 
 		await expect(
-			noticeWith( page, '2 posts restored from the Archive.' )
+			noticeWith( page, strings.unarchived_notice_many )
 		).toBeVisible();
 
 		for ( const id of [ first.id, second.id ] ) {
@@ -155,7 +161,7 @@ test.describe( 'post list: bulk actions', () => {
 		const params = await applyBulkAction( page, 'unarchive' );
 
 		await expect(
-			noticeWith( page, '2 posts restored from the Archive.' )
+			noticeWith( page, strings.unarchived_notice_many )
 		).toBeVisible();
 		expect( params.get( 'unarchived' ) ).toBe( '2' );
 		await expectNoInvalidBucket( page, params );
@@ -197,10 +203,10 @@ test.describe( 'post list: bulk actions', () => {
 		const params = await applyBulkAction( page, 'archive' );
 
 		await expect(
-			noticeWith( page, '1 post moved to the Archive.' )
+			noticeWith( page, strings.archived_notice_one )
 		).toBeVisible();
 		await expect(
-			noticeWith( page, '1 post not archived, somebody is editing it.' )
+			noticeWith( page, strings.locked_notice_one )
 		).toBeVisible();
 		expect( params.get( 'archived' ) ).toBe( '1' );
 		expect( params.get( 'locked' ) ).toBe( '1' );
@@ -241,13 +247,10 @@ test.describe( 'post list: bulk actions', () => {
 		const params = await applyBulkAction( page, 'archive' );
 
 		await expect(
-			noticeWith( page, '1 post moved to the Archive.' )
+			noticeWith( page, strings.archived_notice_one )
 		).toBeVisible();
 		await expect(
-			noticeWith(
-				page,
-				'1 post skipped: you are not allowed to perform this action on it.'
-			)
+			noticeWith( page, strings.denied_notice_one )
 		).toBeVisible();
 		expect( params.get( 'archived' ) ).toBe( '1' );
 		expect( params.get( 'denied' ) ).toBe( '1' );
@@ -287,13 +290,10 @@ test.describe( 'post list: bulk actions', () => {
 		const params = await applyBulkAction( page, 'archive' );
 
 		await expect(
-			noticeWith( page, '1 post moved to the Archive.' )
+			noticeWith( page, strings.archived_notice_one )
 		).toBeVisible();
 		await expect(
-			noticeWith(
-				page,
-				'1 post skipped: its status is not eligible for this action.'
-			)
+			noticeWith( page, strings.wrong_status_notice_one )
 		).toBeVisible();
 		expect( params.get( 'archived' ) ).toBe( '1' );
 		expect( params.get( 'wrong_status' ) ).toBe( '1' );
@@ -352,19 +352,13 @@ test.describe( 'post list: bulk actions', () => {
 		expect( params.get( 'wrong_status' ) ).toBeNull();
 
 		await expect(
-			noticeWith( page, '1 post not archived, somebody is editing it.' )
+			noticeWith( page, strings.locked_notice_one )
 		).toBeVisible();
 		await expect(
-			noticeWith(
-				page,
-				'1 post skipped: you are not allowed to perform this action on it.'
-			)
+			noticeWith( page, strings.denied_notice_one )
 		).toBeVisible();
 		await expect(
-			noticeWith(
-				page,
-				'1 post skipped: it no longer exists or its type is unsupported.'
-			)
+			noticeWith( page, strings.not_found_notice_one )
 		).toBeVisible();
 		await expectNoInvalidBucket( page, params );
 	} );

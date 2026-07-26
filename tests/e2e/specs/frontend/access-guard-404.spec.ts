@@ -14,14 +14,13 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
 /**
  * Internal dependencies
  */
+import { POST_TITLE } from '../../config/admin';
 import {
 	archivePost,
 	deletePosts,
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
-
-const POST_TITLE = 'h1.wp-block-post-title';
 
 /**
  * Seed a published post, archive it, and hand back its permalink.

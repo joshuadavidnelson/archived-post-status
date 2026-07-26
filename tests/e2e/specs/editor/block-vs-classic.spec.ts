@@ -30,6 +30,7 @@ import {
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
+import { pluginStrings } from '../../config/strings';
 
 /**
  * Class the block-editor bundle puts on its Archive button.
@@ -45,6 +46,12 @@ const CLASSIC_ARCHIVE_LINK = '#archive-action a';
  * Handle of the block-editor script, as WordPress renders its `<script>` id.
  */
 const BLOCK_SCRIPT = 'script#aps-block-editor-js';
+
+let strings: Awaited< ReturnType< typeof pluginStrings > >;
+
+test.beforeAll( async ( { requestUtils } ) => {
+	strings = await pluginStrings( requestUtils );
+} );
 
 test.describe( 'editor: block editor archive button', () => {
 	const created: number[] = [];
@@ -70,13 +77,13 @@ test.describe( 'editor: block editor archive button', () => {
 
 		const button = page.locator( BLOCK_ARCHIVE_BUTTON );
 		await expect( button ).toBeVisible();
-		await expect( button ).toHaveText( 'Archive' );
+		await expect( button ).toHaveText( strings.archive_row_action );
 
 		page.once( 'dialog', ( dialog ) => dialog.accept() );
 		await Promise.all( [ page.waitForURL( /edit\.php/ ), button.click() ] );
 
 		await expect(
-			noticeWith( page, '1 post moved to the Archive.' )
+			noticeWith( page, strings.archived_notice_one )
 		).toBeVisible();
 		expect( ( await postState( requestUtils, post.id ) ).post_status ).toBe(
 			ARCHIVED_STATUS_SLUG
@@ -147,7 +154,7 @@ test.describe( 'editor: classic editor archive link', () => {
 
 		const link = page.locator( CLASSIC_ARCHIVE_LINK );
 		await expect( link ).toBeVisible();
-		await expect( link ).toHaveText( 'Archive' );
+		await expect( link ).toHaveText( strings.archive_row_action );
 
 		// `aps_is_classic_editor` short-circuits the enqueue, which matters:
 		// the bundle dereferences wp.element / wp.editPost and would throw
@@ -177,7 +184,7 @@ test.describe( 'editor: classic editor archive link', () => {
 		] );
 
 		await expect(
-			noticeWith( page, '1 post moved to the Archive.' )
+			noticeWith( page, strings.archived_notice_one )
 		).toBeVisible();
 		expect( ( await postState( requestUtils, post.id ) ).post_status ).toBe(
 			ARCHIVED_STATUS_SLUG

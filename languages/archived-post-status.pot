@@ -1,50 +1,182 @@
+# Copyright (C) 2026 Joshua David Nelson
+# This file is distributed under the GPL-2.0+.
 msgid ""
 msgstr ""
-"Project-Id-Version: Archived Post Status/0.3.1\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-01-27 11:57-0600\n"
-"PO-Revision-Date: 2015-01-27 12:11-0600\n"
-"Last-Translator: Frankie Jarrett <fjarrett@gmail.com>\n"
-"Language-Team: \n"
-"Language: en\n"
+"Project-Id-Version: Archived Post Status 0.4.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/archived-post-status\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;"
-"_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;_ex:1,2c;"
-"esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;"
-"esc_html_x:1,2c\n"
-"X-Poedit-Basepath: .\n"
-"X-Poedit-SourceCharset: UTF-8\n"
-"X-Generator: Poedit 1.7.3\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Poedit-SearchPath-0: ..\n"
+"POT-Creation-Date: 2026-07-26T20:45:59+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: archived-post-status\n"
 
-#: ../archived-post-status.php:43
+#. Plugin Name of the plugin
+#: archived-post-status.php
 msgid "Archived Post Status"
 msgstr ""
 
-#: ../archived-post-status.php:44
-msgid ""
-"Allows posts and pages to be archived so you can unpublish content without "
-"having to trash it."
+#. Plugin URI of the plugin
+#: archived-post-status.php
+msgid "https://archivedpoststat.us/"
 msgstr ""
 
-#: ../archived-post-status.php:56 ../archived-post-status.php:111
-#: ../archived-post-status.php:160 ../archived-post-status.php:190
-#: ../archived-post-status.php:284
+#. Description of the plugin
+#: archived-post-status.php
+msgid "Allows posts and pages to be archived so you can unpublish content without having to trash it."
+msgstr ""
+
+#. Author of the plugin
+#: archived-post-status.php
+msgid "Joshua David Nelson"
+msgstr ""
+
+#. Author URI of the plugin
+#: archived-post-status.php
+msgid "https://joshuadnelson.com"
+msgstr ""
+
+#. translators: header label for the Archived list-table column; also used as the cell value for legacy posts with no recorded archive date.
+#. translators: The label used for the status.
+#: src/Admin/ArchiveColumn.php:36
+#: src/Status/ArchiveLabel.php:29
 msgid "Archived"
 msgstr ""
 
-#: ../archived-post-status.php:62
+#. translators: attribution shown when a post was archived with no user context (anonymous WP-CLI, cron).
+#: src/Admin/ArchiveColumn.php:49
+msgctxt "archive agent"
+msgid "system"
+msgstr ""
+
+#. translators: attribution shown when the archiving user's account no longer exists.
+#: src/Admin/ArchiveColumn.php:62
+msgid "Unknown"
+msgstr ""
+
+#. translators: %1$s: user display name
+#: src/Admin/ArchiveColumn.php:75
+#, php-format
+msgid "Archived by %1$s"
+msgstr ""
+
+#. translators: label for the undo link appended to the archive success notice.
+#: src/Admin/NoticeBuilder.php:60
+msgid "Undo"
+msgstr ""
+
+#. translators: %s: Number of locked posts
+#: src/Admin/NoticeBuilder.php:117
+#, php-format
+msgid "%s post not archived, somebody is editing it."
+msgid_plural "%s posts not archived, somebody is editing them."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of posts skipped because the user lacks the capability
+#: src/Admin/NoticeBuilder.php:120
+#, php-format
+msgid "%s post skipped: you are not allowed to perform this action on it."
+msgid_plural "%s posts skipped: you are not allowed to perform this action on them."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of posts skipped because they could not be located
+#: src/Admin/NoticeBuilder.php:123
+#, php-format
+msgid "%s post skipped: it no longer exists or its type is unsupported."
+msgid_plural "%s posts skipped: they no longer exist or their types are unsupported."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of posts skipped because their status disqualifies them
+#: src/Admin/NoticeBuilder.php:126
+#, php-format
+msgid "%s post skipped: its status is not eligible for this action."
+msgid_plural "%s posts skipped: their status is not eligible for this action."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of posts archived
+#: src/Admin/NoticeBuilder.php:147
+#, php-format
+msgid "%s post moved to the Archive."
+msgid_plural "%s posts moved to the Archive."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of posts unarchived
+#: src/Admin/NoticeBuilder.php:184
+#, php-format
+msgid "%s post restored from the Archive."
+msgid_plural "%s posts restored from the Archive."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: label for the "Archive" row action link.
+#: src/Admin/PostEditor.php:49
+#: src/Admin/PostList.php:137
+#: src/Admin/RowActionPolicy.php:38
+#: assets/js/block-editor.js:36
+msgid "Archive"
+msgstr ""
+
+#. translators: wp_die() message shown when a direct edit attempt on an archived post is blocked.
+#: src/Admin/PostEditorGuard.php:54
+msgid "You can't edit this item because it has been Archived. Please change the post status and try again."
+msgstr ""
+
+#: src/Admin/PostEditorGuard.php:96
+msgid "WordPress &rsaquo; Error"
+msgstr ""
+
+#. translators: label for the "Unarchive" row action link.
+#: src/Admin/PostList.php:143
+#: src/Admin/RowActionPolicy.php:50
+msgid "Unarchive"
+msgstr ""
+
+#: src/Admin/PostList.php:233
+msgid "Invalid post type."
+msgstr ""
+
+#. translators: %s: User's display name.
+#: src/Admin/PostList.php:242
+#, php-format
+msgid "You cannot archive this item. %s is currently editing."
+msgstr ""
+
+#: src/Admin/PostList.php:249
+msgid "Error in archiving this item."
+msgstr ""
+
+#: src/Admin/RowActionPolicy.php:103
+msgid "Archive this post"
+msgstr ""
+
+#: src/Admin/RowActionPolicy.php:127
+msgid "Unarchive this post"
+msgstr ""
+
+#. translators: %s: post count
+#: src/Status/PostStatus.php:161
 #, php-format
 msgid "Archived <span class=\"count\">(%s)</span>"
 msgid_plural "Archived <span class=\"count\">(%s)</span>"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../archived-post-status.php:257
-msgid ""
-"You can't edit this item because it has been Archived. Please change the "
-"post status and try again."
+#: assets/js/block-editor.js:31
+msgid "Are you sure you want to archive this post?"
+msgstr ""
+
+#. translators: warning about deactivating the plugin with archived content.
+#: assets/js/plugin-screen.js:8
+#: assets/js/plugin-screen.test.js:121
+#: assets/js/plugin-screen.test.js:167
+#: assets/js/plugin-screen.test.js:190
+msgid "Warning! Deactivating this plugin will remove the 'archive' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin."
 msgstr ""

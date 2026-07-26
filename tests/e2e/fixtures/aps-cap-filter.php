@@ -24,7 +24,7 @@
  *   - the admin row-action / bulk-action UI path stays correct under the filter.
  *
  * Ported from `tests/manual/fixtures/aps-cap-filter.php` (E2E scenarios
- * A6/A7); the original is kept there untouched for manual runs.
+ * A6/A7); the original was retired once this port landed.
  *
  * @package ArchivedPostStatus\TestFixtures
  */
