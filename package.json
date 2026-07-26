@@ -40,6 +40,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "wp-scripts test-e2e --config playwright.config.ts",
+    "test:e2e:cli": "bash ./tests/e2e/cli/run.sh",
     "test:e2e:core-version": "node ./tests/bin/set-core-version.js"
   },
   "devDependencies": {
