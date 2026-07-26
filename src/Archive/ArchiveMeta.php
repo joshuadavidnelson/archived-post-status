@@ -11,7 +11,7 @@ namespace ArchivedPostStatus\Archive;
  *
  * @since 0.4.0
  */
-final readonly class ArchiveMeta {
+final class ArchiveMeta {
 
 	/** @var string The meta key for storing the previous post status */
 	public const META_PREVIOUS_STATUS = '_aps_archive_meta_status';
@@ -39,11 +39,11 @@ final readonly class ArchiveMeta {
 	 * @param string $ping_status The ping status before archiving.
 	 */
 	public function __construct(
-		public string $previous_status,
-		public int $archive_date,
-		public int $archive_user,
-		public string $comment_status,
-		public string $ping_status
+		public readonly string $previous_status,
+		public readonly int $archive_date,
+		public readonly int $archive_user,
+		public readonly string $comment_status,
+		public readonly string $ping_status
 	) {}
 
 	/**

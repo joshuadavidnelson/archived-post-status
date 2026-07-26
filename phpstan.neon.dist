@@ -1,5 +1,11 @@
 parameters:
   level: 6
+  # Analyse across the whole supported range, not just the developer's PHP: the floor
+  # from readme.txt "Requires PHP: 8.1" / composer.json ">=8.1", the ceiling from the
+  # CI matrices (integrate.yml, unit-tests.yml: 8.1-8.4). Without this, the local gate
+  # silently accepts 8.2+ syntax that fails to parse on 8.1, and misses 8.4 deprecations.
+  # See .dev/0.4.0/reports/micro-unit-3-report.md.
+  phpVersion: { min: 80100, max: 80400 }
   inferPrivatePropertyTypeFromConstructor: true
   bootstrapFiles:
     - archived-post-status.php
