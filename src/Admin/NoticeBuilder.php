@@ -7,9 +7,13 @@ namespace ArchivedPostStatus\Admin;
  *
  * Pure value-builder: no WordPress hook registration, no HTML rendering.
  * Reads the bulk-result counters from the query vars (`archived`,
- * `unarchived`, `locked`, `denied`, `not_found`,
- * `wrong_status`, `skipped`, `ids`) and returns an array of formatted,
- * translation-ready notice strings.
+ * `unarchived`, `locked`, `denied`, `not_found`, `wrong_status`, `ids`)
+ * and returns an array of formatted, translation-ready notice strings.
+ *
+ * The redirect URL also carries a `skipped=N` aggregate — the sum of every
+ * skip bucket, added by {@see BulkActionResult::apply_to_url()} — but this
+ * builder does not read it and produces no aggregate line. Skips are
+ * reported one notice per reason bucket ({@see BUCKET_NAMES}) only.
  *
  * Invariant: NoticeBuilder NEVER performs bucket determination via
  * capability checks. The bucketed `denied` count arrives pre-computed

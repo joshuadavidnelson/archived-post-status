@@ -15,8 +15,13 @@ use ArchivedPostStatus\Archive\ArchiveAction;
  * in Phase 1 of the 0.4.0 cleanup so {@see BulkActionHandler} could continue
  * a batch on per-item failure rather than calling wp_die() mid-loop. The
  * URL pipeline emits a `skipped=N` query arg whenever the total of the
- * skip buckets is non-zero so {@see NoticeBuilder} can render a single
- * aggregate "skipped" line plus per-bucket breakdown.
+ * skip buckets is non-zero.
+ *
+ * That arg is currently emitted but not displayed: {@see NoticeBuilder}
+ * reads the individual buckets only and renders one notice per reason, with
+ * no aggregate "skipped" line. Whether an aggregate notice should exist is
+ * an open decision — until it is made, `skipped` is an accurate but unused
+ * value in the URL.
  *
  * @since 0.4.0
  */
@@ -114,8 +119,11 @@ final class BulkActionResult {
 	 * Adds the action's query arg (e.g. 'archived=3'), and optional
 	 * 'locked', 'denied', 'not_found', 'wrong_status', and
 	 * 'ids' args when applicable. Also emits a single aggregate
-	 * `skipped=N` arg = sum of every skip bucket so the notice layer
-	 * can render a one-line "N skipped" header.
+	 * `skipped=N` arg = sum of every skip bucket.
+	 *
+	 * No notice is built from `skipped`: the notice layer reads the
+	 * individual buckets and renders one line per reason. The aggregate is
+	 * carried in the URL only, pending a decision on whether to display it.
 	 */
 	public function apply_to_url( string $url, ArchiveAction $action ): string {
 		$url = add_query_arg( $action->query_arg(), $this->count, $url );
