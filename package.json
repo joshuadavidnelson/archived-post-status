@@ -38,14 +38,19 @@
     "build": "webpack --mode=production",
     "test": "jest --verbose --runInBand --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "wp-scripts test-e2e --config playwright.config.ts",
+    "test:e2e:core-version": "node ./tests/bin/set-core-version.js"
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-react": "^7.23.3",
-    "@types/node": "^18.0.0",
-    "@wordpress/env": "^10.31.0",
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^20.17.10",
+    "@wordpress/e2e-test-utils-playwright": "^1.51.0",
+    "@wordpress/env": "^11.11.0",
+    "@wordpress/scripts": "^33.0.0",
     "babel-loader": "^9.1.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.4.1",

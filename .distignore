@@ -1,5 +1,8 @@
 # Development and testing files
 /tests/
+/playwright/
+/artifacts/
+playwright.config.ts
 /coverage/
 /reports/
 /vendor/
@@ -19,6 +22,7 @@
 .gitignore
 .phpunit*
 .wp-env.json
+.wp-env.override.json
 phpmd.xml
 
 # Composer and npm files
