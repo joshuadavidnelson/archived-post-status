@@ -28,11 +28,14 @@ if [ ! -x "${WP_ENV}" ]; then
 	exit 1
 fi
 
-STDERR_FILE="$( mktemp -t aps-cli-stderr )"
+# An explicit template rather than `mktemp -t <prefix>`: BSD mktemp (macOS)
+# appends the random suffix itself, but GNU coreutils (every Linux CI runner)
+# rejects a template with no X's outright.
+STDERR_FILE="$( mktemp "${TMPDIR:-/tmp}/aps-cli-stderr.XXXXXX" )"
 # Created ids are recorded in a file rather than an array: `create_post` is
 # called from a command substitution, and an array append inside that subshell
 # would never reach this process.
-CREATED_IDS_FILE="$( mktemp -t aps-cli-ids )"
+CREATED_IDS_FILE="$( mktemp "${TMPDIR:-/tmp}/aps-cli-ids.XXXXXX" )"
 PASSED=0
 FAILED=0
 
