@@ -11,7 +11,7 @@ namespace ArchivedPostStatus\Hooks;
  *
  * @since 0.4.0
  */
-final readonly class HookDescriptor {
+final class HookDescriptor {
 
 	public const TYPE_ACTION = 'action';
 	public const TYPE_FILTER = 'filter';
@@ -31,11 +31,11 @@ final readonly class HookDescriptor {
 	 * @param int                        $accepted_args Number of arguments the callback accepts. Default 1.
 	 */
 	private function __construct(
-		public string                $type,
-		public string                $hook,
-		public array|string|object   $callback,
-		public int                   $priority      = 10,
-		public int                   $accepted_args = 1,
+		public readonly string                $type,
+		public readonly string                $hook,
+		public readonly array|string|object   $callback,
+		public readonly int                   $priority      = 10,
+		public readonly int                   $accepted_args = 1,
 	) {}
 
 	/**
