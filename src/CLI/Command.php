@@ -111,7 +111,7 @@ abstract class Command {
 	 * Enforce the capability filter on the user-facing CLI surface so that
 	 * `aps_default_archive_capability` / `aps_default_unarchive_capability`
 	 * are respected for `wp --user=<id> post archive|unarchive`. The
-	 * template functions in src/functions.php intentionally do not enforce
+	 * template functions in src/functions/functions.php intentionally do not enforce
 	 * this so they remain usable from privileged contexts (e.g. cron).
 	 *
 	 * The gate only fires when the CLI runs as an authenticated user

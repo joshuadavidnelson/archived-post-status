@@ -15,8 +15,8 @@ final class ReadOnlyPolicy {
 	/**
 	 * Whether read-only mode is enabled for archived content.
 	 *
-	 * Mirrors `aps_is_read_only()` so the facade can be rewritten as a
-	 * one-line delegate in Step 3B.
+	 * The canonical implementation behind `aps_is_read_only()`, which is a
+	 * one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @return bool

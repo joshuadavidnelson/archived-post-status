@@ -44,7 +44,7 @@ final class AccessGuard implements HookableInterface {
 	 * @since 0.4.0
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor (Phase 3B leak fix).
+	 * is the canonical filterable slug accessor.
 	 */
 	public function enforce_access(): void {
 		if ( ! is_singular() ) {

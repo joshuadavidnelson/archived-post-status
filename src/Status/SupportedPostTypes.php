@@ -17,8 +17,8 @@ final class SupportedPostTypes {
 	/**
 	 * Get the post types that can use the Archived post status.
 	 *
-	 * Mirrors `aps_get_supported_post_types()` body so the facade can be
-	 * rewritten as a one-line delegate in Step 3B.
+	 * The canonical implementation behind `aps_get_supported_post_types()`,
+	 * which is a one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @return array<int|string, string> List of supported post type slugs.

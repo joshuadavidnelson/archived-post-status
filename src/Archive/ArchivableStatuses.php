@@ -5,9 +5,9 @@ namespace ArchivedPostStatus\Archive;
 /**
  * Resolves the set of post statuses that may transition into the archive.
  *
- * Absorbs the body of the retired internal archivable-statuses helper
- * (Phase 3C, 0.4.0 cleanup): applies the `aps_archivable_statuses` filter
- * to the default list and returns the sanitised slug array.
+ * Holds the body of the retired internal archivable-statuses helper: applies
+ * the `aps_archivable_statuses` filter to the default list and returns the
+ * sanitised slug array.
  *
  * @since 0.4.0
  */
@@ -25,10 +25,9 @@ final class ArchivableStatuses {
 	/**
 	 * Get the statuses that are archivable.
 	 *
-	 * Replaces the retired internal archivable-statuses helper (Phase 3C
-	 * deleted it; all internal call sites route through this class). Post-
-	 * status slugs are normalised via `sanitize_key()` (the canonical filter
-	 * for slug strings — see C5 in the Phase 1 cleanup notes).
+	 * Replaces the retired internal archivable-statuses helper; all internal
+	 * call sites route through this class. Post-status slugs are normalised
+	 * via `sanitize_key()`, the canonical filter for slug strings.
 	 *
 	 * @since 0.4.0
 	 * @return string[]

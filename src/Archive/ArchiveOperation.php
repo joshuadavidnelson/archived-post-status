@@ -7,10 +7,10 @@ use ArchivedPostStatus\Status\PostStatusValue;
 /**
  * Performs the archive transition for a post.
  *
- * Absorbs the body of {@see aps_archive_post()}. The procedural facade in
- * `src/functions.php` will be rewritten as a one-line delegate in Step 3B.
+ * Holds the body of {@see aps_archive_post()}; the procedural facade in
+ * `src/functions/functions.php` is a one-line delegate to this class.
  *
- * Contract pin (C3 — Phase 1 of the 0.4.0 cleanup):
+ * Contract pin (C3):
  *   This class MUST NOT re-read the post between `wp_update_post` and the
  *   `aps_archived_post` action firing. The original `WP_Post` object captured
  *   at the top of {@see perform()} is the canonical "pre-archive snapshot"
@@ -47,7 +47,7 @@ final class ArchiveOperation {
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
 	 * is the canonical filterable slug accessor; the wp_update_post call
-	 * threads the filtered slug end-to-end (Phase 3B leak fix).
+	 * threads the filtered slug end-to-end.
 	 */
 	public static function perform( int $post_id ): \WP_Post|bool {
 

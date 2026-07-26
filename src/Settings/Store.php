@@ -42,7 +42,7 @@ final class Store {
 	/**
 	 * Update a single setting value.
 	 *
-	 * H8 (Phase 1 of the 0.4.0 cleanup): `update_option` fires FIRST so its
+	 * Ordering matters: `update_option` fires FIRST so its
 	 * cache-flush hooks (`update_option_aps_settings`, etc.) wired in
 	 * {@see HookAdapter::hooks()} run against the freshly persisted value.
 	 * Only after the option is committed do we prime the in-memory cache —

@@ -30,9 +30,9 @@ final class RowActionPolicy {
 	 * Compute the row-actions array for a given post + screen + caller-supplied baseline.
 	 *
 	 * The screen argument is accepted for forward compatibility — the
-	 * Phase 4 implementation does not consult it. A future Phase 5+ change
-	 * may introduce screen-conditional row-action surfaces (e.g. hiding
-	 * archive on the legacy `post-new.php` screen) without rewiring callers.
+	 * current implementation does not consult it. A later change may
+	 * introduce screen-conditional row-action surfaces (e.g. hiding archive
+	 * on the legacy `post-new.php` screen) without rewiring callers.
 	 *
 	 * Branch contract (mirrors the pre-extraction {@see PostList::row_actions()}):
 	 *
@@ -60,7 +60,7 @@ final class RowActionPolicy {
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchivableStatuses::includes()}
 	 * and {@see PostStatusValue::resolved_slug()} are the canonical
-	 * vocabulary lookups (Phase 3B).
+	 * vocabulary lookups.
 	 */
 	public static function for_post( \WP_Post $post, array $actions, ?object $screen = null ): array {
 		if ( ! aps_is_supported_post_type( $post->post_type ) ) {

@@ -70,7 +70,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * @return array<string, string>
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor (Phase 3B leak fix).
+	 * is the canonical filterable slug accessor.
 	 */
 	public function add_column( array $columns ): array {
 		if ( ! in_array( PostStatusValue::resolved_slug(), (array) get_query_var( 'post_status' ), true ) ) {
@@ -89,7 +89,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * @return array<string, string>
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor (Phase 3B leak fix).
+	 * is the canonical filterable slug accessor.
 	 */
 	public function register_sortable( array $columns ): array {
 		if ( ! in_array( PostStatusValue::resolved_slug(), (array) get_query_var( 'post_status' ), true ) ) {
@@ -151,10 +151,10 @@ final class ArchiveColumn implements HookableInterface {
 	 *   3. archive_date > 0 && archive_user > 0  (fully attributed)
 	 *      Render "Archived by NAME" + the date.
 	 *
-	 * Phase 4: extracted from `render_cell()` so the WP-filter adapter
-	 * stays terse and the HTML-build path is independently testable.
-	 * The `else` branch on the archive_user check was inverted into an
-	 * early-return so the legacy-case + system-case branches read top-to-bottom.
+	 * Kept out of `render_cell()` so the WP-filter adapter stays terse and
+	 * the HTML-build path is independently testable. The archive_user check
+	 * is an early return, so the legacy-case + system-case branches read
+	 * top-to-bottom.
 	 */
 	private function render_archive_cell( ArchiveMeta $meta ): void {
 		// Case 1: true legacy — no archive_date means pre-0.4.0 metadata
@@ -189,8 +189,8 @@ final class ArchiveColumn implements HookableInterface {
 	 * user's display_name, falling back to a localised "Unknown" if the
 	 * user record was deleted between archiving and now.
 	 *
-	 * Phase 4: inverted the original `else` branch into early returns so
-	 * the case-2 and case-3 paths each read as a single linear flow.
+	 * Both cases are early returns, so the case-2 and case-3 paths each read
+	 * as a single linear flow.
 	 *
 	 * @param int $archive_user Archive user id (0 for anonymous / system context).
 	 */

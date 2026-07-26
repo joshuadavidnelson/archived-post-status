@@ -48,7 +48,7 @@ final class PostStatusGuard implements HookableInterface {
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
 	 * is the canonical filterable slug accessor consulted by every consumer
-	 * that compares against `$post->post_status` (Phase 3B leak fix).
+	 * that compares against `$post->post_status`.
 	 */
 	public function enforce_archive_state( int $post_id, \WP_Post $post ): void {
 		if ( wp_doing_ajax() || wp_doing_cron() || wp_is_post_revision( $post_id ) ) {

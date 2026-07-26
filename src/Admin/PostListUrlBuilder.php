@@ -12,8 +12,8 @@ namespace ArchivedPostStatus\Admin;
  * optional post_type query-arg logic that lived in both consumers is
  * centralized here as a single source of truth.
  *
- * Hybrid pattern (per the Phase 3 architecture decision): static helper
- * for stateless value builders; DI for hookable services. No constructor
+ * Hybrid pattern, as used throughout the plugin: static helper for
+ * stateless value builders; DI for hookable services. No constructor
  * wiring through `Plugin::hookables()` — consumers call
  * `PostListUrlBuilder::for_post_type( $post_type )` at the use site.
  *

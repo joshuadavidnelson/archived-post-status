@@ -47,7 +47,7 @@ final class ArchiveTitle implements HookableInterface {
 	 * @return string
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor (Phase 3B leak fix).
+	 * is the canonical filterable slug accessor.
 	 */
 	public function filter_title( $title, $post_id = null ) {
 

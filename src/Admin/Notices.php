@@ -21,7 +21,7 @@ final class Notices implements HookableInterface {
 	/**
 	 * Screen bases on which archive/unarchive notices are allowed to render.
 	 *
-	 * Redirect contract (Phase 2 H3):
+	 * Redirect contract:
 	 *   - {@see BulkActionHandler::get_redirect_url()} returns a URL pointing
 	 *     at edit.php (with an optional `post_type` query arg). Both the
 	 *     single-post `post_action_*` handlers in {@see PostList} and the

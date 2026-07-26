@@ -11,9 +11,9 @@ use ArchivedPostStatus\Archive\ArchiveAction;
  * Separating count accumulation from URL construction keeps each concern
  * at a single level of abstraction and eliminates branching in PostList.
  *
- * Reason-bucketed counters (denied / not_found / wrong_status) were added
- * in Phase 1 of the 0.4.0 cleanup so {@see BulkActionHandler} could continue
- * a batch on per-item failure rather than calling wp_die() mid-loop. The
+ * Reason-bucketed counters (denied / not_found / wrong_status) exist so
+ * {@see BulkActionHandler} can continue a batch on per-item failure rather
+ * than calling wp_die() mid-loop. The
  * URL pipeline emits a `skipped=N` query arg whenever the total of the
  * skip buckets is non-zero.
  *
@@ -56,9 +56,9 @@ final class BulkActionResult {
 	 * Record a post that was skipped because the current user lacks the
 	 * capability to perform the action on it.
 	 *
-	 * Added in Phase 1 of the 0.4.0 cleanup so per-item cap failures no
-	 * longer halt the batch via wp_die(); the outer cap gate in
-	 * {@see BulkActionHandler::handle()} remains the only fail-closed exit.
+	 * Per-item cap failures do not halt the batch via wp_die(); the outer
+	 * cap gate in {@see BulkActionHandler::handle()} remains the only
+	 * fail-closed exit.
 	 *
 	 * The $post_id parameter is part of the locked public signature and is
 	 * reserved for future per-id logging / structured audit output without

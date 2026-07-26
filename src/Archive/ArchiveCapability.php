@@ -17,8 +17,8 @@ final class ArchiveCapability {
 	/**
 	 * Whether the current user can archive content.
 	 *
-	 * Mirrors `aps_current_user_can_archive()` so the facade can be rewritten
-	 * as a one-line delegate in Step 3B.
+	 * The canonical implementation behind `aps_current_user_can_archive()`,
+	 * which is a one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id Optional. The post ID to check against. Default 0.
@@ -42,8 +42,8 @@ final class ArchiveCapability {
 	/**
 	 * Whether the current user can unarchive content.
 	 *
-	 * Mirrors `aps_current_user_can_unarchive()` so the facade can be
-	 * rewritten as a one-line delegate in Step 3B.
+	 * The canonical implementation behind `aps_current_user_can_unarchive()`,
+	 * which is a one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id Optional. The post ID to check against. Default 0.

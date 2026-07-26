@@ -2,10 +2,9 @@
 /**
  * Deprecated `aps_*` functions and filter-default shims.
  *
- * Phase 3C of the 0.4.0 cleanup: this file is the home for self-deprecating
- * facades (functions that emit `_deprecated_function()`) and any
- * filter-default-restoring shim callbacks the Phase 2 filter-drift audit
- * decided to keep on a deprecation timer.
+ * This file is the home for self-deprecating facades (functions that emit
+ * `_deprecated_function()`) and any filter-default-restoring shim callbacks
+ * the 0.4.0 filter-drift audit decided to keep on a deprecation timer.
  *
  * Per `docs/0.4.0-filter-drift-audit.md`, none of the four audited drifts
  * required a shim:
@@ -20,7 +19,7 @@
  *     `! is_admin() && aps_current_user_can_view()` (Option C).
  *
  * So the only resident here today is `aps_is_excluded_post_type`, lifted
- * verbatim from the old `src/functions.php` (including its
+ * verbatim from the pre-0.4.0 single-file plugin (including its
  * `_deprecated_function()` call) — it has been self-deprecating since 0.4.0
  * and remains BC-locked for the 0.4.0 line.
  *

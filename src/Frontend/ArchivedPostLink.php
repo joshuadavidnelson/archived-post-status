@@ -5,9 +5,9 @@ namespace ArchivedPostStatus\Frontend;
 /**
  * Builds the public-facing permalink for an archived post.
  *
- * Absorbs the body of {@see aps_get_archived_post_link()}. The procedural
- * facade in `src/functions.php` will be rewritten as a one-line delegate in
- * Step 3B.
+ * Holds the body of {@see aps_get_archived_post_link()}; the procedural
+ * facade in `src/functions/functions.php` is a one-line delegate to this
+ * class.
  *
  * @since 0.4.0
  */

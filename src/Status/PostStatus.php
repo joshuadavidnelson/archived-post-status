@@ -176,7 +176,7 @@ final class PostStatus implements HookableInterface {
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
 	 * is the canonical filterable slug accessor consulted by every consumer
-	 * that compares against `$post->post_status` (Phase 3B leak fix).
+	 * that compares against `$post->post_status`.
 	 */
 	public function display_post_states( array $post_states, \WP_Post $post ): array {
 		$slug = PostStatusValue::resolved_slug();

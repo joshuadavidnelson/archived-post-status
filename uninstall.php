@@ -70,8 +70,7 @@ if ( is_multisite() ) {
 	// Operators of networks at this scale are expected to clean up out
 	// of band — typically `wp site list | wp aps cleanup --network`
 	// from WP-CLI, or a direct SQL pass after the plugin is deleted.
-	// This branch having no `else` arm is the design — see Phase 5.5
-	// of the 0.4.0 test-refactor plan for the deferred reconsideration.
+	// This branch having no `else` arm is the design.
 	if ( $count < 5000 ) {
 		$sites = get_sites( array( 'number' => $count ) );
 

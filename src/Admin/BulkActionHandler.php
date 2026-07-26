@@ -158,15 +158,15 @@ final class BulkActionHandler {
 	/**
 	 * Per-id processor for the archive path.
 	 *
-	 * Phase 4 of the 0.4.0 cleanup: extracted from the inline `foreach` body
-	 * in {@see bulk_archive()} so the outer loop becomes a clean iterate +
-	 * dispatch + collect pipeline. Each guard records a bucket on $result
-	 * and returns; the success path records the count + id at the bottom.
+	 * Kept out of the `foreach` body in {@see bulk_archive()} so the outer
+	 * loop is a clean iterate + dispatch + collect pipeline. Each guard
+	 * records a bucket on $result and returns; the success path records the
+	 * count + id at the bottom.
 	 *
 	 * @since 0.4.0
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchivableStatuses::includes()}
-	 * is the canonical archivable-statuses lookup (Phase 3B).
+	 * is the canonical archivable-statuses lookup.
 	 */
 	private function process_archive_post( int $post_id, ArchiveAction $action, BulkActionResult $result ): void {
 		$cap = $action->capability_function();
@@ -208,8 +208,8 @@ final class BulkActionHandler {
 	/**
 	 * Per-id processor for the unarchive path.
 	 *
-	 * Phase 4: extracted from the inline `foreach` body in
-	 * {@see bulk_unarchive()}. Unarchive has fewer guards than archive
+	 * Kept out of the `foreach` body in {@see bulk_unarchive()}, mirroring
+	 * the archive path. Unarchive has fewer guards than archive
 	 * (no lock check, no status pre-check) because
 	 * {@see UnarchiveOperation::perform()} already returns false for
 	 * missing posts / non-archive-status posts / persist failures.

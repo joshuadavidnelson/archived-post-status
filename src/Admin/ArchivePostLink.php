@@ -7,9 +7,9 @@ use ArchivedPostStatus\Archive\ArchiveAction;
 /**
  * Builds nonce-wrapped admin URLs that archive or unarchive a post.
  *
- * Absorbs the bodies of {@see aps_get_archive_post_link()} and
- * {@see aps_get_unarchive_post_link()}. The procedural facades in
- * `src/functions.php` will be rewritten as one-line delegates in Step 3B.
+ * Holds the bodies of {@see aps_get_archive_post_link()} and
+ * {@see aps_get_unarchive_post_link()}; the procedural facades in
+ * `src/functions/functions.php` are one-line delegates to this class.
  *
  * The `$action` parameter is type-narrowed to {@see ArchiveAction} so the
  * slug-vs-action ambiguity that the procedural facade had to defend against

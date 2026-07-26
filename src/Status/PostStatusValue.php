@@ -6,14 +6,14 @@ namespace ArchivedPostStatus\Status;
  * The vocabulary used to identify the archived post status throughout the plugin.
  *
  * Replaces the bare-string literals `'archive'` (slug) and `'Archived'` (label)
- * that previously appeared scattered across the codebase. Phase 3B of the 0.4.0
- * refactor will rewire call sites to consume `PostStatusValue::Slug->value` /
- * `PostStatusValue::Label->value` in place of the literals.
+ * that previously appeared scattered across the codebase; call sites consume
+ * `PostStatusValue::Slug->value` / `PostStatusValue::Label->value` — or
+ * {@see self::resolved_slug()} where the `aps_post_status_slug` filter must be
+ * honoured — in place of the literals.
  *
- * Only cases that emerged during the Phase 3A extraction are included; this
- * enum is deliberately narrow. Other status-related vocabulary (query var
- * names, option keys, meta keys, hook names) lives with the consuming class,
- * per the plan's instruction.
+ * Deliberately narrow: only the status slug and label live here. Other
+ * status-related vocabulary (query var names, option keys, meta keys, hook
+ * names) lives with the consuming class.
  *
  * @since 0.4.0
  */
