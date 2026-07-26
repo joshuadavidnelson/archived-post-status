@@ -29,6 +29,7 @@
  *   POST aps-test/v1/post/<id>/lock        -> write `_edit_lock` for another user
  *   POST aps-test/v1/post/<id>/archive-meta-> overwrite archive date/user meta
  *   POST aps-test/v1/settings              -> external update_option( 'aps_settings' ) write
+ *   GET  aps-test/v1/strings               -> user-facing strings asserted by specs, sourced from plugin code
  *
  * @package ArchivedPostStatus\TestFixtures
  */
@@ -274,6 +275,41 @@ add_action(
 						array(
 							'aps_settings'  => get_option( 'aps_settings', array() ),
 							'is_read_only' => aps_is_read_only(),
+						)
+					);
+				},
+			)
+		);
+
+		// User-facing strings asserted by specs, read straight from the
+		// plugin source so a copy change can't silently desync the suite.
+		register_rest_route(
+			'aps-test/v1',
+			'/strings',
+			array(
+				'methods'             => 'GET',
+				'permission_callback' => 'aps_test_api_can_manage',
+				'callback'            => static function () {
+					$notices = new \ArchivedPostStatus\Admin\NoticeBuilder();
+
+					return rest_ensure_response(
+						array(
+							'read_only_message'       => \ArchivedPostStatus\Admin\PostEditorGuard::read_only_message(),
+							'archive_row_action'      => \ArchivedPostStatus\Admin\RowActionPolicy::archive_label(),
+							'unarchive_row_action'    => \ArchivedPostStatus\Admin\RowActionPolicy::unarchive_label(),
+							'archived_column_label'   => \ArchivedPostStatus\Admin\ArchiveColumn::column_label(),
+							'system_attribution'      => \ArchivedPostStatus\Admin\ArchiveColumn::system_attribution_label(),
+							'unknown_attribution'     => \ArchivedPostStatus\Admin\ArchiveColumn::unknown_attribution_label(),
+							'attribution_template'    => \ArchivedPostStatus\Admin\ArchiveColumn::attribution_template(),
+							'undo_label'              => \ArchivedPostStatus\Admin\NoticeBuilder::undo_label(),
+							'archived_notice_one'     => $notices->build_archive_notice( 1, array(), 'post' ),
+							'archived_notice_many'    => $notices->build_archive_notice( 2, array(), 'post' ),
+							'unarchived_notice_one'   => $notices->build_unarchive_notice( 1, array() ),
+							'unarchived_notice_many'  => $notices->build_unarchive_notice( 2, array() ),
+							'locked_notice_one'       => $notices->format_bucket_notice( 'locked', 1 ),
+							'denied_notice_one'       => $notices->format_bucket_notice( 'denied', 1 ),
+							'not_found_notice_one'    => $notices->format_bucket_notice( 'not_found', 1 ),
+							'wrong_status_notice_one' => $notices->format_bucket_notice( 'wrong_status', 1 ),
 						)
 					);
 				},

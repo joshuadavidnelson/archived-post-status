@@ -31,6 +31,8 @@ import {
 	storageStatePath,
 } from '../../config/roles';
 import {
+	editUrl,
+	POST_TITLE,
 	postListQuery,
 	rowActionLocator,
 	rowLocator,
@@ -47,11 +49,15 @@ import {
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
+import { pluginStrings } from '../../config/strings';
 
-const POST_TITLE = 'h1.wp-block-post-title';
+let READ_ONLY_MESSAGE: string;
 
-const READ_ONLY_MESSAGE =
-	"You can't edit this item because it has been Archived. Please change the post status and try again.";
+test.beforeAll( async ( { requestUtils } ) => {
+	( { read_only_message: READ_ONLY_MESSAGE } = await pluginStrings(
+		requestUtils
+	) );
+} );
 
 /**
  * Expected answers per role.
@@ -202,9 +208,7 @@ for ( const role of Object.keys( MATRIX ) as MatrixRole[] ) {
 			created.push( post.id );
 			await archivePost( requestUtils, post.id );
 
-			const response = await page.goto(
-				`/wp-admin/post.php?post=${ post.id }&action=edit`
-			);
+			const response = await page.goto( editUrl( post.id ) );
 
 			// Read-only mode is on for everybody — no role is an exception.
 			expect( response?.status() ).toBe( 500 );

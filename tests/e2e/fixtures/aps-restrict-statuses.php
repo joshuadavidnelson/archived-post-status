@@ -17,7 +17,7 @@
  * `array( 'publish' )`, so archiving a non-published post is rejected.
  *
  * Ported from `tests/manual/fixtures/aps-restrict-statuses.php` (E2E scenario
- * A1); the original is kept there untouched for manual runs.
+ * A1); the original was retired once this port landed.
  *
  * @package ArchivedPostStatus\TestFixtures
  */

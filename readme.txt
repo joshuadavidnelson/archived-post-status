@@ -105,6 +105,10 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - The `aps_is_frontend()` function has been removed. 0.3.x defined it only so it could hook itself to `aps_status_arg_exclude_from_search`, and 0.4.0 computes that default directly instead. Any code calling `aps_is_frontend()` will fatal - use `! is_admin()` in its place.
 - Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
 
+**Localization**
+
+- `languages/archived-post-status.pot` regenerated from scratch (the bundled copy had been stale since ~0.3.1). Of the plugin's 28 translatable strings, 20 are net-new in 0.4.0 (mostly the block editor, bulk actions, row actions, and notice text) and 1 changed wording (`WordPress Error` -> `WordPress &rsaquo; Error`, matching WP core's own `wp_die()` title convention); nothing was removed. The bundled `.po`/`.mo` catalogs (cs_CZ, de_DE, es_ES, fr_FR, nl_NL, pt_PT, ru_RU) predate this and cover only the original handful of strings - translators will need to pick up the new and changed text.
+
 **Deprecated**
 
 - `aps_is_excluded_post_type()` - use `! aps_is_supported_post_type( $post_type )` instead. The old function still works and now emits a standard WordPress deprecation notice.

@@ -25,6 +25,57 @@ final class ArchiveColumn implements HookableInterface {
 	private const COLUMN_KEY = 'aps_archived';
 
 	/**
+	 * Label of the Archived column header. Exposed so callers (and tests)
+	 * have a single source of truth instead of duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function column_label(): string {
+		/* translators: header label for the Archived list-table column; also used as the cell value for legacy posts with no recorded archive date. */
+		return __( 'Archived', 'archived-post-status' );
+	}
+
+	/**
+	 * Attribution label used when a post was archived without a user context
+	 * (anonymous WP-CLI, cron). Exposed so callers (and tests) have a single
+	 * source of truth instead of duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function system_attribution_label(): string {
+		/* translators: attribution shown when a post was archived with no user context (anonymous WP-CLI, cron). */
+		return _x( 'system', 'archive agent', 'archived-post-status' );
+	}
+
+	/**
+	 * Attribution label used when the archiving user record no longer
+	 * exists. Exposed so callers (and tests) have a single source of truth
+	 * instead of duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function unknown_attribution_label(): string {
+		/* translators: attribution shown when the archiving user's account no longer exists. */
+		return __( 'Unknown', 'archived-post-status' );
+	}
+
+	/**
+	 * Format template for the fully-attributed cell (`%1$s` is the display
+	 * name). Exposed so callers (and tests) have a single source of truth
+	 * instead of duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function attribution_template(): string {
+		/* translators: %1$s: user display name */
+		return __( 'Archived by %1$s', 'archived-post-status' );
+	}
+
+	/**
 	 * @return array<int, HookDescriptor>
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
@@ -77,7 +128,7 @@ final class ArchiveColumn implements HookableInterface {
 			return $columns;
 		}
 
-		$columns[ self::COLUMN_KEY ] = __( 'Archived', 'archived-post-status' );
+		$columns[ self::COLUMN_KEY ] = self::column_label();
 
 		return $columns;
 	}
@@ -160,7 +211,7 @@ final class ArchiveColumn implements HookableInterface {
 		// Case 1: true legacy — no archive_date means pre-0.4.0 metadata
 		// was never written. Nothing to show beyond the plain label.
 		if ( ! $meta->archive_date ) {
-			echo '<span>' . esc_html__( 'Archived', 'archived-post-status' ) . '</span>';
+			echo '<span>' . esc_html( self::column_label() ) . '</span>';
 			return;
 		}
 
@@ -171,8 +222,7 @@ final class ArchiveColumn implements HookableInterface {
 		$name = $this->resolve_archive_agent_name( $meta->archive_user );
 
 		printf(
-			/* translators: 1: user display name, 2: date and time */
-			'<span>' . esc_html__( 'Archived by %1$s', 'archived-post-status' ) . '</span>'
+			'<span>' . esc_html( self::attribution_template() ) . '</span>'
 			. '<br><span class="aps-archive-datetime">'
 			. '%2$s'
 			. '</span>',
@@ -199,14 +249,14 @@ final class ArchiveColumn implements HookableInterface {
 		// archive_user is 0 because get_current_user_id() returned 0
 		// (anonymous WP-CLI / cron / server-side aps_archive_post() call).
 		if ( ! $archive_user ) {
-			return _x( 'system', 'archive agent', 'archived-post-status' );
+			return self::system_attribution_label();
 		}
 
 		// Case 3: fully attributed. Fall back to "Unknown" if the
 		// user record was deleted between archiving and now.
 		$user = get_userdata( $archive_user );
 
-		return $user ? $user->display_name : __( 'Unknown', 'archived-post-status' );
+		return $user ? $user->display_name : self::unknown_attribution_label();
 	}
 
 	// -----------------------------------------------------------------------

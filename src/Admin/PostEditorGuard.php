@@ -42,6 +42,19 @@ final class PostEditorGuard implements HookableInterface {
 	}
 
 	/**
+	 * The message shown when a direct edit attempt on an archived post is
+	 * blocked. Exposed so callers (and tests) have a single source of truth
+	 * instead of duplicating the copy.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	public static function read_only_message(): string {
+		/* translators: wp_die() message shown when a direct edit attempt on an archived post is blocked. */
+		return __( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' );
+	}
+
+	/**
 	 * Redirect or block access when an archived post is opened in the editor.
 	 *
 	 * @since 0.4.0
@@ -79,7 +92,7 @@ final class PostEditorGuard implements HookableInterface {
 
 		// Block any other attempt to open the editor.
 		wp_die(
-			esc_html__( "You can't edit this item because it has been Archived. Please change the post status and try again.", 'archived-post-status' ),
+			esc_html( self::read_only_message() ),
 			esc_html__( 'WordPress &rsaquo; Error', 'archived-post-status' )
 		);
 	}

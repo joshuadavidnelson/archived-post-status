@@ -23,7 +23,7 @@
  *   wp option delete aps_test_archived_args aps_test_unarchived_args
  *
  * Ported from `tests/manual/fixtures/aps-test-hooks.php` (E2E scenarios
- * A9/A10); the original is kept there untouched for manual runs.
+ * A9/A10); the original was retired once this port landed.
  *
  * @package ArchivedPostStatus\TestFixtures
  */

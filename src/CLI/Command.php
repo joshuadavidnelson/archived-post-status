@@ -118,7 +118,8 @@ abstract class Command {
 	 * (typically via `--user=...`). Anonymous CLI (user 0) bypasses the
 	 * check, matching the convention of core `wp post update|delete|create`
 	 * — WP-CLI's default elevated server context is intentionally
-	 * privileged. See tests/manual/0.4.0-e2e-results.md (A6/A7 re-run).
+	 * privileged. See docs/0.4.0-cleanup-roadmap.md's consolidated manual-test
+	 * summary for the A6/A7 re-run this gate closed.
 	 *
 	 * @param int $post_id The post ID being acted on.
 	 * @return CliResult|null Error result or null if the user is permitted.

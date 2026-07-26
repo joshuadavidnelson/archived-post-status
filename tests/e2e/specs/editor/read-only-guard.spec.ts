@@ -18,6 +18,7 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
  */
 import { ARCHIVED_STATUS_SLUG } from '../../config/roles';
 import {
+	editUrl,
 	postListQuery,
 	rowActionLocator,
 	rowLocator,
@@ -29,25 +30,17 @@ import {
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
-
-/**
- * The wp_die() copy, verbatim from `Admin\PostEditorGuard::enforce_read_only()`.
- */
-const READ_ONLY_MESSAGE =
-	"You can't edit this item because it has been Archived. Please change the post status and try again.";
-
-/**
- * Admin URL for the classic edit screen of a post.
- *
- * @param id     Post id.
- * @param action Value of the `action` query arg.
- */
-function editUrl( id: number, action = 'edit' ): string {
-	return `/wp-admin/post.php?post=${ id }&action=${ action }`;
-}
+import { pluginStrings } from '../../config/strings';
 
 test.describe( 'editor: read-only guard', () => {
 	const created: number[] = [];
+	let READ_ONLY_MESSAGE: string;
+
+	test.beforeAll( async ( { requestUtils } ) => {
+		( { read_only_message: READ_ONLY_MESSAGE } = await pluginStrings(
+			requestUtils
+		) );
+	} );
 
 	test.afterEach( async ( { requestUtils } ) => {
 		await deletePosts( requestUtils, created.splice( 0 ) );

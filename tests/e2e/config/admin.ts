@@ -12,6 +12,24 @@
 import type { Locator, Page } from '@playwright/test';
 
 /**
+ * The theme renders the post title through the post-title block, which is what
+ * runs the `the_title` filter on the front end. Scoped to the `h1` because the
+ * single template reuses the same block class for the related-posts headings
+ * further down the page.
+ */
+export const POST_TITLE = 'h1.wp-block-post-title';
+
+/**
+ * Admin URL for the classic edit screen of a post.
+ *
+ * @param id     Post id.
+ * @param action Value of the `action` query arg.
+ */
+export function editUrl( id: number, action = 'edit' ): string {
+	return `/wp-admin/post.php?post=${ id }&action=${ action }`;
+}
+
+/**
  * Query string for the post list table, filtered to a status when given.
  *
  * @param options.postType   Post type slug. Defaults to `post`.

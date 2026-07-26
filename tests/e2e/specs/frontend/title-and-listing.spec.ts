@@ -16,10 +16,7 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
 /**
  * Internal dependencies
  */
-import {
-	ARCHIVED_STATUS_LABEL,
-	ARCHIVED_STATUS_SLUG,
-} from '../../config/roles';
+import { POST_TITLE } from '../../config/admin';
 import {
 	FIXTURE_TITLE_LABEL,
 	FIXTURE_TITLE_SEPARATOR,
@@ -28,19 +25,15 @@ import {
 	setFixtures,
 } from '../../config/fixtures';
 import {
+	ARCHIVED_STATUS_LABEL,
+	ARCHIVED_STATUS_SLUG,
+} from '../../config/roles';
+import {
 	archivePost,
 	deletePosts,
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
-
-/**
- * The theme renders the post title through the post-title block, which is what
- * runs the `the_title` filter on the front end. Scoped to the `h1` because the
- * single template reuses the same block class for the related-posts headings
- * further down the page.
- */
-const POST_TITLE = 'h1.wp-block-post-title';
 
 test.describe( 'frontend: archived title label', () => {
 	const created: number[] = [];
