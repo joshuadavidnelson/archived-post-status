@@ -7,11 +7,11 @@ use ArchivedPostStatus\Status\PostStatusValue;
 /**
  * Performs the unarchive transition for a post.
  *
- * Absorbs the body of {@see aps_unarchive_post()} and the filter helper
- * {@see aps_unarchive_post_set_previous_status()}. The procedural facades in
- * `src/functions.php` will be rewritten as one-line delegates in Step 3B.
+ * Holds the body of {@see aps_unarchive_post()} and the filter helper
+ * {@see aps_unarchive_post_set_previous_status()}; the procedural facades in
+ * `src/functions/functions.php` are one-line delegates to this class.
  *
- * INVARIANT (C4 — Phase 1 of the 0.4.0 cleanup):
+ * INVARIANT (C4):
  *   Third-party listeners registered on the `aps_unarchived_post` action may
  *   alter post meta before the in-tree {@see ArchiveMetaListener::delete_meta()}
  *   listener fires. Action callbacks register at priority 10 by default and
@@ -44,13 +44,12 @@ final class UnarchiveOperation {
 	 *     non-null. Sites typically use `false` to veto unarchival; `true`
 	 *     is accepted but undocumented.
 	 *
-	 * Phase 4 of the 0.4.0 cleanup decomposed the body into four private
-	 * helpers — {@see validate()}, {@see resolve_restore_values()},
-	 * {@see dispatch_update()}, and the in-line filter / action firing —
-	 * so the conductor below reads as orchestration. C3 contract pin
-	 * (Phase 1): there is NO re-read between `wp_update_post()` and the
-	 * `aps_unarchived_post` action firing — the snapshot returned from
-	 * `validate()` flows verbatim to the action.
+	 * The body is decomposed into private helpers — {@see validate()},
+	 * {@see resolve_restore_values()}, {@see dispatch_update()}, and the
+	 * in-line filter / action firing — so the conductor below reads as
+	 * orchestration. C3 contract pin: there is NO re-read between
+	 * `wp_update_post()` and the `aps_unarchived_post` action firing — the
+	 * snapshot returned from `validate()` flows verbatim to the action.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to unarchive.
@@ -123,8 +122,6 @@ final class UnarchiveOperation {
 	 * the resolved archive status. Returning a `\WP_Post|false` shape mirrors
 	 * the WP core idiom (`get_post()` itself returns null/false).
 	 *
-	 * Phase 4: extracted from `perform()`.
-	 *
 	 * @return \WP_Post|false
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
@@ -155,10 +152,11 @@ final class UnarchiveOperation {
 	 *     `[ 'draft', 'draft', 'closed', 'closed' ]`. The legacy path is also
 	 *     tripped when `META_PREVIOUS_STATUS === '0'` (or any empty value)
 	 *     because the `?:` operator coerces it to the `'draft'` fallback —
-	 *     this is the explicit pin in Phase 4 of the cleanup plan.
+	 *     this is deliberate, and pinned by
+	 *     {@see UnarchiveOperationTest::test_perform_falls_back_to_draft_when_previous_status_meta_is_zero_string}.
 	 *
-	 * Phase 4: extracted from `perform()`. Inverted the else branch into an
-	 * early-return so the meta-missing case reads as a single linear flow.
+	 * The meta-missing case is an early return, so it reads as a single
+	 * linear flow.
 	 *
 	 * @return array{0:string,1:string,2:string,3:string}
 	 *
@@ -193,8 +191,7 @@ final class UnarchiveOperation {
 	 * falsy on failure. Callers must NOT re-read the post between this
 	 * call and the `aps_unarchived_post` action (C3 contract).
 	 *
-	 * Phase 4: extracted from `perform()`. The `--status` flag → `add_filter`
-	 * translation contract pinned in
+	 * The `--status` flag → `add_filter` translation contract pinned in
 	 * {@see UnarchiveCommandTest::test_status_flag_overrides_unarchive_status}
 	 * traverses the `aps_unarchive_post_status` filter applied here.
 	 *

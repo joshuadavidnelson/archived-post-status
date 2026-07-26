@@ -46,7 +46,7 @@ final class ArchiveMetaListener implements HookableInterface {
 	 * previous_status, comment_status, and ping_status are captured accurately —
 	 * they would be stale after wp_update_post() has already run.
 	 *
-	 * INVARIANT (C3 — Phase 1 of the 0.4.0 cleanup):
+	 * INVARIANT (C3):
 	 *   `$original_post` MUST be the pre-archive snapshot — the same object
 	 *   {@see aps_archive_post()} captured before calling `wp_update_post`.
 	 *   This listener does NOT re-read the post (a re-read would defeat the
@@ -81,7 +81,7 @@ final class ArchiveMetaListener implements HookableInterface {
 	 * (locked public API for 0.4.0) but unused — ArchiveMeta::for_post() is
 	 * sufficient to locate the stored meta.
 	 *
-	 * INVARIANT (C4 — Phase 1 of the 0.4.0 cleanup):
+	 * INVARIANT (C4):
 	 *   This is one of potentially many listeners on `aps_unarchived_post`.
 	 *   Third-party callbacks registered at the same or higher priority may
 	 *   alter (or already have altered) the archive meta keys before this

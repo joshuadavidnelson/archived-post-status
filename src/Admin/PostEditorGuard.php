@@ -47,7 +47,7 @@ final class PostEditorGuard implements HookableInterface {
 	 * @since 0.4.0
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor (Phase 3B leak fix).
+	 * is the canonical filterable slug accessor.
 	 */
 	public function enforce_read_only(): void {
 		if ( ! aps_is_read_only() ) {

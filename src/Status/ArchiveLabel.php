@@ -17,8 +17,8 @@ final class ArchiveLabel {
 	/**
 	 * Build the archived label.
 	 *
-	 * Mirrors the body of `aps_archived_label_string()` so the facade can be
-	 * rewritten as a one-line delegate in Step 3B.
+	 * The canonical implementation behind `aps_archived_label_string()`,
+	 * which is a one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @return string

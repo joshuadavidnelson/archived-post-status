@@ -45,7 +45,7 @@ final class ArchiveCommand extends Command {
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
 	 * and {@see ArchivableStatuses::includes()} are the canonical
-	 * vocabulary lookups (Phase 3B).
+	 * vocabulary lookups.
 	 */
 	protected function validate( int $post_id, array $assoc_args ): ?CliResult {
 		$pt_error = $this->ensure_supported_post_type( $post_id );

@@ -42,7 +42,7 @@ final class UnarchiveCommand extends Command {
 	 * @return CliResult|null Error result, or null if validation passes.
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor (Phase 3B).
+	 * is the canonical filterable slug accessor.
 	 */
 	protected function validate( int $post_id, array $assoc_args ): ?CliResult {
 		$pt_error = $this->ensure_supported_post_type( $post_id );

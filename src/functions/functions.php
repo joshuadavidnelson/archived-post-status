@@ -2,19 +2,17 @@
 /**
  * Public `aps_*` global functions.
  *
- * Phase 3C of the 0.4.0 cleanup: each function below is a one-line delegate
- * to the corresponding static class in `src/Status/`, `src/Archive/`,
- * `src/Admin/`, or `src/Frontend/`. The public signatures (BC contract) are
- * preserved verbatim from prior 0.4.0 work; the mechanics live with the
- * lifted classes. The legacy `_aps_*` internal helpers were retired
+ * Each function below is a one-line delegate to the corresponding static
+ * class in `src/Status/`, `src/Archive/`, `src/Admin/`, or `src/Frontend/`.
+ * The public signatures (BC contract) are preserved verbatim; the mechanics
+ * live with the classes. The legacy `_aps_*` internal helpers were retired
  * (net-new in 0.4.0, no callers); `aps_is_excluded_post_type` lives in
  * the sibling `deprecated.php` file.
  *
  * `@SuppressWarnings("PHPMD.StaticAccess")` is applied per-delegate: each
- * function is, by design, a static call to the canonical lifted class —
- * that's the whole point of the delegate. Phase 5 expands the suppression
- * policy across the broader codebase; here the suppression is scoped to
- * the delegate sites that 3B introduced.
+ * function is, by design, a static call to the canonical class — that's the
+ * whole point of the delegate, so the suppression is scoped to the delegate
+ * sites rather than declared codebase-wide.
  *
  * @since 0.3.9
  * @package ArchivedPostStatus
@@ -40,7 +38,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * @since 0.3.9
  * @return string
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate: the static
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate: the static
  * call to {@see ArchiveLabel::value()} is the entire point of the function.
  */
 function aps_archived_label_string() {
@@ -53,7 +51,7 @@ function aps_archived_label_string() {
  * @since 0.4.0
  * @return array<int|string, string> List of supported post type slugs.
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see SupportedPostTypes::all()}.
  */
 function aps_get_supported_post_types() {
@@ -67,7 +65,7 @@ function aps_get_supported_post_types() {
  * @param  string $post_type
  * @return bool
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see SupportedPostTypes::includes()}.
  */
 function aps_is_supported_post_type( $post_type ) {
@@ -81,7 +79,7 @@ function aps_is_supported_post_type( $post_type ) {
  * @param int $post_id Optional. The post ID to check against.
  * @return bool
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ViewCapability::granted()}.
  */
 function aps_current_user_can_view( $post_id = 0 ) {
@@ -93,7 +91,7 @@ function aps_current_user_can_view( $post_id = 0 ) {
  *
  * @return bool
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ReadOnlyPolicy::enabled()}.
  */
 function aps_is_read_only() {
@@ -107,7 +105,7 @@ function aps_is_read_only() {
  * @param int $post_id
  * @return bool
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchiveCapability::can_archive()}.
  */
 function aps_current_user_can_archive( $post_id = 0 ) {
@@ -121,7 +119,7 @@ function aps_current_user_can_archive( $post_id = 0 ) {
  * @param int $post_id
  * @return bool
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchiveCapability::can_unarchive()}.
  */
 function aps_current_user_can_unarchive( $post_id = 0 ) {
@@ -170,7 +168,7 @@ function aps_current_user_can_edit( $post_id = 0 ) {
  * @param string $action  Optional. The action. Default is 'archive'.
  * @return string|false URL used for the post preview, or false if the post does not exist.
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchivePostLink::build()}; the {@see ArchiveAction::tryFrom()} call
  * is the documented public surface of the enum.
  */
@@ -188,7 +186,7 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
  * @param string $context Optional. The context. Default is 'display'.
  * @return string|false
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchivePostLink::build()}.
  */
 function aps_get_unarchive_post_link( $post = 0, $context = 'display' ) {
@@ -212,7 +210,7 @@ function aps_get_unarchive_post_link( $post = 0, $context = 'display' ) {
  *                                             post permalink. Default empty.
  * @return string|false URL used for the post preview, or false if the post does not exist.
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchivedPostLink::build()}.
  */
 function aps_get_archived_post_link( $post = null, $query_args = array(), $archived_link = '' ) {
@@ -224,7 +222,7 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
  *
  * Modeled after the core `wp_trash_post()` function.
  *
- * Contract pin (C3 — Phase 1 of the 0.4.0 cleanup):
+ * Contract pin (C3):
  *   The {@see ArchiveOperation::perform()} body MUST NOT re-read the post
  *   between `wp_update_post` and the `aps_archived_post` action firing.
  *   The original `WP_Post` object captured at the top of the operation is
@@ -240,7 +238,7 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
  * @param int $post_id
  * @return bool|WP_Post
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchiveOperation::perform()}.
  */
 function aps_archive_post( $post_id = 0 ) {
@@ -253,7 +251,7 @@ function aps_archive_post( $post_id = 0 ) {
  * Modeled after the core `wp_untrash_post()` function — `aps_unarchive_post`
  * mirrors WordPress core's `untrash_post` in both intent and lifecycle.
  *
- * INVARIANT (C4 — Phase 1 of the 0.4.0 cleanup):
+ * INVARIANT (C4):
  *   Third-party listeners registered on the `aps_unarchived_post` action may
  *   alter post meta before the in-tree {@see \ArchivedPostStatus\Archive\ArchiveMetaListener::delete_meta()}
  *   listener fires. Action callbacks register at priority 10 by default and
@@ -272,7 +270,7 @@ function aps_archive_post( $post_id = 0 ) {
  * @param int $post_id
  * @return bool|WP_Post
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see UnarchiveOperation::perform()}.
  */
 function aps_unarchive_post( $post_id = 0 ) {
@@ -292,7 +290,7 @@ function aps_unarchive_post( $post_id = 0 ) {
  * @param string $previous_status The previous status to restore.
  * @return string
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- Phase 3B delegate to
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see UnarchiveOperation::set_previous_status()}.
  */
 function aps_unarchive_post_set_previous_status( $new_status, $post_id, $previous_status ) {

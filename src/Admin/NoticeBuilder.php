@@ -35,11 +35,10 @@ final class NoticeBuilder {
 	 * {@see build_notices()}. Iterated to drive the dispatcher table in
 	 * {@see format_bucket_notice()}.
 	 *
-	 * Phase 4 of the 0.4.0 cleanup extracted the five near-identical
-	 * sprintf+_n blocks from `build_notices()` into a per-bucket strategy
-	 * so the orchestration reads as a single loop. The string literals
-	 * stay inline inside the dispatcher (i18n scanners require literal
-	 * arguments to `_n()`).
+	 * The five near-identical sprintf+_n blocks live in a per-bucket
+	 * strategy rather than in `build_notices()`, so the orchestration reads
+	 * as a single loop. The string literals stay inline inside the
+	 * dispatcher (i18n scanners require literal arguments to `_n()`).
 	 *
 	 * Order matters — pinned by
 	 * `test_build_notices_emits_per_bucket_notices_for_phase_1_reason_buckets`.
@@ -88,8 +87,6 @@ final class NoticeBuilder {
 	 * piped through `sprintf( …, number_format_i18n( $count ) )`. The
 	 * string literals are inline inside each `match` arm so the i18n
 	 * scanner (xgettext / WPCS WordPress.WP.I18n) can extract them.
-	 *
-	 * Extracted in Phase 4 of the 0.4.0 cleanup.
 	 *
 	 * @since 0.4.0
 	 *

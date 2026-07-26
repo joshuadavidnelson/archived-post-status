@@ -122,7 +122,7 @@ final class PostList implements HookableInterface {
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchivableStatuses::all()}
 	 * and {@see PostStatusValue::resolved_slug()} are the canonical
-	 * vocabulary lookups (Phase 3B).
+	 * vocabulary lookups.
 	 */
 	public function bulk_actions( array $actions ): array {
 		// Multi-status filters (e.g. ?post_status[]=publish&post_status[]=archive)
@@ -149,10 +149,10 @@ final class PostList implements HookableInterface {
 	/**
 	 * Add an Unarchive & Archive link to the post row actions.
 	 *
-	 * Phase 4 of the 0.4.0 cleanup extracted the policy branches into the
-	 * pure-static {@see RowActionPolicy::for_post()} helper; this filter
-	 * callback is a thin WP-adapter that forwards the current screen for
-	 * forward compatibility.
+	 * The policy branches live in the pure-static
+	 * {@see RowActionPolicy::for_post()} helper; this filter callback is a
+	 * thin WP-adapter that forwards the current screen for forward
+	 * compatibility.
 	 *
 	 * @since 0.4.0
 	 * @param array<string, string> $actions Current post row actions (action key => HTML link).
@@ -160,7 +160,7 @@ final class PostList implements HookableInterface {
 	 * @return array<string, string>
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see RowActionPolicy::for_post()}
-	 * is a pure function of input (Phase 4 hybrid pattern); the static call
+	 * is a pure function of input (the hybrid pattern); the static call
 	 * is the documented public surface, not a service-locator pull.
 	 */
 	public function row_actions( array $actions, \WP_Post $post ): array {
@@ -193,7 +193,7 @@ final class PostList implements HookableInterface {
 	/**
 	 * Handle individual post archive/unarchive actions.
 	 *
-	 * H6 (Phase 1 of the 0.4.0 cleanup): post-id validation runs BEFORE
+	 * Ordering matters: post-id validation runs BEFORE
 	 * the nonce check. Rationale: `check_admin_referer()` fatal-errors on
 	 * a missing/invalid nonce, which leaks a real WordPress dialog to
 	 * the requester. By validating the post id first we can reject
