@@ -1,0 +1,262 @@
+<?php
+/**
+ * RowActionPolicy unit tests.
+ *
+ * @since 0.4.0
+ * @package ArchivedPostStatus
+ * @covers ArchivedPostStatus\Admin\RowActionPolicy
+ *
+ * Direct unit coverage on the static `RowActionPolicy::for_post()` helper.
+ * The cross-product parity is pinned in
+ * {@see RowActionPolicyParitySnapshotTest}; this file targets the three
+ * branches the Phase 4 plan called out as coverage holes on
+ * `PostList::row_actions()`:
+ *
+ *   1. archivable status + cannot archive → no `archive` entry.
+ *   2. archive status + cannot unarchive  → no `unarchive` entry; edit/view kept.
+ *   3. archive status + can unarchive but cannot view → `view` stripped + `unarchive` appended.
+ */
+
+use ArchivedPostStatus\Admin\RowActionPolicy;
+
+/**
+ * RowActionPolicy direct unit tests.
+ *
+ * @since 0.4.0
+ * @covers ArchivedPostStatus\Admin\RowActionPolicy
+ */
+class RowActionPolicyTest extends TestCase {
+
+	public function tear_down() {
+		$_GET  = [];
+		$_POST = [];
+		parent::tear_down();
+	}
+
+	/**
+	 * Stub the boundary `RowActionPolicy::for_post()` traverses via the static
+	 * helpers (SupportedPostTypes, ArchivableStatuses, capability functions,
+	 * link builders).
+	 *
+	 * @param bool $can_archive   Result of current_user_can('edit_others_posts', $id).
+	 * @param bool $can_view      Result of current_user_can('read_private_posts', $id).
+	 */
+	private function configure_boundary( int $post_id, bool $can_archive, bool $can_view ): void {
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( array( 'post' => 'post' ) );
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( static fn( $v ) => $v );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( \Mockery::type( 'array' ) )
+			->reply( array( 'post' ) );
+
+		\WP_Mock::onFilter( 'aps_archivable_statuses' )
+			->with( \Mockery::type( 'array' ) )
+			->reply( array( 'publish', 'future', 'draft', 'pending', 'private' ) );
+
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', $post_id )
+			->andReturn( $can_archive );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'read_private_posts', $post_id )
+			->andReturn( $can_view );
+
+		\WP_Mock::userFunction( 'get_post' )
+			->andReturnUsing( static function ( $arg ) {
+				if ( is_object( $arg ) ) {
+					return $arg;
+				}
+				$post              = new \stdClass();
+				$post->ID          = (int) $arg;
+				$post->post_type   = 'post';
+				$post->post_status = 'publish';
+				return $post;
+			} );
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->andReturn( (object) array( '_edit_link' => 'post.php?post=%d&action=edit' ) );
+		\WP_Mock::userFunction( 'admin_url' )
+			->andReturnUsing( static fn( $path ) => 'http://example.com/wp-admin/' . $path );
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing( static fn( $arg, $value, $url ) => $url . '&' . $arg . '=' . $value );
+		\WP_Mock::userFunction( 'wp_nonce_url' )
+			->andReturnUsing( static fn( $url ) => $url . '&_wpnonce=abc' );
+		\WP_Mock::userFunction( 'esc_url' )
+			->andReturnUsing( static fn( $url ) => $url );
+	}
+
+	/**
+	 * Coverage hole #1 (from Phase 4 plan): publish status + cannot archive.
+	 * The archive branch is gated on capability, so the actions array comes
+	 * back unchanged — no `archive` entry, no `unarchive` entry, original
+	 * `edit`/`view`/`inline` keys all preserved.
+	 *
+	 * @covers ArchivedPostStatus\Admin\RowActionPolicy::for_post
+	 */
+	public function test_for_post_omits_archive_entry_when_user_lacks_archive_cap_on_publish_post() {
+		$post_id = 11;
+		$this->configure_boundary( $post_id, false, false );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => $post_id,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+
+		$incoming = array(
+			'edit'                 => '<a>Edit</a>',
+			'inline hide-if-no-js' => '<a>Quick Edit</a>',
+			'view'                 => '<a>View</a>',
+		);
+
+		$result = RowActionPolicy::for_post( $post, $incoming );
+
+		$this->assertArrayNotHasKey( 'archive', $result );
+		$this->assertArrayNotHasKey( 'unarchive', $result );
+		// Original keys must survive verbatim.
+		$this->assertSame( $incoming, $result );
+	}
+
+	/**
+	 * Coverage hole #2: archive status + cannot unarchive. The unarchive
+	 * branch is gated on capability, so the actions array comes back
+	 * unchanged — no `unarchive` entry, edit and view both preserved
+	 * (the strip-edit behavior is also gated on can-unarchive).
+	 *
+	 * @covers ArchivedPostStatus\Admin\RowActionPolicy::for_post
+	 */
+	public function test_for_post_omits_unarchive_entry_when_user_lacks_unarchive_cap_on_archived_post() {
+		$post_id = 12;
+		$this->configure_boundary( $post_id, false, false );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => $post_id,
+				'post_type'   => 'post',
+				'post_status' => 'archive',
+			)
+		);
+
+		$incoming = array(
+			'edit'                 => '<a>Edit</a>',
+			'inline hide-if-no-js' => '<a>Quick Edit</a>',
+			'view'                 => '<a>View</a>',
+		);
+
+		$result = RowActionPolicy::for_post( $post, $incoming );
+
+		$this->assertArrayNotHasKey( 'unarchive', $result );
+		$this->assertArrayNotHasKey( 'archive', $result );
+		// edit / view / inline are NOT stripped when the unarchive branch
+		// short-circuits — the strip is part of the unarchive-branch logic.
+		$this->assertSame( $incoming, $result );
+	}
+
+	/**
+	 * Coverage hole #3: archive status + can unarchive + cannot view.
+	 * The unarchive branch runs and strips `edit` + `inline`. The extra
+	 * branch under test: when the user CANNOT view archived content,
+	 * `view` is also stripped from the row.
+	 *
+	 * @covers ArchivedPostStatus\Admin\RowActionPolicy::for_post
+	 */
+	public function test_for_post_strips_view_entry_when_user_can_unarchive_but_cannot_view() {
+		$post_id = 13;
+		$this->configure_boundary( $post_id, true, false );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => $post_id,
+				'post_type'   => 'post',
+				'post_status' => 'archive',
+			)
+		);
+
+		$incoming = array(
+			'edit'                 => '<a>Edit</a>',
+			'inline hide-if-no-js' => '<a>Quick Edit</a>',
+			'view'                 => '<a>View</a>',
+			'trash'                => '<a>Trash</a>',
+		);
+
+		$result = RowActionPolicy::for_post( $post, $incoming );
+
+		$this->assertArrayHasKey( 'unarchive', $result );
+		$this->assertArrayNotHasKey( 'view', $result );
+		$this->assertArrayNotHasKey( 'edit', $result );
+		$this->assertArrayNotHasKey( 'inline hide-if-no-js', $result );
+		// Non-archive-related entries (trash) are untouched.
+		$this->assertArrayHasKey( 'trash', $result );
+	}
+
+	/**
+	 * Pin: the `$screen` argument is accepted for forward compatibility but
+	 * MUST NOT change the policy output. Two calls — one with `null`, one
+	 * with a screen-shaped stdClass — must return the same key set.
+	 *
+	 * @covers ArchivedPostStatus\Admin\RowActionPolicy::for_post
+	 */
+	public function test_for_post_ignores_screen_argument() {
+		$post_id = 14;
+		$this->configure_boundary( $post_id, true, true );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => $post_id,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+
+		$incoming = array(
+			'edit' => '<a>Edit</a>',
+			'view' => '<a>View</a>',
+		);
+
+		$null_screen   = RowActionPolicy::for_post( $post, $incoming, null );
+		$object_screen = RowActionPolicy::for_post( $post, $incoming, (object) array( 'base' => 'edit' ) );
+
+		$this->assertSame( array_keys( $null_screen ), array_keys( $object_screen ) );
+	}
+
+	/**
+	 * Pin: unsupported post type → return $actions unchanged regardless of
+	 * status / caps. Mirrors the same check in the parity snapshot.
+	 *
+	 * @covers ArchivedPostStatus\Admin\RowActionPolicy::for_post
+	 */
+	public function test_for_post_returns_actions_unchanged_for_unsupported_post_type() {
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( array( 'post' => 'post', 'attachment' => 'attachment' ) );
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( static fn( $v ) => $v );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( \Mockery::type( 'array' ) )
+			->reply( array( 'post' ) );
+
+		// Cap functions must never even be consulted — the post-type gate
+		// is the early return.
+		\WP_Mock::userFunction( 'current_user_can' )->never();
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 15,
+				'post_type'   => 'attachment',
+				'post_status' => 'publish',
+			)
+		);
+
+		$incoming = array( 'edit' => '<a>Edit</a>' );
+
+		$result = RowActionPolicy::for_post( $post, $incoming );
+
+		$this->assertSame( $incoming, $result );
+	}
+}

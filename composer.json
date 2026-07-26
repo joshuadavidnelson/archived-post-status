@@ -1,14 +1,23 @@
 {
   "name": "joshuadavidnelson/archived-post-status",
-  "version": "0.3.12",
+  "version": "0.4.0",
   "type": "wordpress-plugin",
-  "description": "A WordPress plugin that allows posts and pages to be archived so you can unpublish content without having to trash it.",
+  "description": "This plugin gives you the power to archive your WordPress content.",
   "homepage": "https://archivedpoststat.us/",
   "license": "GPL-2.0-or-later",
+  "support": {
+    "issues": "https://github.com/joshuadavidnelson/archived-post-status/issues",
+    "docs": "https://docs.archivedpoststat.us/",
+    "forum": "https://wordpress.org/support/plugin/archived-post-status/"
+  },
   "authors": [
+		{
+			"name": "Joshua David Nelson",
+			"email": "josh@joshuadnelson.com"
+		},
     {
-      "name": "joshuadavidnelson",
-      "email": "josh@joshuadnelson.com"
+      "name": "Frankie Jarrett",
+      "email": "fjarrett@gmail.com"
     }
   ],
   "require": {
@@ -16,9 +25,6 @@
     "composer/installers": "^2.0"
   },
   "scripts": {
-    "test": [
-      "./vendor/bin/phpunit"
-    ],
     "phpstan": [
       "./vendor/bin/phpstan analyse --memory-limit=2048M"
     ],
@@ -26,7 +32,25 @@
       "./vendor/bin/phpcs"
     ],
     "lint": [
-      "find *.php src/ tests/ -type f -name '*.php' -print0 | xargs -0 -L1 -P4 -- php -l"
+      "./vendor/bin/parallel-lint *.php src/ tests/"
+    ],
+    "phpunit": [
+      "@php ./vendor/bin/phpunit"
+    ],
+    "phpunit:coverage": [
+      "@php -dpcov.enabled=0 -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-text"
+    ],
+    "phpunit:coverage-html": [
+      "@php -dpcov.enabled=0 -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-html coverage"
+    ],
+    "phpcbf": [
+      "./vendor/bin/phpcbf"
+    ],
+    "phpmd": [
+      "php -d error_reporting='E_ALL & ~E_DEPRECATED' ./vendor/bin/phpmd src/ text phpmd.xml"
+    ],
+    "phpmetrics": [
+      "php -d error_reporting='E_ALL & ~E_DEPRECATED' ./vendor/bin/phpmetrics --report-html=reports/metrics --report-json=reports/metrics.json src/"
     ]
   },
   "require-dev": {
@@ -42,7 +66,11 @@
     "sirbrillig/phpcs-variable-analysis": "^2.12",
     "automattic/vipwpcs": "^3.0",
     "doctrine/instantiator": "^1.5",
-    "php-stubs/wordpress-stubs": "^6.9"
+    "php-stubs/wordpress-stubs": "^6.9",
+    "johnbillion/wp-compat": "^1.4",
+    "phpmd/phpmd": "^2.15",
+    "phpmetrics/phpmetrics": "^2.8",
+    "php-parallel-lint/php-parallel-lint": "^1.4"
   },
   "prefer-stable": true,
   "config": {

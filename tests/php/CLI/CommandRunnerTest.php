@@ -1,0 +1,235 @@
+<?php
+/**
+ * CommandRunner tests.
+ *
+ * Exercises the per-id loop, progress-bar branching, per-post emit() of
+ * success/warning, exit-code aggregation, and the terminate() override
+ * pattern. The WP_CLI static stub lives here because CommandRunner is the
+ * only class outside CLI.php that touches WP_CLI::*.
+ *
+ * @since 0.4.0
+ * @package ArchivedPostStatus
+ * @covers ArchivedPostStatus\CLI\CommandRunner
+ */
+
+namespace {
+	// Shared WP_CLI in-memory stub + get_flag_value / make_progress_bar polyfills
+	// (Phase 5 of 0.4.0 cleanup).
+	require_once __DIR__ . '/Support/WpCliStub.php';
+
+	use ArchivedPostStatus\Archive\ArchiveAction;
+	use ArchivedPostStatus\CLI\CliResult;
+	use ArchivedPostStatus\CLI\Command;
+	use ArchivedPostStatus\CLI\CommandRunner;
+
+	if ( ! class_exists( 'ScriptedCommand' ) ) {
+		/**
+		 * Test double for Command: returns a queue of pre-baked CliResults
+		 * without touching any WP-Mock functions. Lets the runner tests
+		 * stay narrowly focused on iteration/emit/exit-code behavior.
+		 */
+		// phpcs:disable
+		final class ScriptedCommand extends Command {
+			/** @var CliResult[] */
+			public array $queue = array();
+			public string $label = 'Fake';
+
+			protected function action(): ArchiveAction {
+				return ArchiveAction::Archive;
+			}
+
+			public function progress_label(): string {
+				return $this->label;
+			}
+
+			protected function validate( int $post_id, array $assoc_args ): ?CliResult {
+				return null;
+			}
+		}
+		// phpcs:enable
+	}
+
+	if ( ! class_exists( 'CapturingCommandRunner' ) ) {
+		/**
+		 * CommandRunner subclass that captures (rather than executes) the
+		 * exit code. Mirrors the testability pattern documented on
+		 * CommandRunner::terminate().
+		 */
+		// phpcs:disable
+		final class CapturingCommandRunner extends CommandRunner {
+			public ?int $captured_code = null;
+
+			protected function terminate( int $code ): void {
+				$this->captured_code = $code;
+			}
+		}
+		// phpcs:enable
+	}
+
+	/**
+	 * Behavior contract for CommandRunner.
+	 *
+	 * @covers ArchivedPostStatus\CLI\CommandRunner
+	 */
+	class CommandRunnerTest extends TestCase {
+
+		public function set_up() {
+			parent::set_up();
+			\WP_CLI::reset();
+			$GLOBALS['aps_test_progress_bar_calls'] = array();
+		}
+
+		/**
+		 * The run() method needs a Command instance plus a scripted result
+		 * queue. This helper builds a ScriptedCommand whose run() will be
+		 * overridden by anonymous subclassing to dequeue from the script.
+		 *
+		 * @param CliResult[] $script
+		 */
+		private function scripted( array $script ): Command {
+			// Use an anonymous class to override the final run() — but
+			// run() is final on the base, so we override validate() to
+			// return the next scripted result instead. validate() returning
+			// a CliResult short-circuits before execute() can fire.
+			$cmd        = new ScriptedCommand();
+			$cmd->queue = $script;
+			return new class( $cmd ) extends Command {
+				public function __construct( private ScriptedCommand $inner ) {}
+
+				protected function action(): ArchiveAction {
+					return ArchiveAction::Archive;
+				}
+
+				public function progress_label(): string {
+					return $this->inner->progress_label();
+				}
+
+				protected function validate( int $post_id, array $assoc_args ): ?CliResult {
+					$next = array_shift( $this->inner->queue );
+					return $next ?? new CliResult( false, "unscripted call for {$post_id}" );
+				}
+			};
+		}
+
+		/**
+		 * Single success: emit() should record a WP_CLI::success and the
+		 * captured exit code should be 0.
+		 *
+		 * @covers ArchivedPostStatus\CLI\CommandRunner::run
+		 * @covers ArchivedPostStatus\CLI\CommandRunner::terminate
+		 */
+		public function test_run_emits_success_and_exits_zero_on_all_success() {
+			$cmd    = $this->scripted( array( new CliResult( true, 'archived 1' ) ) );
+			$runner = new CapturingCommandRunner();
+
+			$runner->run( $cmd, array( 1 ), array() );
+
+			$this->assertSame( array( 'archived 1' ), \WP_CLI::$successes );
+			$this->assertEmpty( \WP_CLI::$warnings );
+			$this->assertSame( 0, $runner->captured_code );
+		}
+
+		/**
+		 * Single failure: emit() should record a WP_CLI::warning and the
+		 * captured exit code should be 1. The "warning lets the run
+		 * continue" contract is the reason we use warning over error.
+		 *
+		 * @covers ArchivedPostStatus\CLI\CommandRunner::run
+		 */
+		public function test_run_emits_warning_and_exits_one_on_failure() {
+			$cmd    = $this->scripted( array( new CliResult( false, 'failed 1' ) ) );
+			$runner = new CapturingCommandRunner();
+
+			$runner->run( $cmd, array( 1 ), array() );
+
+			$this->assertEmpty( \WP_CLI::$successes );
+			$this->assertSame( array( 'failed 1' ), \WP_CLI::$warnings );
+			$this->assertSame( 1, $runner->captured_code );
+		}
+
+		/**
+		 * The exit code reflects the LAST per-post emit() call (matches
+		 * the legacy behavior of CLI::run_command). A failing last result
+		 * yields exit 1 even if earlier results succeeded.
+		 *
+		 * @covers ArchivedPostStatus\CLI\CommandRunner::run
+		 */
+		public function test_run_aggregates_exit_code_from_final_result() {
+			$cmd    = $this->scripted(
+				array(
+					new CliResult( true, 'archived 1' ),
+					new CliResult( false, 'failed 2' ),
+				)
+			);
+			$runner = new CapturingCommandRunner();
+
+			$runner->run( $cmd, array( 1, 2 ), array() );
+
+			$this->assertSame( array( 'archived 1' ), \WP_CLI::$successes );
+			$this->assertSame( array( 'failed 2' ), \WP_CLI::$warnings );
+			$this->assertSame( 1, $runner->captured_code );
+		}
+
+		/**
+		 * Above the count limit, the runner switches to a progress bar
+		 * and emits no per-post success/warning lines. Default exit code
+		 * stays 0 because the per-post emit branch never fires.
+		 *
+		 * @covers ArchivedPostStatus\CLI\CommandRunner::run
+		 */
+		public function test_run_uses_progress_bar_above_count_limit() {
+			$cmd    = $this->scripted(
+				array(
+					new CliResult( true, 'archived 1' ),
+					new CliResult( true, 'archived 2' ),
+					new CliResult( true, 'archived 3' ),
+				)
+			);
+			$runner = new class(2) extends CommandRunner {
+				public ?int $captured_code = null;
+
+				protected function terminate( int $code ): void {
+					$this->captured_code = $code;
+				}
+			};
+
+			$runner->run( $cmd, array( 1, 2, 3 ), array() );
+
+			$this->assertEmpty( \WP_CLI::$successes, 'progress-bar branch must not call WP_CLI::success' );
+			$this->assertEmpty( \WP_CLI::$warnings );
+			$this->assertCount( 1, $GLOBALS['aps_test_progress_bar_calls'] );
+			$this->assertSame( 'Fake', $GLOBALS['aps_test_progress_bar_calls'][0][0] );
+			$this->assertSame( 3, $GLOBALS['aps_test_progress_bar_calls'][0][1] );
+			$this->assertSame( 0, $runner->captured_code );
+		}
+
+		/**
+		 * At-or-below the count limit, the runner emits per-post and skips
+		 * the progress bar entirely. Two items with count_limit=2 falls in
+		 * the per-post branch (the boundary check is strict `> $count_limit`).
+		 *
+		 * @covers ArchivedPostStatus\CLI\CommandRunner::run
+		 */
+		public function test_run_uses_per_post_emit_at_count_limit_boundary() {
+			$cmd    = $this->scripted(
+				array(
+					new CliResult( true, 'archived 1' ),
+					new CliResult( true, 'archived 2' ),
+				)
+			);
+			$runner = new class(2) extends CommandRunner {
+				public ?int $captured_code = null;
+
+				protected function terminate( int $code ): void {
+					$this->captured_code = $code;
+				}
+			};
+
+			$runner->run( $cmd, array( 1, 2 ), array() );
+
+			$this->assertSame( array( 'archived 1', 'archived 2' ), \WP_CLI::$successes );
+			$this->assertEmpty( $GLOBALS['aps_test_progress_bar_calls'] );
+			$this->assertSame( 0, $runner->captured_code );
+		}
+	}
+}
