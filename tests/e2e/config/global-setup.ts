@@ -8,11 +8,13 @@ import { RequestUtils } from '@wordpress/e2e-test-utils-playwright';
 /**
  * Internal dependencies
  */
+import { resetFixtures } from './fixtures';
 import {
 	ADMIN_STORAGE_STATE,
 	ARCHIVED_STATUS_SLUG,
 	PLUGIN_SLUG,
 } from './roles';
+import { resetPluginSettings } from './seed';
 
 /**
  * Upper bound on sweep iterations, so a delete that never takes effect fails
@@ -70,9 +72,17 @@ async function deleteAllArchived(
  *
  * Signs in as the wp-env admin and persists the authenticated state so the
  * `auth` setup project and every spec have a session to start from, makes sure
- * the plugin under test is active, and clears posts and pages — including the
- * archived ones the upstream helpers cannot see — so specs begin from a
- * known-empty content set.
+ * the plugin under test is active, clears posts and pages — including the
+ * archived ones the upstream helpers cannot see — and resets the mutable
+ * options the suite depends on, so specs begin from a known-empty content set
+ * and stock plugin/fixture behaviour.
+ *
+ * The option reset matters because a run that dies before a spec's `afterEach`
+ * strands state in the database: a leftover `aps_settings` with
+ * `is_read_only => false` silently un-blocks the editor guard and fails every
+ * read-only assertion in the next run, and a leftover `aps_test_*` toggle
+ * leaves a fixture filter hooked for specs that never opted into it. Both
+ * present as code failures with no hint that state is the cause.
  *
  * @param config Resolved Playwright config.
  */
@@ -98,6 +108,10 @@ async function globalSetup( config: FullConfig ): Promise< void > {
 	await requestUtils.deleteAllPages();
 	await deleteAllArchived( requestUtils, 'posts' );
 	await deleteAllArchived( requestUtils, 'pages' );
+
+	// Start from stock plugin settings and every fixture toggle off.
+	await resetPluginSettings( requestUtils );
+	await resetFixtures( requestUtils );
 
 	await requestContext.dispose();
 }

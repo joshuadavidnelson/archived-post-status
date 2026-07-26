@@ -38,7 +38,7 @@ const baseConfig: PlaywrightTestConfig = require( '@wordpress/scripts/config/pla
 export default defineConfig( {
 	...baseConfig,
 
-	// `specs/` holds UI specs, `cli/` holds WP-CLI specs (Phase 2B).
+	// `specs/` holds UI specs, `cli/` holds WP-CLI specs.
 	testDir: path.join( __dirname, 'tests', 'e2e' ),
 
 	// Resolved relative to this config file.
