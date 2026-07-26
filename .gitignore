@@ -12,3 +12,9 @@ vendor
 /Settings Reference.md
 .claude/
 .dev/
+
+# E2E (Playwright + wp-env) artifacts
+/playwright/.auth/
+/artifacts/
+/playwright-report/
+/.wp-env.override.json
