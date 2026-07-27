@@ -115,6 +115,44 @@ class ArchiveColumnTest extends TestCase {
 	}
 
 	/**
+	 * In the archived view, core's Date column is replaced by the Archived
+	 * column: "Published"/"Last Modified" labels are misleading for
+	 * archived rows, and the archive date is the one that matters there.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::add_column
+	 */
+	public function test_add_column_removes_the_core_date_column_in_the_archived_view() {
+		\WP_Mock::userFunction( 'get_query_var' )
+			->with( 'post_status' )
+			->andReturn( 'archive' );
+
+		$result = $this->column->add_column(
+			array( 'cb' => '', 'title' => 'Title', 'date' => 'Date' )
+		);
+
+		$this->assertArrayNotHasKey( 'date', $result );
+		$this->assertArrayHasKey( 'aps_archived', $result );
+	}
+
+	/**
+	 * Outside the archived view the Date column is untouched.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::add_column
+	 */
+	public function test_add_column_keeps_the_core_date_column_elsewhere() {
+		\WP_Mock::userFunction( 'get_query_var' )
+			->with( 'post_status' )
+			->andReturn( 'publish' );
+
+		$result = $this->column->add_column(
+			array( 'cb' => '', 'date' => 'Date' )
+		);
+
+		$this->assertArrayHasKey( 'date', $result );
+		$this->assertArrayNotHasKey( 'aps_archived', $result );
+	}
+
+	/**
 	 * Multi-status filters (`?post_status[]=publish&post_status[]=archive`)
 	 * expose `post_status` as an array. The §1.3 #11 fix wraps it through
 	 * (array) + in_array so the column header still appears.

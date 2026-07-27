@@ -131,6 +131,11 @@ final class ArchiveColumn implements HookableInterface {
 			return $columns;
 		}
 
+		// The Archived column replaces core's Date column here: its
+		// "Published"/"Last Modified" labels are misleading for archived
+		// rows, and the archive date is the one that matters in this view.
+		unset( $columns['date'] );
+
 		$columns[ self::COLUMN_KEY ] = self::column_label();
 
 		return $columns;
