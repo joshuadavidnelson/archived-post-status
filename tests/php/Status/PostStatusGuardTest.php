@@ -385,9 +385,9 @@ class PostStatusGuardTest extends TestCase {
 	}
 
 	/**
-	 * Trashing an archived post is not an exit: core records the status in
-	 * _wp_trash_meta_status and untrash restores the post to the archived
-	 * status, so the archive meta must survive the trash round-trip intact.
+	 * Trashing an archived post defers the exit: core records the status in
+	 * _wp_trash_meta_status, and the archive meta must survive so whatever
+	 * concludes the trash round-trip can still restore faithfully.
 	 *
 	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
 	 */
@@ -405,6 +405,89 @@ class PostStatusGuardTest extends TestCase {
 		] );
 
 		$this->guard->restore_state_on_exit( 'trash', 'archive', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Untrash concludes the deferred exit: core lands untrashed posts on
+	 * draft by default, so a trash→draft transition on a post still
+	 * carrying archive meta restores comment/ping and clears the meta.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_concludes_the_trash_round_trip() {
+		$this->stubExitMetaBoundary( 1, 'publish', 'open', 'open' );
+		$this->expectMetaDeleted( 1 );
+
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with( [
+				'ID'             => 1,
+				'comment_status' => 'open',
+				'ping_status'    => 'open',
+			] )
+			->andReturn( 1 );
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'draft',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'draft', 'trash', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Untrash back to the archived status (a site hooking
+	 * wp_untrash_post_set_previous_status) stays inside the lifecycle —
+	 * the meta is untouched.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_ignores_untrash_back_to_archive() {
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'delete_post_meta' )->never();
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'archive',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'archive', 'trash', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * A trash exit on a post with no archive meta (ordinary trashed
+	 * content) is none of the plugin's business.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_ignores_trash_exits_without_archive_meta() {
+		$this->stubExitMetaBoundary( 1, '' );
+
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'delete_post_meta' )->never();
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'draft',
+			'post_type'      => 'post',
+			'comment_status' => 'open',
+			'ping_status'    => 'open',
+		] );
+
+		$this->guard->restore_state_on_exit( 'draft', 'trash', $post );
 
 		$this->addToAssertionCount( 1 );
 	}
