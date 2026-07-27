@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Hooks;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 /**
  * Describes a single WordPress hook registration.
  *

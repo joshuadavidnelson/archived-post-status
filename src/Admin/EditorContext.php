@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Admin;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 /**
  * Detects whether the current admin context is the classic editor.
  *

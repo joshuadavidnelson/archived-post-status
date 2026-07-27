@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Status;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 /**
  * The vocabulary used to identify the archived post status throughout the plugin.
  *
