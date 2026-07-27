@@ -95,6 +95,7 @@ final class Plugin {
 		if ( is_admin() ) {
 			$hookables[] = new Admin\PostList( new Admin\BulkActionHandler() );
 			$hookables[] = new Admin\ArchiveColumn();
+			$hookables[] = new Admin\PluginScreen();
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
