@@ -124,7 +124,7 @@ class BulkActionHandlerTest extends TestCase {
 
 	/**
 	 * Archive bulk action — per-item capability denial buckets the post
-	 * into `denied` and continues the batch (C2 + H4). The legacy
+	 * into `denied` and continues the batch. The legacy
 	 * mid-batch wp_die() was removed in the 0.4.0 refactor.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
@@ -376,7 +376,7 @@ class BulkActionHandlerTest extends TestCase {
 
 	/**
 	 * Unarchive bulk action — per-item capability denial buckets into
-	 * `denied` and continues the batch (C2 + H4). The legacy mid-batch
+	 * `denied` and continues the batch. The legacy mid-batch
 	 * wp_die() was removed in the 0.4.0 refactor.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
