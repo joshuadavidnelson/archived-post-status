@@ -140,7 +140,9 @@ Note that 0.4.0 registers its hooks as callbacks on internal object instances, w
 
 This only applies if you changed the status slug with the `aps_post_status_slug` filter. Everyone else can update normally.
 
-Because 0.3.x saved the literal `archive` to the database no matter what your filter returned, posts archived before this update still carry that old value and will no longer be recognized as archived once you upgrade. Back up your database first, then run a one-off query to bring the old rows in line: `UPDATE wp_posts SET post_status = 'archived' WHERE post_status = 'archive';`
+The status slug is still `archive`, exactly as in 0.3.x. Nothing to do here unless your site adds an `aps_post_status_slug` filter to rename it - if you have never used that filter, skip this section and update normally.
+
+What changed is where the filter is honored. 0.3.x applied it only when registering the status and then saved the literal `archive` to the database regardless, so a site that renamed the slug ends up with rows the plugin no longer matches once 0.4.0 honors the custom name everywhere. If that is your site: back up your database first, then run `UPDATE wp_posts SET post_status = 'your-custom-slug' WHERE post_status = 'archive';` - substituting your own slug for "your-custom-slug" and your own table prefix for `wp_`. Do not run that query if you are not filtering the slug; it would rename your archived posts to a status the plugin does not recognize.
 
 Replace `archived` with whatever slug your filter returns, and replace the `wp_` prefix with your site's actual table prefix if it differs.
 
@@ -255,7 +257,7 @@ Props [fjarrett](https://github.com/fjarrett)
 
 = 0.4.0 =
 
-IMPORTANT if your site uses the `aps_post_status_slug` filter: back up your database, then run `UPDATE wp_posts SET post_status = 'archived' WHERE post_status = 'archive';` - replacing "archived" with the slug your filter returns and `wp_` with your table prefix. Sites not using that filter can update normally.
+The archived status slug is unchanged (`archive`) and most sites can update normally. IMPORTANT only if your site adds an `aps_post_status_slug` filter to rename the slug: 0.4.0 honors that filter everywhere, so posts archived under 0.3.x need a one-off migration. Back up your database, then run `UPDATE wp_posts SET post_status = 'your-custom-slug' WHERE post_status = 'archive';` - substituting your slug and table prefix. Do not run it if you are not filtering the slug.
 
 0.3.x saved the literal "archive" to the database no matter what your filter returned, so posts archived before this update will no longer be recognized as archived.
 

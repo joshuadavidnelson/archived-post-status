@@ -59,7 +59,7 @@ Whatever the reason, incorporating the 'Archive' status can be a useful addition
 * **Settings groundwork** - settings are stored in a single `aps_settings` option (currently just `is_read_only`). There is no settings screen yet; the admin UI is planned for a future release.
 * **Deprecated** `aps_is_excluded_post_type()` in favor of `! aps_is_supported_post_type( $post_type )`.
 * **Removed** eleven 0.3.x global functions, including `aps_post_status_slug()`, `aps_the_title()`, `aps_save_post()`, and `aps_is_frontend()` - calling any of them now fatals, and unhooking one (e.g. `remove_filter( 'the_title', 'aps_the_title' )`) is now a silent no-op. 0.4.0 registers its hooks on internal object instances that third-party code cannot reach, so use the documented filters instead - to drop the "Archived: " title prefix, for example, return an empty string from `aps_title_label`. See [changelog.md](changelog.md) for the full list and replacements.
-* **Fixed** the `aps_post_status_slug` filter, which 0.3.x only applied when registering the status. Sites using that filter need a one-off database migration - see [changelog.md](changelog.md) before updating.
+* **Fixed** the `aps_post_status_slug` filter, which 0.3.x only applied when registering the status while still saving the literal `archive` to the database. The default slug is unchanged (`archive`); only sites that add this filter to rename it need a one-off database migration - see [changelog.md](changelog.md) before updating.
 
 Full details in [changelog.md](changelog.md).
 
