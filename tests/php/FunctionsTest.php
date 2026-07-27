@@ -319,25 +319,30 @@ class FunctionsTest extends TestCase {
 
 	/**
 	 * `aps_is_excluded_post_type()` is the lone resident of
-	 * `src/functions/deprecated.php` (Phase 3C). It self-deprecates via
-	 * `_deprecated_function()` and returns the boolean negation of
-	 * `aps_is_supported_post_type`. The smoke test confirms it's exposed,
-	 * the deprecation notice fires, and the delegation produces the
-	 * inverted boolean.
+	 * `src/functions/deprecated.php`. It self-deprecates via
+	 * `_deprecated_function()` and keeps its exact pre-0.4.0 semantics:
+	 * membership in the filterable `aps_excluded_post_types` list — NOT
+	 * the negation of `aps_is_supported_post_type()`, which would wrongly
+	 * report non-public post types as excluded.
 	 *
 	 * @covers ::aps_is_excluded_post_type
 	 */
-	public function test_aps_is_excluded_post_type_deprecated_facade_inverts_supported_post_type() {
+	public function test_aps_is_excluded_post_type_keeps_its_pre_040_membership_semantics() {
 		$this->assertTrue( function_exists( 'aps_is_excluded_post_type' ) );
 		$this->assertTrue( is_callable( 'aps_is_excluded_post_type' ) );
 
 		\WP_Mock::userFunction( '_deprecated_function' )
 			->with( 'aps_is_excluded_post_type', '0.4.0', 'aps_is_supported_post_type' )
-			->once();
-		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
-			->with( 'attachment' )
-			->andReturn( false );
+			->times( 2 );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->never();
 
 		$this->assertTrue( aps_is_excluded_post_type( 'attachment' ) );
+
+		// A non-public CPT outside the excluded list is NOT excluded, even
+		// though aps_is_supported_post_type() would report it unsupported.
+		$this->assertFalse( aps_is_excluded_post_type( 'internal_notes' ) );
 	}
 }
