@@ -27,9 +27,38 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 
 - The plugin was rebuilt from a single procedural file into small, focused, namespaced classes under `src/`, loaded by a lightweight autoloader. Composer is a development tool only - no extra dependencies ship to your site.
 - Archived posts are now kept out of the default "All" view on the posts list, the same way Trash is. Use the "Archived" filter link to see them.
-- **The `aps_save_post()` function has been removed.** Closing comments and pings on an archived post now happens in `Status\PostStatusGuard`, so `remove_action( 'save_post', 'aps_save_post', 10 )` no longer unhooks anything and fails silently. There is no filter to switch that behavior off in 0.4.0 - the only supported opt-out is to drop the post type with `aps_supported_post_types` or `aps_excluded_post_types`, which turns off archiving for that type entirely.
-- **The `aps_is_frontend()` function has been removed.** 0.3.x defined it only so it could hook itself to `aps_status_arg_exclude_from_search`, and 0.4.0 computes that default directly instead. Any code calling `aps_is_frontend()` will fatal - use `! is_admin()` in its place.
 - Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
+
+### Removed
+
+The rewrite replaced the plugin's procedural internals with classes, and eleven functions that were global in 0.3.x no longer exist. All of them were undocumented internals rather than a published API, but they were callable, so this is a breaking change for any site that referenced one.
+
+**Calling any of these now causes a fatal error.** Where a replacement exists, use it:
+
+| Removed | Replacement |
+| --- | --- |
+| `aps_post_status_slug()` | `apply_filters( 'aps_post_status_slug', 'archive' )`, or read `$post->post_status` directly |
+| `aps_is_frontend()` | `! is_admin()` |
+| `aps_the_title()` | none needed - the title filter is registered internally and is controlled with `aps_title_label`, `aps_title_label_before`, and `aps_title_separator` |
+| `aps_save_post()` | none - see the note below |
+| `aps_display_post_states()` | none - the "Archived" post state label is applied internally |
+| `aps_register_archive_post_status()` | none - registration is internal; the `aps_status_arg_*` filters control its arguments |
+| `aps_i18n()` | none - text domain loading is internal |
+| `aps_i18n_strings()` | none |
+| `aps_post_screen_js()` | none - the 0.3.x status-dropdown injection was replaced by row actions, bulk actions, and editor buttons |
+| `aps_edit_screen_js()` | none - read-only enforcement is now server-side, so the script it enqueued was deleted |
+| `aps_load_post_screen()` | none - editor access is enforced by `Admin\PostEditorGuard` |
+
+**If you unhooked one of these, that call is now a silent no-op** rather than an error. WordPress ignores `remove_filter()` / `remove_action()` for a callback that was never registered, so nothing breaks - but nothing is disabled either, and the behavior you meant to switch off is still active. This affects, in particular:
+
+- `remove_filter( 'the_title', 'aps_the_title' )` - to remove the "Archived: " prefix instead, return an empty string from `aps_title_label`:
+  ```php
+  add_filter( 'aps_title_label', '__return_empty_string' );
+  ```
+- `remove_action( 'save_post', 'aps_save_post', 10 )` - closing comments and pings on an archived post now happens in `Status\PostStatusGuard`. There is no filter to switch that behavior off in 0.4.0; the only supported opt-out is to drop the post type with `aps_supported_post_types` or `aps_excluded_post_types`, which turns off archiving for that type entirely.
+- `remove_action( 'admin_footer-post.php', 'aps_post_screen_js' )` and its `admin_footer-edit.php` counterpart - the injected status dropdown no longer exists to suppress.
+
+Note that 0.4.0 registers its hooks as callbacks on internal object instances, which third-party code cannot reach. Unhooking is therefore no longer an extension mechanism for any of the plugin's behavior; use the documented filters and actions instead. If you need an opt-out that the current filters do not provide, please open an issue.
 
 ### Localization
 
