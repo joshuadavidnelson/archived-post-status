@@ -7,6 +7,13 @@ on:
       - stable
       - develop
 
+permissions:
+  contents: "read"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   syntax-check:
     name: "Syntax check on all PHP versions"
@@ -35,6 +42,9 @@ jobs:
 
     - name: "Install Composer dependencies"
       run: "composer install"
+
+    - name: "Audit dependencies for known vulnerabilities"
+      run: "composer audit"
 
     - name: "PHP lint"
       run: "composer lint"
@@ -80,6 +90,9 @@ jobs:
     runs-on: "ubuntu-latest"
     needs: [syntax-check, code-quality]
     if: always() && github.event_name == 'pull_request'
+    permissions:
+      contents: "read"
+      pull-requests: "write"
 
     steps:
     - name: "Checkout"
@@ -98,7 +111,7 @@ jobs:
         restore-keys: composer-8.4-
 
     - name: "Install dependencies"
-      run: composer install --no-dev --optimize-autoloader
+      run: composer install
 
     - name: "Check if quality checks passed"
       id: quality-status
@@ -193,3 +206,30 @@ jobs:
         name: phpmetrics-report-${{ github.sha }}
         path: reports/metrics/
         retention-days: 30
+
+  pot-freshness:
+    name: "Translation template freshness"
+    runs-on: "ubuntu-latest"
+    steps:
+    - name: "Checkout"
+      uses: "actions/checkout@v6"
+
+    - name: "Install PHP"
+      uses: "shivammathur/setup-php@v2"
+      with:
+        php-version: "8.4"
+        coverage: none
+
+    - name: "Regenerate the pot and compare source strings"
+      # Compares the msgid set only — immune to header/reference churn
+      # from differing make-pot flags. A mismatch means a user-facing
+      # string changed without `wp i18n make-pot` being re-run.
+      run: |
+        curl -sSLO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+        php wp-cli.phar i18n make-pot . /tmp/fresh.pot --slug=archived-post-status
+        grep '^msgid ' languages/archived-post-status.pot | sort -u > /tmp/committed-msgids
+        grep '^msgid ' /tmp/fresh.pot | sort -u > /tmp/fresh-msgids
+        diff -u /tmp/committed-msgids /tmp/fresh-msgids || {
+          echo '::error::languages/archived-post-status.pot is stale — run `wp i18n make-pot . languages/archived-post-status.pot --slug=archived-post-status` and commit the result.'
+          exit 1
+        }

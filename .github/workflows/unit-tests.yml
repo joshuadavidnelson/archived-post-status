@@ -6,6 +6,13 @@ on:
     branches:
       - stable
 
+permissions:
+  contents: "read"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   phpunit:
     name: ${{ matrix.php-versions }} PHPUnit Tests
@@ -22,7 +29,9 @@ jobs:
       uses: "shivammathur/setup-php@v2"
       with:
         php-version: ${{ matrix.php-versions }}
-        coverage: none
+        # Coverage is collected on the newest matrix leg only — the other
+        # legs exist for runtime compatibility, not coverage duplication.
+        coverage: ${{ matrix.php-versions == '8.4' && 'xdebug' || 'none' }}
         tools: phpunit, phpunit-polyfills, composer:v2
       env:
         debug: true
@@ -42,6 +51,10 @@ jobs:
     - name: "PHPUnit Tests"
       run: 'composer phpunit'
 
+    - name: "Coverage report"
+      if: ${{ matrix.php-versions == '8.4' }}
+      run: 'composer phpunit:coverage'
+
   jest:
     name: "Javascript Unit Tests"
     runs-on: "ubuntu-latest"
@@ -59,5 +72,5 @@ jobs:
     - name: "Install npm dependencies"
       run: "npm install"
 
-    - name: "Run Jest tests"
-      run: "npm run test"
+    - name: "Run Jest tests with coverage thresholds"
+      run: "npm run test:coverage"

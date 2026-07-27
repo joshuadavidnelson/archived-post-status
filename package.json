@@ -35,7 +35,6 @@
     "env:debuglog": "wp-env run cli tail -f /var/www/html/wp-content/debug.log",
     "env:db-port": "docker ps --format 'table {{.Names}}\\t{{.Ports}}' | grep mysql | grep -v tests | grep -o '0.0.0.0:[0-9]*->3306' | cut -d: -f2 | cut -d- -f1",
     "env:db-info": "echo 'WordPress Database Connection Details:' && echo 'Host: localhost' && echo 'Port:' $(docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep mysql | head -1 | grep -o '0.0.0.0:[0-9]*->3306' | cut -d: -f2 | cut -d- -f1) && echo 'Database: wordpress' && echo 'Username: root' && echo 'Password: password' && echo '' && echo 'All MySQL containers:' && docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep mysql",
-    "build": "webpack --mode=production",
     "test": "jest --verbose --runInBand --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
