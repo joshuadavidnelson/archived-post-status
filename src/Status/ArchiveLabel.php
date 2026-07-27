@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Status;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 /**
  * Resolves the user-facing label for the archived post status.
  *

@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Frontend;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 /**
  * Builds the public-facing permalink for an archived post.
  *

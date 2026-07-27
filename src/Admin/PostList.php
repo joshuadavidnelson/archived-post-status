@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Admin;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 use ArchivedPostStatus\Archive\ArchivableStatuses;
 use ArchivedPostStatus\Archive\ArchiveAction;
 use ArchivedPostStatus\Contracts\HookableInterface;

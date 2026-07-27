@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Contracts;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 use ArchivedPostStatus\Hooks\HookDescriptor;
 
 /**

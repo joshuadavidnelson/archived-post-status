@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Archive;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 /**
  * The two actions that can be performed on a post's archive status.
  *

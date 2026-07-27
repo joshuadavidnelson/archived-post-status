@@ -2,6 +2,9 @@
 
 namespace ArchivedPostStatus\Settings;
 
+// Exit if accessed directly, prevent direct access to this file.
+if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
+
 /**
  * Reads and writes plugin settings stored in wp_options.
  *
