@@ -477,7 +477,7 @@ class PostListTest extends TestCase {
 
 	/**
 	 * `post_action_archive` is the entry point for the single-post archive
-	 * link (`?action=archive&post=99&_wpnonce=...`). After H6, validation
+	 * link (`?action=archive&post=99&_wpnonce=...`). Validation
 	 * runs first (get_post, is_supported_post_type), then the nonce check
 	 * with the action-specific nonce key (`archive-{id}`), then the
 	 * capability check. We short-circuit the rest of the method by denying
@@ -486,7 +486,7 @@ class PostListTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
 	 */
 	public function test_post_action_archive_checks_nonce_with_archive_post_id_key() {
-		// H6 pre-nonce validation needs a real post + supported type.
+		// Pre-nonce validation needs a real post + supported type.
 		$post              = $this->createMockPost(
 			array(
 				'ID'          => 99,
@@ -515,7 +515,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * post_action_archive's missing-post guard (H6 — the 0.4.0 refactor
+	 * post_action_archive's missing-post guard (the 0.4.0 refactor
 	 * cleanup): when get_post() returns null (post deleted between
 	 * row-action render and click), the handler now silently returns
 	 * BEFORE calling check_admin_referer(). This rejects bogus payloads
@@ -529,7 +529,7 @@ class PostListTest extends TestCase {
 			->with( 50 )
 			->andReturn( null );
 
-		// H6 contract: nonce check, cap, persistence, and redirect must
+		// Pre-nonce-validation contract: nonce check, cap, persistence, and redirect must
 		// all be skipped when the id is invalid.
 		\WP_Mock::userFunction( 'check_admin_referer' )->never();
 		\WP_Mock::userFunction( 'current_user_can' )->never();
@@ -542,7 +542,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * Unsupported post type guard (H6 — the 0.4.0 refactor):
+	 * Unsupported post type guard (the 0.4.0 refactor):
 	 * a post in an unsupported post type now silently returns BEFORE
 	 * check_admin_referer() fires. The original `wp_die('Invalid post
 	 * type')` branch became unreachable once the upstream supported-type
@@ -621,11 +621,11 @@ class PostListTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PostList::post_action_unarchive
 	 */
 	// -----------------------------------------------------------------------
-	// H6 regression tests (ID validation BEFORE nonce check)
+	// Pre-nonce-validation regression tests (ID validation BEFORE nonce check)
 	// -----------------------------------------------------------------------
 
 	/**
-	 * H6 regression: validation runs FIRST. With a post_id that get_post()
+	 * Pre-nonce-validation regression: validation runs FIRST. With a post_id that get_post()
 	 * cannot resolve, the SUT must return without ever calling
 	 * check_admin_referer(). This is the canary that asserts the new
 	 * ordering — a regression that moved the nonce check back to the top
@@ -651,7 +651,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * H6 regression (complement): the validation pipeline runs in
+	 * Pre-nonce-validation regression (complement): the validation pipeline runs in
 	 * dependency order before the nonce check fires. Post id ≤ 0 must
 	 * be rejected before any of get_post / aps_is_supported_post_type /
 	 * check_admin_referer runs.
@@ -672,7 +672,7 @@ class PostListTest extends TestCase {
 	}
 
 	public function test_post_action_unarchive_checks_nonce_with_unarchive_post_id_key() {
-		// H6 pre-nonce validation needs a real post + supported type.
+		// Pre-nonce validation needs a real post + supported type.
 		$post              = $this->createMockPost(
 			array(
 				'ID'          => 99,

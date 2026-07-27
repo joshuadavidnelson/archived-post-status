@@ -36,7 +36,7 @@ class ArchivableStatusesTest extends TestCase {
 
 	/**
 	 * Filter-override path: `aps_archivable_statuses` can shrink or rename
-	 * the set. The SUT applies `sanitize_key()` to each item (C5 cleanup —
+	 * the set. The SUT applies `sanitize_key()` to each item (sanitization contract —
 	 * slug-context normalisation, not HTML escaping).
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchivableStatuses::all
@@ -53,7 +53,7 @@ class ArchivableStatusesTest extends TestCase {
 
 	/**
 	 * Edge case: `sanitize_key()` strips uppercase / disallowed characters,
-	 * matching the C5 contract. Pin so a future change can't silently
+	 * matching the sanitization contract. Pin so a future change can't silently
 	 * regress back to `esc_attr()` (HTML-context, which would let `<` etc.
 	 * through into slug comparison).
 	 *

@@ -278,7 +278,7 @@ class StoreTest extends TestCase {
 
 		Store::update( 'is_read_only', false );
 
-		// The H8 contract: a get() immediately after update() returns the
+		// The cache-flush contract: a get() immediately after update() returns the
 		// new value without a second get_option() call. ->once() above
 		// pins the no-second-read clause; the assertSame pins the value.
 		$this->assertFalse(

@@ -355,7 +355,7 @@ class NoticeBuilderTest extends TestCase {
 	/**
 	 * the denied / not_found / wrong_status query vars
 	 * each contribute their own translation-ready notice line. The
-	 * builder NEVER performs capability checks (H4) — the denied count
+	 * builder NEVER performs capability checks — the denied count
 	 * arrives pre-computed from BulkActionHandler.
 	 *
 	 * @covers ArchivedPostStatus\Admin\NoticeBuilder::build_notices

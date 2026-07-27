@@ -209,7 +209,7 @@ final class PostList implements HookableInterface {
 	 * @return void
 	 */
 	private function handle_post_action( int $post_id, ArchiveAction $action ): void {
-		// H6: pre-nonce validation. A non-numeric, missing, or
+		// Pre-nonce validation. A non-numeric, missing, or
 		// unsupported-post-type id is rejected without ever reaching
 		// check_admin_referer().
 		if ( $post_id <= 0 ) {

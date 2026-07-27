@@ -121,7 +121,7 @@ final class BulkActionHandler {
 	/**
 	 * Handle unarchive bulk action.
 	 *
-	 * Continues the loop on every per-item failure (H4: SRP-correct
+	 * Continues the loop on every per-item failure (SRP-correct
 	 * scoping — capability checks happen here, not in
 	 * {@see NoticeBuilder}). Bucketed counts flow through
 	 * {@see BulkActionResult} to the redirect URL.
