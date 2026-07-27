@@ -4,7 +4,7 @@ Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
-Tested up to:      6.9
+Tested up to:      6.9.1
 Stable tag:        0.4.0
 License:           GPL-2.0
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -92,8 +92,8 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - **Archive metadata** - archiving now records the previous post status, the previous comment and ping status, the archive date, and the user who archived it. Unarchiving restores all of it. (Posts archived before 0.4.0 have no metadata and still restore to Draft.)
 - **WP-CLI commands** - `wp post archive <id>...` and `wp post unarchive <id>...`, each accepting one or more IDs. `wp post archive` takes `--force` to skip the eligible-status check, `wp post unarchive` takes `--status=<status>` to restore to a specific status, and both take `--defer-term-counting` for large batches.
 - **`aps_archive_post()` and `aps_unarchive_post()`** - real API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with `aps_pre_archive_post` / `aps_pre_unarchive_post` short-circuit filters and `aps_archived_post` / `aps_unarchived_post` actions.
-- **Front-end protection** - a visitor who isn't allowed to see archived content now gets a 404 when they request a single archived post. The check runs consistently for every visitor, including a post's own author, rather than varying with WordPress's private-post rules.
-- **Per-action capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, filterable through `aps_default_archive_capability`, `aps_default_unarchive_capability`, and `aps_default_edit_capability` (defaults `edit_others_posts`, `edit_others_posts`, and `edit_post`). Viewing is unchanged - `aps_default_read_capability`, default `read_private_posts`.
+- **Front-end protection** - a visitor who isn't allowed to see archived content now gets a 404 when they request a single archived post. The check runs consistently for every visitor rather than varying with WordPress's private-post rules; a post's own author can always view their own archived content.
+- **Per-action, ownership-aware capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, filterable through `aps_default_archive_capability`, `aps_default_unarchive_capability`, and `aps_default_edit_capability`. Authors can archive, unarchive, and view their own content (via the post type's `edit_posts` capability); acting on other authors' content requires `edit_others_posts`. Viewing others' archived content is unchanged - `aps_default_read_capability`, default `read_private_posts`.
 - **Settings groundwork** - settings are now stored in a single `aps_settings` option, which currently holds one value, `is_read_only`. There is no settings screen yet; the admin UI is planned for a future release and all behavior stays filter-driven in 0.4.0.
 - More filters throughout: `aps_supported_post_types`, `aps_archivable_statuses`, `aps_is_classic_editor`, `aps_enable_archive_meta`, `aps_status_arg_dashicon`, `aps_status_arg_protected`, `aps_unarchive_post_status`, `aps_unarchive_post_comment_status`, `aps_unarchive_post_ping_status`, `aps_archived_post_link`, `aps_get_archive_post_link`, and `aps_get_unarchive_post_link`. See the [documentation site](https://docs.archivedpoststat.us/) for the full reference.
 

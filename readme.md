@@ -55,7 +55,7 @@ Whatever the reason, incorporating the 'Archive' status can be a useful addition
 * **WP-CLI** - `wp post archive <id>...` and `wp post unarchive <id>...`, with `--force`, `--status=<status>`, and `--defer-term-counting` flags.
 * **`aps_archive_post()` / `aps_unarchive_post()`** - API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with matching pre-filters and post-actions.
 * **Front-end protection** - visitors without permission to view archived content get a 404 for a single archived post.
-* **Per-action capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, each filterable via a matching `aps_default_*_capability` filter.
+* **Per-action, ownership-aware capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, each filterable via a matching `aps_default_*_capability` filter. Authors can archive, unarchive, and view their own content; acting on other authors' content requires `edit_others_posts`.
 * **Settings groundwork** - settings are stored in a single `aps_settings` option (currently just `is_read_only`). There is no settings screen yet; the admin UI is planned for a future release.
 * **Deprecated** `aps_is_excluded_post_type()` in favor of `! aps_is_supported_post_type( $post_type )`.
 * **Removed** the `aps_save_post()` and `aps_is_frontend()` globals - calling either now fatals. Comment and ping closing moved to `Status\PostStatusGuard`, so `remove_action( 'save_post', 'aps_save_post', 10 )` silently does nothing; the only supported opt-out is dropping the post type from `aps_supported_post_types`.
