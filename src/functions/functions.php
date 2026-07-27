@@ -75,6 +75,11 @@ function aps_is_supported_post_type( $post_type ) {
 /**
  * Check if the current user can view Archived content.
  *
+ * Grants access via the filterable read capability (default
+ * `read_private_posts`), with an ownership fallback: a post's own author
+ * can always view their archived content when they hold the post type's
+ * `edit_posts` primitive.
+ *
  * @since 0.4.0
  * @param int $post_id Optional. The post ID to check against.
  * @return bool
@@ -101,6 +106,11 @@ function aps_is_read_only() {
 /**
  * Check that the current user can archive content.
  *
+ * Ownership-aware with post context: the post's own author needs the post
+ * type's `edit_posts` primitive, anyone else its `edit_others_posts`.
+ * Without post context the default is `edit_others_posts`. Filterable via
+ * `aps_default_archive_capability`.
+ *
  * @since 0.4.0
  * @param int $post_id
  * @return bool
@@ -114,6 +124,9 @@ function aps_current_user_can_archive( $post_id = 0 ) {
 
 /**
  * Check that the current user can unarchive content.
+ *
+ * Ownership-aware with post context, like {@see aps_current_user_can_archive()}.
+ * Filterable via `aps_default_unarchive_capability`.
  *
  * @since 0.4.0
  * @param int $post_id

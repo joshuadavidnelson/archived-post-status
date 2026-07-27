@@ -80,20 +80,10 @@ final class BulkActionHandler {
 			return $sendback; // Not our action
 		}
 
-		// H5: fail-closed outer cap gate, routed through the same
-		// centralized cap function the per-id loop uses. ArchiveAction's
-		// capability_function() returns the global function name
-		// (`aps_current_user_can_archive` / `_unarchive`), which we invoke
-		// with no post id — falling back to its `$post_id = 0` default for
-		// a screen-level check. This picks up the
-		// `aps_default_archive_capability` /
-		// `aps_default_unarchive_capability` filter overrides instead of a
-		// hardcoded 'edit_posts' baseline.
-		$cap = $action->capability_function();
-		if ( ! $cap() ) {
-			return $sendback;
-		}
-
+		// No screen-level capability pre-gate: capabilities are ownership-
+		// aware (a post's own author may act on it), so the only correct
+		// gate is the per-post check inside each loop below, which
+		// fail-closes item-by-item into the 'denied' notice bucket.
 		$sendback = remove_query_arg( self::STRIPPED_QUERY_ARGS, $sendback );
 
 		return match ( $action ) {

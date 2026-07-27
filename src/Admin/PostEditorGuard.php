@@ -38,7 +38,44 @@ final class PostEditorGuard implements HookableInterface {
 	public function hooks(): array {
 		return array(
 			HookDescriptor::action( 'load-post.php', array( $this, 'enforce_read_only' ) ),
+			HookDescriptor::filter( 'map_meta_cap', array( $this, 'deny_editing_archived' ), 10, 4 ),
 		);
+	}
+
+	/**
+	 * Deny the edit_post meta cap for archived posts while read-only mode
+	 * is active, so core drops its own edit affordances (row title link,
+	 * Edit and Quick Edit actions, editor screens) server-side.
+	 *
+	 * Archive, unarchive, and author view capabilities resolve through
+	 * post type primitives — never `edit_post` — so this deny cannot lock
+	 * a post out of being unarchived or hidden from its own author.
+	 *
+	 * @since 0.4.0
+	 * @param array<int, string> $caps    Primitive capabilities required.
+	 * @param string             $cap     The meta capability being mapped.
+	 * @param int                $user_id The user ID being checked.
+	 * @param array<int, mixed>  $args    Context arguments; [0] is the post ID.
+	 * @return array<int, string>
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
+	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- $user_id is fixed by the
+	 * map_meta_cap filter signature; the deny applies to every user identically.
+	 */
+	public function deny_editing_archived( array $caps, string $cap, int $user_id, array $args ): array {
+		if ( 'edit_post' !== $cap || empty( $args[0] ) || ! aps_is_read_only() ) {
+			return $caps;
+		}
+
+		$post = get_post( (int) $args[0] );
+		if ( ! $post || PostStatusValue::resolved_slug() !== $post->post_status ) {
+			return $caps;
+		}
+
+		$caps[] = 'do_not_allow';
+
+		return $caps;
 	}
 
 	/**

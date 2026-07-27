@@ -6,10 +6,12 @@
  * user touches. Every case below therefore drives the real screen or the real
  * URL as the role in question.
  *
- * Defaults under test (`Archive\ViewCapability`, `Archive\ArchiveCapability`):
- *   - view      -> `read_private_posts`  (administrator, editor)
- *   - archive   -> `edit_others_posts`   (administrator, editor)
- *   - unarchive -> `edit_others_posts`   (administrator, editor)
+ * Defaults under test (`Archive\ViewCapability`, `Archive\ArchiveCapability`)
+ * are ownership-aware: a post's own author passes via the post type's
+ * `edit_posts` primitive; anyone else needs `edit_others_posts` (archive /
+ * unarchive) or `read_private_posts` (view). The matrix seeds each role's
+ * posts AS that role, so the author row exercises the own-content grants;
+ * the dedicated describe below it pins the other-authors denial.
  *
  * The last describe re-runs the archive axis with `aps_default_archive_capability`
  * and `aps_default_unarchive_capability` filtered to `manage_options`, which is
@@ -69,7 +71,7 @@ test.beforeAll( async ( { requestUtils } ) => {
 const MATRIX = {
 	administrator: { canView: true, canArchive: true, listsPosts: true },
 	editor: { canView: true, canArchive: true, listsPosts: true },
-	author: { canView: false, canArchive: false, listsPosts: true },
+	author: { canView: true, canArchive: true, listsPosts: true },
 	subscriber: { canView: false, canArchive: false, listsPosts: false },
 } as const;
 
@@ -245,6 +247,72 @@ test.describe( 'roles: anonymous', () => {
 
 		expect( response?.status() ).toBe( 404 );
 		await expect( page.getByText( title ) ).toHaveCount( 0 );
+	} );
+} );
+
+test.describe( "roles: author on another author's content", () => {
+	test.use( { storageState: storageStatePath( 'author' ) } );
+
+	const created: number[] = [];
+
+	test.afterEach( async ( { requestUtils } ) => {
+		await deletePosts( requestUtils, created.splice( 0 ) );
+	} );
+
+	test( 'cannot view another author\'s archived post on the front end', async ( {
+		page,
+		requestUtils,
+	} ) => {
+		const title = uniqueTitle( 'Matrix other-author view' );
+		// Authored by the admin (user 1) — not the author under test.
+		const post = await seedPost( requestUtils, {
+			title,
+			status: 'publish',
+			author: 1,
+		} );
+		created.push( post.id );
+
+		const archived = await archivePost( requestUtils, post.id );
+		const response = await page.goto( archived.link );
+
+		expect( response?.status() ).toBe( 404 );
+		await expect( page.getByText( title ) ).toHaveCount( 0 );
+	} );
+
+	test( 'sees no Archive or Unarchive row action on another author\'s posts', async ( {
+		page,
+		requestUtils,
+	} ) => {
+		const active = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Matrix other-author archive' ),
+			status: 'publish',
+			author: 1,
+		} );
+		created.push( active.id );
+
+		const archivedSeed = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Matrix other-author unarchive' ),
+			status: 'publish',
+			author: 1,
+		} );
+		created.push( archivedSeed.id );
+		await archivePost( requestUtils, archivedSeed.id );
+
+		await page.goto( `/wp-admin/edit.php?${ postListQuery() }` );
+		await expect( rowLocator( page, active.id ) ).toBeVisible();
+		await expect(
+			rowActionLocator( page, active.id, 'archive' )
+		).toHaveCount( 0 );
+
+		await page.goto(
+			`/wp-admin/edit.php?${ postListQuery( {
+				postStatus: ARCHIVED_STATUS_SLUG,
+			} ) }`
+		);
+		await expect( rowLocator( page, archivedSeed.id ) ).toBeVisible();
+		await expect(
+			rowActionLocator( page, archivedSeed.id, 'unarchive' )
+		).toHaveCount( 0 );
 	} );
 } );
 

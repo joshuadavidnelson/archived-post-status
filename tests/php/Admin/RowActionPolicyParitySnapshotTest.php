@@ -172,10 +172,14 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 			->with( \Mockery::type( 'array' ) )
 			->reply( array( 'publish', 'future', 'draft', 'pending', 'private' ) );
 
-		// Capability resolution.
+		// Capability resolution. The grid's mock user is anonymous (id 0),
+		// so the ownership-aware defaults resolve to the others-primitive
+		// and the view fallback never engages:
 		// aps_current_user_can_archive($id)   -> current_user_can('edit_others_posts', $id)
 		// aps_current_user_can_unarchive($id) -> current_user_can('edit_others_posts', $id)
 		// aps_current_user_can_view($id)      -> current_user_can('read_private_posts', $id)
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+
 		$can_archive   = ( 'full_caps' === $caps );
 		$can_unarchive = ( 'full_caps' === $caps );
 		$can_view      = ( 'full_caps' === $caps || 'view_only' === $caps );
