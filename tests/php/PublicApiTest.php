@@ -19,9 +19,8 @@
  *                                       action→listener chain (end-to-end with
  *                                       a real ArchiveMetaListener wired in).
  *
- * Phase 4 migration note (0.4.0):
- *   This file absorbs the three former LinkFiltersTest scenarios plus the
- *   four ArchiveProcessTest scenarios. It does NOT stub plugin-owned aps_* /
+ * Approach:
+ *   This file does NOT stub plugin-owned aps_* /
  *   _aps_* helpers; instead it stubs only the WP-boundary functions those
  *   helpers traverse on the way to apply_filters. Result: a regression in
  *   aps_is_supported_post_type or _aps_nonce_key surfaces here as a failed
@@ -160,7 +159,7 @@ class PublicApiTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// aps_get_archive_post_link — three-branch coverage (Phase 4.4)
+	// aps_get_archive_post_link — three-branch coverage 
 	// -----------------------------------------------------------------------
 
 	/**
@@ -255,7 +254,7 @@ class PublicApiTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// aps_get_unarchive_post_link — delegation (Phase 4.4)
+	// aps_get_unarchive_post_link — delegation 
 	// -----------------------------------------------------------------------
 
 	/**
@@ -350,10 +349,6 @@ class PublicApiTest extends TestCase {
 	 * and `aps_archived_post` actions fire, the function returns the
 	 * pre-update WP_Post. The 3rd `aps_archived_post` arg is the original
 	 * WP_Post object — listeners depend on it.
-	 *
-	 * Phase 3.3 migration note: previous version called
-	 * $this->mockArchiveProcessFunctions(), which bundled a get_post_meta
-	 * stub unused on this path. Stubs are now inline.
 	 *
 	 * @covers ::aps_archive_post
 	 */
@@ -487,7 +482,7 @@ class PublicApiTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// End-to-end listener chain (Phase 4.2)
+	// End-to-end listener chain 
 	// -----------------------------------------------------------------------
 
 	/**

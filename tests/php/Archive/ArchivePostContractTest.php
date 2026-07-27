@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ::aps_archive_post
  *
- * C3 (Phase 1 of the 0.4.0 cleanup) — pin the invariant documented at
+ * C3  pin the invariant documented at
  * `src/functions.php` aps_archive_post and at
  * `src/Archive/ArchiveMetaListener::save_meta()`:
  *

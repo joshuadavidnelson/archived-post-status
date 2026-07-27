@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ::aps_uninstall_site
  *
- * Pins the 0.4.0 cleanup contract that runs when a site administrator
+ * Pins the 0.4.0 refactor contract that runs when a site administrator
  * deletes the plugin: removes the settings option, the version option,
  * and every `_aps_archive_meta_*` postmeta row.
  *
@@ -265,12 +265,8 @@ class UninstallTest extends TestCase {
 	 * This is an explicit design choice; see the inline comment at
 	 * uninstall.php:53. Networks at this scale are expected to drop the
 	 * plugin's options out of band (WP-CLI loop across sites, direct SQL,
-	 * etc.). The constraint document for Phase 2.5 directed us to record
-	 * the intent and write a regression test, not change behavior — Phase
-	 * 5.5 owns any eventual reconsideration.
-	 *
-	 * Decision (recorded for Reviewer): keep as intentional. get_sites
-	 * must NEVER be called when the count is at or above the cap.
+	 * etc.). get_sites must NEVER be called when the count is at or above
+	 * the cap.
 	 *
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled

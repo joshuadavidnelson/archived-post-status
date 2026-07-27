@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\PostListUrlBuilder
  *
- * Phase 5 of the 0.4.0 cleanup centralized the edit.php + optional `post_type`
+ * the 0.4.0 refactor centralized the edit.php + optional `post_type`
  * query-arg construction (previously duplicated in `PostEditorGuard` and
  * `BulkActionHandler`) into a static helper. These tests pin the four
  * observable cases: default post type, non-default post type, the

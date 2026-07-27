@@ -7,12 +7,11 @@
  * @covers ArchivedPostStatus\Admin\PostList::row_actions
  * @covers ArchivedPostStatus\Admin\RowActionPolicy
  *
- * Phase 4 of the 0.4.0 cleanup: the row-action policy is being extracted out
- * of `PostList::row_actions()` into a standalone static `Admin\RowActionPolicy`
- * helper. The plan's Phase 4 Risk note calls for a parity snapshot over
- * `(post_status x cap_set x screen_base)` taken BEFORE the extraction; the
- * pre-extraction shape becomes the locked snapshot, and the new static
- * `RowActionPolicy::for_post()` MUST reproduce it byte-for-byte.
+ * `PostList::row_actions()` delegates to the standalone static
+ * `Admin\RowActionPolicy` helper. A parity snapshot over
+ * `(post_status x cap_set x screen_base)` locks the policy output:
+ * both entry points MUST reproduce it byte-for-byte, so any drift in
+ * either is a deliberate, test-updating change.
  *
  * Cross-product surface:
  *   - post_status:   publish, draft, archive, pending           (4)
@@ -21,9 +20,8 @@
  *
  *   = 24 combinations.
  *
- * Per the plan, the new helper accepts a `WP_Screen|null` argument; the
- * current `PostList::row_actions()` does not consult any screen state. We
- * still exercise the grid with both screen variants so the SUT contract is
+ * The helper accepts a `WP_Screen|null` argument that the policy does
+ * not consult. The grid exercises both screen variants so the contract is
  * pinned: the screen MUST NOT change the policy output (regression guard
  * against any future drift in how the screen arg is consumed).
  */
@@ -316,7 +314,7 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 		// after applying the archive/unarchive policy — same return shape
 		// as PostList::row_actions(). Screen arg is null in this assertion;
 		// the policy contract says screen MUST NOT alter the output for
-		// the current (Phase 4) scope.
+		// the current  scope.
 		$screen = null;
 		$result = RowActionPolicy::for_post( $post, $incoming, $screen );
 

@@ -41,7 +41,7 @@ class PluginTest extends TestCase {
 		$this->plugin = new ArchivedPostStatus\Plugin( '0.4.0' );
 	}
 
-	// Phase 3.4: two prior `test_plugin_construction*` tests were deleted.
+	// two prior `test_plugin_construction*` tests were deleted.
 	// Asserting `instanceof Plugin` against a newly-constructed Plugin
 	// is tautological — PHP guarantees `new X()` yields an X. The version
 	// argument is exercised end-to-end via the `run()` tests below, which
@@ -398,9 +398,9 @@ class PluginTest extends TestCase {
 	 * `archived_post_status_previous_version`. This is the upgrade-
 	 * tracking contract the 0.4.0 release introduced.
 	 *
-	 * Phase 2 H2 atomicity invariant: both writes belong to the same
-	 * logical transition. add_option is NOT called in the upgrade branch
-	 * (the option exists by definition).
+	 * Atomicity invariant: both writes belong to the same logical
+	 * transition. add_option is NOT called in the upgrade branch (the
+	 * option exists by definition).
 	 *
 	 * @covers ArchivedPostStatus\Plugin::run
 	 * @covers ArchivedPostStatus\Plugin::upgrade_check

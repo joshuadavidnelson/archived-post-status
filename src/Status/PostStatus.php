@@ -89,10 +89,15 @@ final class PostStatus implements HookableInterface {
 		 * however we need it to be false in admin contexts to support not showing up in the main
 		 * "All" admin list and to allow the "Archived" status filter to work.
 		 *
+		 * The `is_admin()` split in `public`/`private` toggles front-end
+		 * visibility: the status is private on the front end (gated by the
+		 * view capability), while in admin both flags stay false so the
+		 * "All" list exclusion and the "Archived" filter work.
+		 *
 		 * @since 0.3.0 Defaulted to `true`.
-		 * @since 0.4.0 Changed default to ! is_admin()
+		 * @since 0.4.0 Changed default to `! is_admin()`.
 		 * @param bool $private Whether posts of this status are treated as
-		 *                      private. Default `true`.
+		 *                      private. Default `! is_admin()`.
 		 * @return bool
 		 */
 		$private = (bool) apply_filters( 'aps_status_arg_private', ! is_admin() );
@@ -122,10 +127,13 @@ final class PostStatus implements HookableInterface {
 		/**
 		 * Filter the show in admin all list status parameter.
 		 *
-		 * @since 0.4.0
+		 * Archived posts stay out of the admin "All" list by default (as
+		 * core does with trash); the "Archived" filter browses them.
+		 *
+		 * @since 0.3.0 Defaulted to `aps_current_user_can_view()`.
+		 * @since 0.4.0 Changed default to `false`.
 		 * @param bool $show True to show archived content in the
-		 *                   admin all list, false to hide it.
-		 *                   Defaults to true if the current user can view archived content.
+		 *                   admin all list, false to hide it. Default false.
 		 * @return bool
 		 */
 		$show_in_all_list = (bool) apply_filters( 'aps_status_arg_show_in_admin_all_list', false );

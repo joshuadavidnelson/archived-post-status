@@ -157,7 +157,7 @@ class BulkActionResultTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// Phase 1 — reason-bucket API (C2)
+	// reason-bucket API
 	// -----------------------------------------------------------------------
 
 	/**
@@ -219,7 +219,7 @@ class BulkActionResultTest extends TestCase {
 	/**
 	 * apply_to_url() emits the per-bucket query args AND an aggregate
 	 * `skipped=N` arg when any reason bucket is non-zero. Documents the
-	 * URL contract NoticeBuilder consumes for the Phase 1 "X skipped"
+	 * URL contract NoticeBuilder consumes for the "X skipped"
 	 * banner.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::apply_to_url

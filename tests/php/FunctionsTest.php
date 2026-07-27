@@ -2,8 +2,8 @@
 /**
  * Facade-contract smoke test for the `aps_*` public global functions.
  *
- * Phase 3C of the 0.4.0 cleanup trimmed this file from a full
- * mechanics-exerciser into a thin smoke test that confirms, for every
+ * A thin smoke test (mechanics live in the per-class suites) that
+ * confirms, for every
  * `aps_*` global facade in `src/functions/functions.php` and
  * `src/functions/deprecated.php`:
  *

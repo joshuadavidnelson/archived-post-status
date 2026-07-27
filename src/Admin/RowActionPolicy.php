@@ -61,7 +61,7 @@ final class RowActionPolicy {
 	 * introduce screen-conditional row-action surfaces (e.g. hiding archive
 	 * on the legacy `post-new.php` screen) without rewiring callers.
 	 *
-	 * Branch contract (mirrors the pre-extraction {@see PostList::row_actions()}):
+	 * Branch contract:
 	 *
 	 *   1. Unsupported post type → return `$actions` unchanged.
 	 *   2. Archivable status + can-archive → append an `archive` entry.

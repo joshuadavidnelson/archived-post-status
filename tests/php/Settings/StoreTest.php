@@ -227,7 +227,7 @@ class StoreTest extends TestCase {
 	}
 
 	/**
-	 * H8 regression (Phase 1 of the 0.4.0 cleanup): `update_option` fires
+	 * Cache-flush regression: `update_option` fires
 	 * BEFORE the cache is primed. The HookAdapter wires the option's
 	 * update-action to {@see Store::flush_cache}, which clears the cache.
 	 * If the cache were primed before update_option ran, that flush would

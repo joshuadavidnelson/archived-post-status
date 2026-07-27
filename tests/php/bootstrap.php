@@ -25,8 +25,7 @@ if ( ! defined( 'WEEK_IN_SECONDS' ) ) {
 	define( 'WEEK_IN_SECONDS', 604800 );
 }
 
-// WP function polyfills (Phase 5 of 0.4.0 cleanup split common.php into
-// Support/WpPolyfills.php + Support/Fixtures.php).
+// WP function polyfills and fixtures.
 require_once __DIR__ . '/Support/WpPolyfills.php';
 require_once __DIR__ . '/Support/Fixtures.php';
 
@@ -96,7 +95,7 @@ if ( ! class_exists( 'wpdb' ) ) {
 
 require_once __DIR__ . '/includes/TestCase.php';
 
-// Shared test-support traits (Phase 5 of 0.4.0 cleanup).
+// Shared test-support traits.
 // Loaded here so any test class can `use ArchivedPostStatus\Tests\Support\BoundaryStubs;`
 // without each suite re-requiring the file.
 require_once __DIR__ . '/Support/BoundaryStubs.php';

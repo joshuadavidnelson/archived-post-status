@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Frontend\ArchivedPostLink
  *
- * Phase 3A extraction (0.4.0): exercises the lifted body of
+ * exercises the lifted body of
  * `aps_get_archived_post_link()` directly. The procedural facade stays in
  * place this step; Step 3B will rewire it as a one-line delegate.
  */

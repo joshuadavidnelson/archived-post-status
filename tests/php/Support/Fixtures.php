@@ -2,7 +2,7 @@
 /**
  * Test fixture builders.
  *
- * Phase 5 of the 0.4.0 cleanup split this file out of
+ * the 0.4.0 refactor split this file out of
  * `tests/php/includes/common.php`. Where {@see Support/WpPolyfills.php}
  * provides global function declarations the SUT calls unconditionally,
  * THIS file provides per-test factories that build deterministic fixtures

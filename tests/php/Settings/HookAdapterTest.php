@@ -153,7 +153,7 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
-	 * Phase 4 coverage pin: a stored options array containing extra/unknown
+	 * Coverage pin: a stored options array containing extra/unknown
 	 * keys (e.g. left over from a different plugin, manually-added junk)
 	 * must still resolve `is_read_only` from the value-typed entry. The
 	 * `array_merge(defaults, stored)` in {@see Store::all()} preserves the
@@ -182,7 +182,7 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
-	 * Phase 4 coverage pin: `Store::get('is_read_only', $default)` resolves
+	 * Coverage pin: `Store::get('is_read_only', $default)` resolves
 	 * a falsy stored value (literal `false`) verbatim — the
 	 * `null === $value` guard inside {@see Store::get()} treats `null` as
 	 * "use the default" but `false` as a real stored answer. This pins
@@ -208,7 +208,7 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
-	 * Phase 4 coverage pin: when `is_read_only` is explicitly `null` in
+	 * Coverage pin: when `is_read_only` is explicitly `null` in
 	 * the stored option (rare; possible via manual db editing), the SUT
 	 * falls through to the caller-supplied default via the `??` coalesce
 	 * inside {@see Store::get()}.

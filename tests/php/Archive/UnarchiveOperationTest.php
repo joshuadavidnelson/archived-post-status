@@ -6,12 +6,12 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Archive\UnarchiveOperation
  *
- * Phase 3A extraction (0.4.0): mirrors the existing facade tests in
+ * Mirrors the existing facade tests in
  * UnarchiveStatusFilterTest (the pure-unit `set_previous_status` contract)
  * and the bulk-unarchive integration tests. The procedural facades
  * `aps_unarchive_post()` and `aps_unarchive_post_set_previous_status()`
- * stay in place this step; Step 3B will rewire them as one-line delegates
- * to `UnarchiveOperation::perform()` and `UnarchiveOperation::set_previous_status()`.
+ * are one-line delegates to `UnarchiveOperation::perform()` and
+ * `UnarchiveOperation::set_previous_status()`.
  */
 
 use ArchivedPostStatus\Archive\ArchiveMeta;
@@ -343,7 +343,7 @@ class UnarchiveOperationTest extends TestCase {
 	}
 
 	/**
-	 * Phase 4 coverage pin: META_PREVIOUS_STATUS === '0' (or any other
+	 * Coverage pin: META_PREVIOUS_STATUS === '0' (or any other
 	 * empty/falsy stored value) must route through the legacy "no meta"
 	 * branch of `resolve_restore_values()` and reach `wp_update_post`
 	 * as `post_status === 'draft'`.

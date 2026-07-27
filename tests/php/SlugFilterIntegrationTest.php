@@ -9,8 +9,8 @@
  * @covers ArchivedPostStatus\Archive\UnarchiveOperation
  * @covers ArchivedPostStatus\Status\PostStatusValue
  *
- * Phase 3B of the 0.4.0 cleanup centralised the archived post status slug in
- * the `PostStatusValue::resolved_slug()` accessor. The motivating bug:
+ * The archived post status slug is centralised in the
+ * `PostStatusValue::resolved_slug()` accessor. The motivating bug:
  * stable 0.3.x applied the `aps_post_status_slug` filter at registration
  * only, leaving every other internal comparison ('archive' === $post->post_status,
  * wp_update_post(['post_status' => 'archive']), etc.) hardcoded against the

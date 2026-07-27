@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\ArchivePostLink
  *
- * Phase 3A extraction (0.4.0): mirrors the previously implicit coverage of
+ * Mirrors the previously implicit coverage of
  * `aps_get_archive_post_link()` / `aps_get_unarchive_post_link()`. The
  * procedural facades stay in place this step; Step 3B will rewire them as
  * one-line delegates that wrap the bare string `'archive'` / `'unarchive'`

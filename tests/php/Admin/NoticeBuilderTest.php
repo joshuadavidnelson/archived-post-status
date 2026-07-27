@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\NoticeBuilder
  *
- * Phase 2 of the 0.4.0 follow-up refactor extracted `NoticeBuilder` from
+ * the 0.4.0 refactor extracted `NoticeBuilder` from
  * `Admin\Notices`. The reflection-based `parse_ids()` data-provider from
  * `NoticesTest` moves here — `parse_ids()` is now a public method, no
  * reflection required. The two build_* methods and the `build_notices()`
@@ -48,7 +48,7 @@ class NoticeBuilderTest extends TestCase {
 	// and others don't. Both shapes flow through here.
 	//
 	// Moved from `NoticesTest::test_parse_ids_normalizes_inputs_to_int_array`
-	// in Phase 2 of the 0.4.0 follow-up — `parse_ids()` is now public on
+	// in the 0.4.0 refactor `parse_ids()` is now public on
 	// `NoticeBuilder`, so the test no longer needs ReflectionMethod.
 
 	/**
@@ -248,7 +248,7 @@ class NoticeBuilderTest extends TestCase {
 	}
 
 	/**
-	 * H4.1 regression (Phase 1 follow-up): the edit-link gate routes
+	 * Edit-link-gate regression: the routing
 	 * through the centralized `aps_current_user_can_edit()` helper, which
 	 * consults the `aps_default_edit_capability` filter to resolve the
 	 * capability. Filtering the cap to one the user lacks must suppress
@@ -353,7 +353,7 @@ class NoticeBuilderTest extends TestCase {
 	}
 
 	/**
-	 * Phase 1 (C2 + H4): the denied / not_found / wrong_status query vars
+	 * the denied / not_found / wrong_status query vars
 	 * each contribute their own translation-ready notice line. The
 	 * builder NEVER performs capability checks (H4) — the denied count
 	 * arrives pre-computed from BulkActionHandler.

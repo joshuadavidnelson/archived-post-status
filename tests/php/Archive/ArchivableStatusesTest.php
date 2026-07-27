@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Archive\ArchivableStatuses
  *
- * Phase 3A extraction (0.4.0): mirrors the facade tests in FunctionsTest
+ * Mirrors the facade tests in FunctionsTest
  * (`test_aps_archivable_statuses_default`, `test_aps_archivable_statuses_custom`)
  * but exercises the lifted SUT directly. Adds an `includes()` test for the
  * new convenience method (no direct procedural ancestor).

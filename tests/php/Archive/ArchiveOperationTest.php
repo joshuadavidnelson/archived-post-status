@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Archive\ArchiveOperation
  *
- * Phase 3A extraction (0.4.0): mirrors `tests/php/Archive/ArchivePostContractTest.php`
+ * Mirrors `tests/php/Archive/ArchivePostContractTest.php`
  * (the C3 contract pin) plus the early-return tests previously implicit in
  * the facade's behaviour. The procedural facade `aps_archive_post()` stays
  * in place this step; Step 3B will rewire it as a one-line delegate to

@@ -125,7 +125,7 @@ class BulkActionHandlerTest extends TestCase {
 	/**
 	 * Archive bulk action — per-item capability denial buckets the post
 	 * into `denied` and continues the batch (C2 + H4). The legacy
-	 * mid-batch wp_die() was removed in Phase 1.
+	 * mid-batch wp_die() was removed in the 0.4.0 refactor.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_denied
@@ -377,7 +377,7 @@ class BulkActionHandlerTest extends TestCase {
 	/**
 	 * Unarchive bulk action — per-item capability denial buckets into
 	 * `denied` and continues the batch (C2 + H4). The legacy mid-batch
-	 * wp_die() was removed in Phase 1.
+	 * wp_die() was removed in the 0.4.0 refactor.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_denied
@@ -796,11 +796,11 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// Batch-robustness regression tests (C2)
+	// Batch-robustness regression tests
 	// -----------------------------------------------------------------------
 
 	/**
-	 * C2 regression: a mixed batch of one denied + one wrong-status + one
+	 * Batch-robustness regression: a mixed batch of one denied + one wrong-status + one
 	 * archivable post must complete WITHOUT calling wp_die() and surface
 	 * three independent bucket counts plus one success on the redirect.
 	 *

@@ -15,7 +15,7 @@
 
 namespace {
 	// Shared WP_CLI in-memory stub + get_flag_value polyfill
-	// (Phase 5 of 0.4.0 cleanup).
+	// (shared across the CLI suites).
 	require_once __DIR__ . '/Support/WpCliStub.php';
 
 	use ArchivedPostStatus\CLI\ArchiveCommand;

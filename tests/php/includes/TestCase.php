@@ -6,7 +6,7 @@ use Yoast\PHPUnitPolyfills\TestCases\TestCase as BaseTestCase;
  * Project base test case. Sets up / tears down WP_Mock and exposes a small
  * surface of fixture helpers.
  *
- * Phase 3.3 (0.4.0) note:
+ * Note:
  *   This class previously bundled stubs for plugin-owned functions
  *   (aps_is_supported_post_type, aps_current_user_can_archive,
  *   aps_get_archive_post_link, _aps_nonce_key, etc.). Those were retired

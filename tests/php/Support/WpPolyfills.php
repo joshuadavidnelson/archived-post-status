@@ -2,10 +2,8 @@
 /**
  * WP runtime polyfills loaded at PHPUnit bootstrap.
  *
- * Phase 5 of the 0.4.0 cleanup split this file out of the legacy
- * `tests/php/includes/common.php` so the polyfill concern (provide global
- * functions that the SUT calls but PHPUnit never declares) lives in one
- * place. Test-controllable fixtures (e.g. {@see make_get_post_stub()})
+ * The polyfill concern (provide global functions that the SUT calls but
+ * PHPUnit never declares) lives in one place here. Test-controllable fixtures (e.g. {@see make_get_post_stub()})
  * moved to {@see Support/Fixtures.php} so a test can override the default
  * stub without redefining the function.
  *
@@ -557,9 +555,8 @@ if ( ! function_exists( 'add_option' ) ) {
 	/**
 	 * Mock add_option() function.
 	 *
-	 * Added in 0.4.0 Phase 2 for the H2 upgrade_check() atomic-transition
-	 * reshape — the first-install branch now uses add_option (race-safe
-	 * create-if-missing) rather than update_option.
+	 * Backs upgrade_check()'s first-install branch, which uses
+	 * add_option (race-safe create-if-missing) rather than update_option.
 	 *
 	 * @since 0.4.0
 	 * @param string $option

@@ -14,7 +14,7 @@
 
 namespace {
 	// Shared WP_CLI in-memory stub + get_flag_value / make_progress_bar polyfills
-	// (Phase 5 of 0.4.0 cleanup).
+	// (shared across the CLI suites).
 	require_once __DIR__ . '/Support/WpCliStub.php';
 
 	use ArchivedPostStatus\Archive\ArchiveAction;
