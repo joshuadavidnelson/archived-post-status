@@ -59,6 +59,19 @@ final class AccessGuard implements HookableInterface {
 			return;
 		}
 
+		// A site can publish archived content by registering the status as
+		// public (`aps_status_arg_public` true, `aps_status_arg_private`
+		// false). That is an explicit decision that archived posts are
+		// world-readable, so this guard stands down rather than overriding
+		// it — the capability check below would 404 visitors who hold no
+		// capabilities at all, which no filter could ever satisfy. The
+		// registered status object is the source of truth because it is
+		// what the filters actually produced.
+		$status = get_post_status_object( PostStatusValue::resolved_slug() );
+		if ( $status && ! empty( $status->public ) ) {
+			return;
+		}
+
 		if ( ! aps_current_user_can_view( $post->ID ) ) {
 			global $wp_query;
 			$wp_query->set_404();
