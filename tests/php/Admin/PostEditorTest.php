@@ -147,4 +147,49 @@ class PostEditorTest extends TestCase {
 	// archived-post access-enforcement responsibility moved to
 	// Admin\PostEditorGuard::enforce_read_only(). The scenario is now
 	// covered in tests/php/Admin/PostEditorGuardTest.php.
+
+	/**
+	 * enqueue_scripts() registers the 'aps-block-editor' handle with
+	 * exactly the script modules assets/js/block-editor.js calls at
+	 * runtime: `wp.element.createElement`, `wp.plugins.registerPlugin`,
+	 * `wp.editPost.PluginPostStatusInfo`, and `wp.i18n.__` require
+	 * `wp-element`, `wp-plugins`, `wp-edit-post`, and `wp-i18n`
+	 * respectively. The previous `wp-blocks`, `wp-dom-ready`, `wp-hooks`
+	 * handles are dropped — block-editor.js calls none of
+	 * wp.blocks/wp.domReady/wp.hooks, and WP core's own `wp-edit-post`
+	 * handle already carries whatever transitive dependencies it needs. A
+	 * missing dependency here means the bundle can throw a ReferenceError
+	 * before the script boots; a stale one means dead weight loads on
+	 * every post editor screen for nothing.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditor::enqueue_scripts
+	 */
+	public function test_enqueue_scripts_registers_block_editor_script_with_required_dependencies() {
+		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( null );
+		\WP_Mock::userFunction( 'is_plugin_active' )
+			->with( 'classic-editor/classic-editor.php' )->andReturn( false );
+		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( false )->reply( false );
+
+		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->with( 7 )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_get_archive_post_link' )
+			->with( 7 )
+			->andReturn( 'http://example.com/wp-admin/post.php?post=7&action=archive&_wpnonce=abc' );
+
+		$deps = null;
+		\WP_Mock::userFunction( 'wp_enqueue_script' )
+			->once()
+			->andReturnUsing(
+				static function ( $handle, $src, $script_deps ) use ( &$deps ) {
+					$deps = $script_deps;
+				}
+			);
+
+		$this->post_editor->enqueue_scripts( 'post.php' );
+
+		$this->assertSame(
+			array( 'wp-element', 'wp-plugins', 'wp-edit-post', 'wp-i18n' ),
+			$deps
+		);
+	}
 }
