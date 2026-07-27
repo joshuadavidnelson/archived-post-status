@@ -1,44 +1,73 @@
-(() => {
-    const wp = window.wp;
-    const el = wp.element.createElement;
-    const registerPlugin = wp.plugins.registerPlugin;
-    const PluginPostStatusInfo = wp.editPost.PluginPostStatusInfo;
-    const __ = wp.i18n.__;
+( () => {
+	/**
+	 * Block editor Archive button, rendered into the post-status panel.
+	 *
+	 * The server side (Admin\PostEditor) enqueues this for supported post types
+	 * and localizes `archivedPostStatus.canArchive` / `.archiveUrl`.
+	 *
+	 * @param {Object} globals Host globals: wp.element/plugins/editPost/i18n,
+	 *                         archivedPostStatus, confirm.
+	 * @return {?Object} The element tree, or null when the user cannot archive.
+	 */
+	function apsArchiveButton( globals ) {
+		const el = globals.wp.element.createElement;
+		const PluginPostStatusInfo = globals.wp.editPost.PluginPostStatusInfo;
+		const __ = globals.wp.i18n.__;
 
-    function archiveButton() {
-        // Check if the current user can edit posts
-        if ( ! archivedPostStatus.canArchive ) {
-            return null;
-        }
+		if ( ! globals.archivedPostStatus.canArchive ) {
+			return null;
+		}
 
-        return el(
-            PluginPostStatusInfo,
-            {},
-            el(
-                'a',
-                {
-                    className: 'components-button editor-post-archive is-destructive is-primary',
-                    href: archivedPostStatus.archiveUrl,
-                    style: {
-                        'margin': '10px auto 0 auto',
-                        'width': 'auto',
-                        'minWidth': '100%',
-                        'textAlign': 'center',
-                        'alignContent': 'center',
-                        'justifyContent': 'center',
-                    },
-                    onClick(event) {
-                        if ( ! window.confirm( __( 'Are you sure you want to archive this post?', 'archived-post-status' ) ) ) {
-                            event.preventDefault();
-                        }
-                    }
-                },
-                __( 'Archive', 'archived-post-status' )
-            )
-        );
-    }
+		return el(
+			PluginPostStatusInfo,
+			{},
+			el(
+				'a',
+				{
+					className:
+						'components-button editor-post-archive is-destructive is-primary',
+					href: globals.archivedPostStatus.archiveUrl,
+					style: {
+						margin: '10px auto 0 auto',
+						width: 'auto',
+						minWidth: '100%',
+						textAlign: 'center',
+						alignContent: 'center',
+						justifyContent: 'center',
+					},
+					onClick( event ) {
+						if (
+							! globals.confirm(
+								__(
+									'Are you sure you want to archive this post?',
+									'archived-post-status'
+								)
+							)
+						) {
+							event.preventDefault();
+						}
+					},
+				},
+				__( 'Archive', 'archived-post-status' )
+			)
+		);
+	}
 
-    registerPlugin( 'archive-button', {
-        render: archiveButton
-    });
-})();
+	/**
+	 * Register the archive-button editor plugin.
+	 *
+	 * @param {Object} globals Host globals (see apsArchiveButton).
+	 */
+	function apsRegisterArchiveButton( globals ) {
+		globals.wp.plugins.registerPlugin( 'archive-button', {
+			render: () => apsArchiveButton( globals ),
+		} );
+	}
+
+	if ( typeof module === 'object' && module.exports ) {
+		module.exports = { apsArchiveButton, apsRegisterArchiveButton };
+	} else {
+		/* istanbul ignore next -- browser bootstrap; covered by the Playwright editor specs. */
+		apsRegisterArchiveButton( window );
+	}
+} )();

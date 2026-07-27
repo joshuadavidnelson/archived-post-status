@@ -19,6 +19,7 @@ import type { RequestUtils } from '@wordpress/e2e-test-utils-playwright';
  */
 import { PLUGIN_SLUG } from '../../config/roles';
 import { archivePost, deletePosts, seedPost, uniqueTitle } from '../../config/seed';
+import { wpCli } from '../../config/wp-cli';
 
 /**
  * Handle of the deactivation-warning script, as WordPress renders its
@@ -120,6 +121,14 @@ test.describe( 'plugins screen: deactivation warning', () => {
 		page,
 		requestUtils,
 	} ) => {
+		// This test's premise is a truly clean slate: purge any archived
+		// posts left behind by an abnormally terminated earlier run (a
+		// cleanup trap cannot fire on SIGKILL).
+		await wpCli( [
+			'eval',
+			'foreach ( get_posts( array( "post_status" => "archive", "post_type" => "any", "numberposts" => -1, "fields" => "ids" ) ) as $stray ) { wp_delete_post( $stray, true ); }',
+		] );
+
 		let dialogSeen = false;
 		page.on( 'dialog', ( dialog ) => {
 			dialogSeen = true;

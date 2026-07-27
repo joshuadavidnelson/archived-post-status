@@ -1,204 +1,118 @@
 /**
- * @jest-environment jsdom
+ * Behavior tests for the shipped plugin-screen.js — the module under test is
+ * imported, never re-implemented, so a regression in the real source fails
+ * here.
  */
+const { apsBindDeactivationWarning } = require( './plugin-screen' );
 
-import { createPluginsPageDOM, setupWordPressGlobals, createArchivedPostStatusConfig, cleanupTestEnvironment } from './test-utils.js';
+describe( 'plugin-screen: deactivation warning', () => {
+	const WARNING_FRAGMENT = 'Deactivating this plugin';
 
-/**
- * Plugin Screen Deactivation Warning Tests - User Behavior Focused
- * Tests the user experience when attempting to deactivate the plugin
- */
+	let globals;
 
-describe('Plugin Deactivation Warning System', () => {
-    let confirmMock;
+	/**
+	 * Render the plugins.php row and return its deactivate link.
+	 *
+	 * @param {string} slug Plugin row slug.
+	 * @return {HTMLAnchorElement} The deactivate anchor.
+	 */
+	function renderPluginRow( slug = 'archived-post-status' ) {
+		document.body.innerHTML = `
+			<table><tbody>
+				<tr data-slug="${ slug }">
+					<td class="deactivate"><a href="/wp-admin/plugins.php?action=deactivate">Deactivate</a></td>
+				</tr>
+			</tbody></table>
+		`;
 
-    beforeEach(() => {
-        cleanupTestEnvironment();
+		return document.querySelector( `tr[data-slug="${ slug }"] .deactivate a` );
+	}
 
-        // Set up realistic WordPress plugins page DOM
-        document.body.innerHTML = createPluginsPageDOM();
+	/**
+	 * Dispatch a cancelable click and report whether it was prevented.
+	 *
+	 * @param {Element} link Element to click.
+	 * @return {boolean} True when preventDefault() was called.
+	 */
+	function click( link ) {
+		const event = new window.MouseEvent( 'click', {
+			bubbles: true,
+			cancelable: true,
+		} );
+		link.dispatchEvent( event );
 
-        // Setup WordPress globals
-        const mocks = setupWordPressGlobals();
-        confirmMock = mocks.confirmMock;
+		return event.defaultPrevented;
+	}
 
-        // Setup default archived post status
-        global.archivedPostStatus = createArchivedPostStatusConfig();
-    });
+	beforeEach( () => {
+		globals = {
+			wp: { i18n: { __: jest.fn( ( text ) => text ) } },
+			archivedPostStatus: { hasArchivedPosts: true },
+			confirm: jest.fn( () => true ),
+		};
+	} );
 
-    afterEach(() => {
-        cleanupTestEnvironment();
-    });
+	afterEach( () => {
+		document.body.innerHTML = '';
+	} );
 
-    describe('Warning Display Based on Archived Content', () => {
-        test('shows warning when deactivating plugin with archived posts', () => {
-            global.archivedPostStatus.hasArchivedPosts = true;
+	test( 'returns null and binds nothing when the plugin row is absent', () => {
+		document.body.innerHTML = '<table><tbody></tbody></table>';
 
-            // Simulate the event handler behavior directly
-            const handler = (e) => {
-                const message = 'Warning! Deactivating this plugin will remove the \'archive\' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin.';
-                if (global.archivedPostStatus.hasArchivedPosts && !confirmMock(message)) {
-                    e.preventDefault();
-                }
-            };
+		expect( apsBindDeactivationWarning( document, globals ) ).toBeNull();
+		expect( globals.confirm ).not.toHaveBeenCalled();
+	} );
 
-            const mockEvent = { preventDefault: jest.fn() };
-            handler(mockEvent);
+	test( "ignores other plugins' deactivate links", () => {
+		const otherLink = renderPluginRow( 'some-other-plugin' );
 
-            expect(confirmMock).toHaveBeenCalledWith(
-                'Warning! Deactivating this plugin will remove the \'archive\' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin.'
-            );
-        });
+		expect( apsBindDeactivationWarning( document, globals ) ).toBeNull();
 
-        test('allows deactivation without warning when no archived posts exist', () => {
-            global.archivedPostStatus.hasArchivedPosts = false;
+		click( otherLink );
+		expect( globals.confirm ).not.toHaveBeenCalled();
+	} );
 
-            // Simulate the event handler behavior directly
-            const handler = (e) => {
-                if (global.archivedPostStatus.hasArchivedPosts && !confirmMock('Warning message')) {
-                    e.preventDefault();
-                }
-            };
+	test( 'dismissing the confirm blocks deactivation', () => {
+		const link = renderPluginRow();
+		globals.confirm.mockReturnValue( false );
 
-            const mockEvent = { preventDefault: jest.fn() };
-            handler(mockEvent);
+		apsBindDeactivationWarning( document, globals );
 
-            expect(confirmMock).not.toHaveBeenCalled();
-            expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-        });
-    });
+		expect( click( link ) ).toBe( true );
+		expect( globals.confirm ).toHaveBeenCalledWith(
+			expect.stringContaining( WARNING_FRAGMENT )
+		);
+	} );
 
-    describe('User Decision Handling', () => {
-        test('prevents deactivation when user cancels the warning', () => {
-            global.archivedPostStatus.hasArchivedPosts = true;
-            confirmMock.mockReturnValue(false);
+	test( 'accepting the confirm lets deactivation proceed', () => {
+		const link = renderPluginRow();
+		globals.confirm.mockReturnValue( true );
 
-            const handler = (e) => {
-                if (global.archivedPostStatus.hasArchivedPosts && !confirmMock('Warning message')) {
-                    e.preventDefault();
-                }
-            };
+		apsBindDeactivationWarning( document, globals );
 
-            const mockEvent = { preventDefault: jest.fn() };
-            handler(mockEvent);
+		expect( click( link ) ).toBe( false );
+	} );
 
-            expect(mockEvent.preventDefault).toHaveBeenCalled();
-        });
+	test( 'with no archived content there is no confirm at all', () => {
+		const link = renderPluginRow();
+		globals.archivedPostStatus.hasArchivedPosts = false;
 
-        test('allows deactivation when user confirms the warning', () => {
-            global.archivedPostStatus.hasArchivedPosts = true;
-            confirmMock.mockReturnValue(true);
+		apsBindDeactivationWarning( document, globals );
 
-            const handler = (e) => {
-                if (global.archivedPostStatus.hasArchivedPosts && !confirmMock('Warning message')) {
-                    e.preventDefault();
-                }
-            };
+		expect( click( link ) ).toBe( false );
+		expect( globals.confirm ).not.toHaveBeenCalled();
+	} );
 
-            const mockEvent = { preventDefault: jest.fn() };
-            handler(mockEvent);
+	test( 'the warning is translated through wp.i18n with the plugin text domain', () => {
+		const link = renderPluginRow();
+		globals.confirm.mockReturnValue( false );
 
-            expect(confirmMock).toHaveBeenCalled();
-            expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-        });
-    });
+		apsBindDeactivationWarning( document, globals );
+		click( link );
 
-    describe('Plugin-Specific Behavior', () => {
-        test('only affects the archived post status plugin deactivation', () => {
-            global.archivedPostStatus = { hasArchivedPosts: true };
-            global.confirm.mockReturnValue(false);
-
-            // Set up event listener only for archived-post-status plugin
-            const archivedPluginLink = document.querySelector('tr[data-slug="archived-post-status"] .deactivate a');
-            const otherPluginLink = document.querySelector('tr[data-slug="other-plugin"] .deactivate a');
-
-            const mockPreventDefault1 = jest.fn();
-            const mockPreventDefault2 = jest.fn();
-
-            // Only add warning to archived-post-status plugin
-            archivedPluginLink.addEventListener('click', function(e) {
-                e.preventDefault = mockPreventDefault1;
-                const message = global.wp.i18n.__('Warning! Deactivating this plugin will remove the \'archive\' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin.', 'archived-post-status');
-                if (global.archivedPostStatus.hasArchivedPosts && !global.confirm(message)) {
-                    e.preventDefault();
-                }
-            });
-
-            // Click both plugin deactivate links
-            const clickEvent1 = new Event('click');
-            clickEvent1.preventDefault = mockPreventDefault1;
-            archivedPluginLink.dispatchEvent(clickEvent1);
-
-            const clickEvent2 = new Event('click');
-            clickEvent2.preventDefault = mockPreventDefault2;
-            otherPluginLink.dispatchEvent(clickEvent2);
-
-            // Only the archived post status plugin should show warning and be prevented
-            expect(global.confirm).toHaveBeenCalledTimes(1);
-            expect(mockPreventDefault1).toHaveBeenCalled();
-            expect(mockPreventDefault2).not.toHaveBeenCalled();
-        });
-
-        test('handles missing plugin gracefully', () => {
-            // Remove the archived post status plugin from DOM
-            const pluginRow = document.querySelector('tr[data-slug="archived-post-status"]');
-            pluginRow.remove();
-
-            // Should not throw error when plugin is not found
-            expect(() => {
-                const deactivateLink = document.querySelector('tr[data-slug="archived-post-status"] .deactivate a');
-                if (deactivateLink) {
-                    deactivateLink.addEventListener('click', function() {});
-                }
-            }).not.toThrow();
-
-            expect(global.confirm).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('User Experience', () => {
-        test('provides clear warning message about data visibility', () => {
-            global.archivedPostStatus = { hasArchivedPosts: true };
-            global.confirm.mockReturnValue(true);
-
-            const deactivateLink = document.querySelector('tr[data-slug="archived-post-status"] .deactivate a');
-
-            deactivateLink.addEventListener('click', function(e) {
-                const message = global.wp.i18n.__('Warning! Deactivating this plugin will remove the \'archive\' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin.', 'archived-post-status');
-                if (global.archivedPostStatus.hasArchivedPosts && !global.confirm(message)) {
-                    e.preventDefault();
-                }
-            });
-
-            deactivateLink.click();
-
-            // Warning should explain the consequences and provide guidance
-            const warningMessage = global.confirm.mock.calls[0][0];
-            expect(warningMessage).toContain('Warning!');
-            expect(warningMessage).toContain('archive\' status');
-            expect(warningMessage).toContain('will be hidden');
-            expect(warningMessage).toContain('unarchive it first');
-        });
-
-        test('integrates with WordPress internationalization', () => {
-            global.archivedPostStatus = { hasArchivedPosts: true };
-            global.wp.i18n.__ = jest.fn((text, domain) => `[${domain}] ${text}`);
-
-            const deactivateLink = document.querySelector('tr[data-slug="archived-post-status"] .deactivate a');
-
-            deactivateLink.addEventListener('click', function(e) {
-                const message = global.wp.i18n.__('Warning! Deactivating this plugin will remove the \'archive\' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin.', 'archived-post-status');
-                global.confirm(message);
-            });
-
-            deactivateLink.click();
-
-            // Should use proper translation domain
-            expect(global.wp.i18n.__).toHaveBeenCalledWith(
-                expect.any(String),
-                'archived-post-status'
-            );
-        });
-    });
-});
-
+		expect( globals.wp.i18n.__ ).toHaveBeenCalledWith(
+			expect.stringContaining( WARNING_FRAGMENT ),
+			'archived-post-status'
+		);
+	} );
+} );
