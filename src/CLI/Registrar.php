@@ -106,9 +106,21 @@ final class Registrar implements HookableInterface {
 	 */
 	public function unarchive( array $args, array $assoc_args ): void {
 		$new_status = Utils\get_flag_value( $assoc_args, 'status', false );
-		if ( $new_status ) {
-			add_filter( 'aps_unarchive_post_status', fn() => $new_status );
+
+		if ( ! $new_status ) {
+			$this->runner->run( $this->unarchive_command, $args, $assoc_args );
+			return;
 		}
+
+		// Bracket the override around the run, mirroring
+		// BulkActionHandler::bulk_unarchive()'s add_filter/remove_filter
+		// pairing. A standard WP-CLI invocation exits inside run(), so the
+		// cleanup matters only in contexts where run() returns — a runner
+		// with an overridden terminate(), or future embedded reuse.
+		$status_filter = static fn() => $new_status;
+
+		add_filter( 'aps_unarchive_post_status', $status_filter );
 		$this->runner->run( $this->unarchive_command, $args, $assoc_args );
+		remove_filter( 'aps_unarchive_post_status', $status_filter );
 	}
 }

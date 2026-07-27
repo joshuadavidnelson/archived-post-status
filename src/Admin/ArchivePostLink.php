@@ -48,7 +48,8 @@ final class ArchivePostLink {
 				return false;
 		}
 
-		if ( ! aps_current_user_can_archive( $post->ID ) ) {
+		$cap = $action->capability_function();
+		if ( ! $cap( $post->ID ) ) {
 			return false;
 		}
 

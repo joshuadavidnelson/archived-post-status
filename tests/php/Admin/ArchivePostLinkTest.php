@@ -218,4 +218,70 @@ class ArchivePostLinkTest extends TestCase {
 
 		$this->assertSame( 'archive-42', $captured_key );
 	}
+
+	/**
+	 * Capability dispatch: build() must consult the capability that matches
+	 * the $action argument passed in, not a hardcoded archive check. Lets
+	 * the real `aps_current_user_can_archive()` / `aps_current_user_can_unarchive()`
+	 * facades and `ArchiveCapability` run for real, filters the two
+	 * `aps_default_*_capability` hooks to two DIFFERENT capability strings,
+	 * and reads back which capability `current_user_can()` actually
+	 * received. Fails against a build() that always calls
+	 * `aps_current_user_can_archive()` regardless of $action, because the
+	 * Unarchive call would then observe the archive capability instead of
+	 * the unarchive one.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchivePostLink::build
+	 */
+	public function test_build_consults_the_capability_matching_the_action() {
+		$post = $this->createMockPost(
+			array(
+				'ID'        => 42,
+				'post_type' => 'post',
+			)
+		);
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'post' )->andReturnUsing(
+			static function () {
+				$object             = new stdClass();
+				$object->_edit_link = 'post.php?post=%d&action=edit';
+				return $object;
+			}
+		);
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
+		\WP_Mock::userFunction( 'admin_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=edit' );
+		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=archive' );
+		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=archive&_wpnonce=abc' );
+
+		\WP_Mock::onFilter( 'aps_default_archive_capability' )
+			->with( 'edit_others_posts', 42 )
+			->reply( 'aps_archive_only_cap' );
+		\WP_Mock::onFilter( 'aps_default_unarchive_capability' )
+			->with( 'edit_others_posts', 42 )
+			->reply( 'aps_unarchive_only_cap' );
+
+		$received_capability = null;
+		\WP_Mock::userFunction( 'current_user_can' )->andReturnUsing(
+			static function ( $capability ) use ( &$received_capability ) {
+				$received_capability = $capability;
+				return true;
+			}
+		);
+
+		ArchivePostLink::build( $post, ArchiveAction::Archive );
+		$this->assertSame(
+			'aps_archive_only_cap',
+			$received_capability,
+			'Archive action must consult the archive capability.'
+		);
+
+		$received_capability = null;
+		ArchivePostLink::build( $post, ArchiveAction::Unarchive );
+		$this->assertSame(
+			'aps_unarchive_only_cap',
+			$received_capability,
+			'Unarchive action must consult the unarchive capability, not the archive one.'
+		);
+	}
 }

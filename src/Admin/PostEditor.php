@@ -72,10 +72,13 @@ final class PostEditor implements HookableInterface {
 			return;
 		}
 
+		// Handles matched to what assets/js/block-editor.js actually calls:
+		// wp.element.createElement, wp.plugins.registerPlugin,
+		// wp.editPost.PluginPostStatusInfo, wp.i18n.__.
 		wp_enqueue_script(
 			'aps-block-editor',
 			ARCHIVED_POST_STATUS_URL . 'assets/js/block-editor.js',
-			array( 'wp-blocks', 'wp-dom-ready', 'wp-hooks', 'wp-i18n' ),
+			array( 'wp-element', 'wp-plugins', 'wp-edit-post', 'wp-i18n' ),
 			ARCHIVED_POST_STATUS_VERSION,
 			true
 		);
