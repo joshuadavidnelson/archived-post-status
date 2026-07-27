@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Archive\ArchiveCapability
  *
- * Phase 3A extraction (0.4.0): mirrors the facade tests in FunctionsTest
+ * Mirrors the facade tests in FunctionsTest
  * (`test_archive_capability_filter_replaces_capability_passed_to_current_user_can`,
  * `test_unarchive_capability_filter_replaces_capability_passed_to_current_user_can`,
  * `test_archive_capability_defaults_to_edit_others_posts_when_no_filter_registered`)

@@ -8,9 +8,9 @@
  *
  * Smoke + path-resolution coverage for the PSR-4-style autoloader.
  *
- * Phase 3.6 refactor: most tests now go through the public `Loader::init()`
- * entry point. Phase 5 of the 0.4.0 cleanup tightened `add_namespace()` back
- * to private (its only legitimate caller is `init()`), so tests that need to
+ * Most tests go through the public `Loader::init()` entry point.
+ * `add_namespace()` is private (its only legitimate caller is `init()`),
+ * so tests that need to
  * layer a test-only namespace use the reflection helper
  * {@see add_namespace_via_reflection()} below. The private-constructor
  * reflection is retained for the one test that needs an isolated loader (no

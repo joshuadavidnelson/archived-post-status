@@ -13,7 +13,7 @@
  *   lives in `Status\PostStatus::register_status()` (which delegates to
  *   the private `status_args()`).
  *
- * Brittleness note (Phase 3.1):
+ * Brittleness note :
  *   The original ten near-identical filter-pinning tests were collapsed into
  *   a single `@dataProvider` driven test. Each old test pinned all seven
  *   filters; only one differed per row. The new test asserts a single
@@ -231,7 +231,7 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
-	 * The `aps_post_status_slug` filter (restored in Phase 2 of the 0.4.0
+	 * The `aps_post_status_slug` filter (restored in the 0.4.0 refactor
 	 * cleanup) lets sites that registered the status under a custom slug
 	 * under 0.3.x continue to do so. When the filter returns `'archived'`,
 	 * `register_post_status()` must receive `'archived'` (not the default
@@ -478,7 +478,7 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
-	 * Phase 4 coverage pin: a multi-status filter that does NOT include
+	 * Coverage pin: a multi-status filter that does NOT include
 	 * `'archive'` (e.g. `?post_status[]=publish&post_status[]=draft`) must
 	 * still surface the "Archived" label for an archived post. The
 	 * `in_array( $slug, …, true )` early-return only fires when the filter
@@ -508,7 +508,7 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
-	 * Phase 4 coverage pin: when the post status is NOT 'archive' — even
+	 * Coverage pin: when the post status is NOT 'archive' — even
 	 * if `aps_is_supported_post_type` is true — `display_post_states()`
 	 * short-circuits without touching `$post_states`. Pins the
 	 * `$slug !== $post->post_status` early-return clause for a non-archive

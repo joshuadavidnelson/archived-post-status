@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Status\ArchiveLabel
  *
- * Phase 3A extraction (0.4.0): mirrors the existing facade tests in
+ * Mirrors the existing facade tests in
  * FunctionsTest::test_archived_label_string_* but exercises the lifted
  * implementation directly. Once Step 3B rewires the facade as a one-line
  * delegate, these tests will be the canonical pin and the facade-side tests

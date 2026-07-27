@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Status\SupportedPostTypes
  *
- * Phase 3A extraction (0.4.0): mirrors the facade tests in FunctionsTest
+ * Mirrors the facade tests in FunctionsTest
  * (`test_attachment_is_excluded_from_supported_post_types_by_default`,
  * `test_excluded_post_types_filter_allows_custom_exclusions`,
  * `test_supported_post_types_filter_allows_adding_custom_types`,

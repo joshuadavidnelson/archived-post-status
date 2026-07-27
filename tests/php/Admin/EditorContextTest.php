@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\EditorContext
  *
- * Phase 4 of the 0.4.0 cleanup extracted the classic-editor detection out of
+ * the 0.4.0 refactor extracted the classic-editor detection out of
  * the private `PostEditor::is_classic_editor()` method into the static
  * `Admin\EditorContext` helper and wrapped the result in the new
  * `aps_is_classic_editor` filter so other plugins can trip the flag.

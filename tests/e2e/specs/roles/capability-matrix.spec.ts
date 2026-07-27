@@ -15,7 +15,7 @@
  *
  * The last describe re-runs the archive axis with `aps_default_archive_capability`
  * and `aps_default_unarchive_capability` filtered to `manage_options`, which is
- * the A6/A7 scenario: the filter must actually move the boundary, not just be
+ * the boundary-move scenario: the filter must actually move the boundary, not just be
  * consulted.
  */
 
@@ -316,7 +316,7 @@ test.describe( "roles: author on another author's content", () => {
 	} );
 } );
 
-test.describe( 'roles: aps_default_*_capability moves the boundary (A6/A7)', () => {
+test.describe( 'roles: aps_default_*_capability moves the boundary', () => {
 	const created: number[] = [];
 
 	test.beforeEach( async ( { requestUtils } ) => {

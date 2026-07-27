@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Archive\ViewCapability
  *
- * Phase 3A extraction (0.4.0): mirrors the facade test
+ * Mirrors the facade test
  * `FunctionsTest::test_aps_current_user_can_view_filter` but exercises the
  * lifted SUT directly. The two complementary tests below cover the default
  * capability (`read_private_posts` flows to current_user_can()) and the

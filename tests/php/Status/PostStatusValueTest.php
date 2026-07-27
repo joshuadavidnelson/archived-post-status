@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Status\PostStatusValue
  *
- * Phase 3A extraction (0.4.0): centralises the bare-string vocabulary items
+ * centralises the bare-string vocabulary items
  * `'archive'` (slug) and `'Archived'` (label) that the procedural layer
  * scattered across the codebase. Cases are pinned here so Step 3B's
  * literal-replacement work can lean on a stable enum surface.

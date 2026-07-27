@@ -6,7 +6,7 @@
  * RegistrarTest, UnarchiveCommandTest) previously each carried a
  * conditionally-defined `class WP_CLI` plus a `namespace WP_CLI\Utils {}`
  * block with `get_flag_value()` and (in CommandRunnerTest) `make_progress_bar()`.
- * Phase 5 of the 0.4.0 cleanup centralized them here so the duplication
+ * the 0.4.0 refactor centralized them here so the duplication
  * (~140 LOC across 5 files) lives in one place.
  *
  * Loaded by each CLI test via `require_once __DIR__ . '/Support/WpCliStub.php';`

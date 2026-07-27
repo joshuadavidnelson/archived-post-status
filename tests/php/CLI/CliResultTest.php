@@ -15,7 +15,7 @@ use ArchivedPostStatus\CLI\CliResult;
  * CliResult is the readonly replacement for the legacy `array('error'|'success',
  * string)` tuple shape that CLI::handle_action() returned before 0.4.0.
  * Construction is via the promoted constructor; the earlier private
- * constructor + named factories were dropped in Phase 3 of the post-0.4.0
+ * constructor + named factories were dropped during the 0.4.0
  * refactor follow-up as ceremony that prevented no real bug. These tests
  * pin the construction shape, message round-trip, and the immutability
  * guarantees that the runner relies on.

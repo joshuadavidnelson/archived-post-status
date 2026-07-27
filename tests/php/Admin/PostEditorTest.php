@@ -34,7 +34,7 @@ class PostEditorTest extends TestCase {
 		$this->post_editor = new ArchivedPostStatus\Admin\PostEditor();
 	}
 
-	// Phase 3.4: the prior `test_hooks_returns_hookable_descriptors` smoke
+	// the prior `test_hooks_returns_hookable_descriptors` smoke
 	// test was deleted — `assertIsArray`/`assertNotEmpty` doesn't pin any
 	// behavior. The composition surface is now covered end-to-end by
 	// `PluginTest::test_hookables_always_registers_*` which asserts the
@@ -48,7 +48,7 @@ class PostEditorTest extends TestCase {
 	 * drops the integration.
 	 *
 	 * Replaces the prior smoke `test_hooks_returns_hookable_descriptors`
-	 * (Phase 3.4) which only asserted the array was non-empty.
+	 *  which only asserted the array was non-empty.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostEditor::hooks
 	 */
@@ -73,7 +73,7 @@ class PostEditorTest extends TestCase {
 	 * presence of the button and that aps_get_archive_post_link() routed
 	 * through the esc_url + render pipeline.
 	 *
-	 * Replaces the prior `assertIsString($output)` smoke test (Phase 3.4):
+	 * Replaces the prior `assertIsString($output)` smoke test :
 	 * that earlier assertion fired even when production emitted an empty
 	 * string or a malformed tag.
 	 *

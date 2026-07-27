@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\PostList
  *
- * Phase 4.5 migration (0.4.0): SUT-mocking of plugin-owned aps_* helpers
+ * SUT-mocking of plugin-owned aps_* helpers
  * (aps_is_supported_post_type, aps_is_read_only,
  * aps_current_user_can_archive/_unarchive/_view, aps_get_archive_post_link,
  * aps_get_unarchive_post_link, _aps_get_archivable_statuses) was retired
@@ -67,7 +67,7 @@ class PostListTest extends TestCase {
 		parent::tear_down();
 	}
 
-	// Phase 3.4: the prior `test_hooks_returns_hookable_descriptors` smoke
+	// the prior `test_hooks_returns_hookable_descriptors` smoke
 	// test was deleted — `assertIsArray`/`assertNotEmpty` doesn't pin any
 	// behavior. The composition surface is now covered end-to-end by
 	// `PluginTest::test_hookables_includes_admin_only_set_when_is_admin_is_true`.
@@ -90,7 +90,7 @@ class PostListTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PostList::hooks
 	 */
 	public function test_hooks_registers_query_vars_filter_and_post_actions() {
-		// Phase 4.5: real aps_get_supported_post_types resolves through the
+		// real aps_get_supported_post_types resolves through the
 		// filter chain, so hooks() iterates over the real supported list.
 		$this->stubSupportedPostTypesBoundary( array( 'post', 'page' ), array( 'post' ) );
 
@@ -212,7 +212,7 @@ class PostListTest extends TestCase {
 	 * Important: even if our capability filters would say yes, the post
 	 * type gate is the primary gate.
 	 *
-	 * Phase 4.5: the negation contract previously expressed as
+	 * the negation contract previously expressed as
 	 * `aps_current_user_can_archive->never()` is now expressed as
 	 * `current_user_can->never()` plus URL-builder ->never() — those are
 	 * the actual side-effects skipped when the SUT early-returns.
@@ -249,7 +249,7 @@ class PostListTest extends TestCase {
 	 * of aps_get_archive_post_link(). Edit/view/inline entries are left
 	 * alone — those still make sense for unarchived posts.
 	 *
-	 * Phase 4.5: aps_get_archive_post_link runs unmocked here, against
+	 * aps_get_archive_post_link runs unmocked here, against
 	 * the same WP-boundary stubs (admin_url + add_query_arg + wp_nonce_url
 	 * + esc_url + get_post + get_post_type_object) so the produced URL
 	 * actually flows through the real link pipeline. The href contains
@@ -326,11 +326,11 @@ class PostListTest extends TestCase {
 	 * edit handle (they don't make sense on archived posts), and adds an
 	 * `unarchive` entry pointing at the unarchive URL.
 	 *
-	 * The `view` entry survives because Phase 1.3 #6 stopped removing it
+	 * The `view` entry survives because the policy stopped removing it
 	 * when the user can view archived content. Here the read capability
 	 * is granted so the view link should remain.
 	 *
-	 * Phase 4.5: the three aps_current_user_can_* helpers all resolve via
+	 * the three aps_current_user_can_* helpers all resolve via
 	 * current_user_can — each receives a different capability string, so
 	 * the cap argument is the only thing that varies. The real
 	 * aps_get_unarchive_post_link delegates to aps_get_archive_post_link
@@ -426,7 +426,7 @@ class PostListTest extends TestCase {
 	 * filter is active (the "All" view). The unarchive entry only appears
 	 * when viewing the `?post_status=archive` filter (see next test).
 	 *
-	 * Phase 4.5: real `_aps_get_archivable_statuses` resolves through the
+	 * real `_aps_get_archivable_statuses` resolves through the
 	 * `aps_archivable_statuses` filter boundary (no SUT stub).
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::bulk_actions
@@ -515,7 +515,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * post_action_archive's missing-post guard (H6 — Phase 1 of the 0.4.0
+	 * post_action_archive's missing-post guard (H6 — the 0.4.0 refactor
 	 * cleanup): when get_post() returns null (post deleted between
 	 * row-action render and click), the handler now silently returns
 	 * BEFORE calling check_admin_referer(). This rejects bogus payloads
@@ -542,7 +542,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * Unsupported post type guard (H6 — Phase 1 of the 0.4.0 cleanup):
+	 * Unsupported post type guard (H6 — the 0.4.0 refactor):
 	 * a post in an unsupported post type now silently returns BEFORE
 	 * check_admin_referer() fires. The original `wp_die('Invalid post
 	 * type')` branch became unreachable once the upstream supported-type
@@ -621,7 +621,7 @@ class PostListTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PostList::post_action_unarchive
 	 */
 	// -----------------------------------------------------------------------
-	// Phase 1 — H6 regression tests (ID validation BEFORE nonce check)
+	// H6 regression tests (ID validation BEFORE nonce check)
 	// -----------------------------------------------------------------------
 
 	/**

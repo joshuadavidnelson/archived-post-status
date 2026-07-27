@@ -2,7 +2,7 @@
 /**
  * CLI registration surface tests.
  *
- * After the Phase 3 refactor, behavior lives in src/CLI/* (Command,
+ * Behavior lives in src/CLI/* (Command,
  * ArchiveCommand, UnarchiveCommand, CommandRunner). This file only tests
  * the WP-CLI registration surface that stays in src/CLI/Registrar.php —
  * `hooks()` returning the `cli_init` descriptor and `cli()` registering
@@ -20,7 +20,7 @@
  */
 
 namespace {
-	// Shared WP_CLI in-memory stub + get_flag_value polyfill (Phase 5 of 0.4.0 cleanup).
+	// Shared WP_CLI in-memory stub + get_flag_value polyfill.
 	require_once __DIR__ . '/Support/WpCliStub.php';
 
 	use ArchivedPostStatus\CLI\ArchiveCommand;

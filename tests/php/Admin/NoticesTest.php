@@ -144,7 +144,7 @@ class NoticesTest extends TestCase {
 			->with( 'unarchived', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'locked', false )->andReturn( false );
-		// Phase 1 new buckets — NoticeBuilder reads them too.
+		// Skip-reason buckets — NoticeBuilder reads them too.
 		\WP_Mock::userFunction( 'get_query_var' )
 			->with( 'denied', false )->andReturn( false );
 		\WP_Mock::userFunction( 'get_query_var' )
@@ -229,7 +229,7 @@ class NoticesTest extends TestCase {
 	 * routed through wp_nonce_url and carrying the archived post id in the
 	 * `ids` query arg.
 	 *
-	 * Structural assertion (Phase 3.2): rather than substring-matching the
+	 * Structural assertion : rather than substring-matching the
 	 * production code's emitted markup, parse the captured HTML and assert
 	 * on (a) presence of an `<a>` element, (b) its href passing through
 	 * wp_nonce_url (`_wpnonce` query arg present from the fixture's stub),
@@ -290,7 +290,7 @@ class NoticesTest extends TestCase {
 	// -----------------------------------------------------------------------
 	//
 	// build_notices() produces several kinds of notice: archived, unarchived,
-	// and locked (plus the Phase 1 reason buckets covered in NoticeBuilderTest).
+	// and locked (plus the reason buckets covered in NoticeBuilderTest).
 	// The existing test_archive_notice_* tests cover the first one. The
 	// tests below pin the other branches so a regression in the counter
 	// pluralization or the message string surfaces in CI.
@@ -396,13 +396,13 @@ class NoticesTest extends TestCase {
 	// parse_ids() — moved to NoticeBuilderTest
 	// -----------------------------------------------------------------------
 	//
-	// Phase 2 of the 0.4.0 follow-up refactor extracted parse_ids() onto
+	// the 0.4.0 refactor extracted parse_ids() onto
 	// the new NoticeBuilder class as a public method. The reflection-based
 	// data-provider that used to live here is now in NoticeBuilderTest, no
 	// longer reflection-based.
 
 	// -----------------------------------------------------------------------
-	// Phase 2 H3: allowed-base list (should_show_notices())
+	// allowed-base list (should_show_notices())
 	// -----------------------------------------------------------------------
 	//
 	// The allowed-screen-base list is now an explicit class constant
@@ -581,9 +581,9 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
-	 * Coverage pin (Phase 2): `get_current_post_type()` reads the
+	 * Coverage pin : `get_current_post_type()` reads the
 	 * `$_GET['post_type']` request variable when the global `$post_type`
-	 * is not set. Phase 4 of the cleanup plan flags this branch as a
+	 * is not set. the 0.4.0 refactor plan flags this branch as a
 	 * coverage hole; pinning it here also keeps the working coverage
 	 * above baseline.
 	 *
@@ -621,7 +621,7 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
-	 * Phase 4 coverage pin: `get_current_post_type()` final fallback —
+	 * Coverage pin: `get_current_post_type()` final fallback —
 	 * when neither the `$post_type` global nor `$_GET['post_type']` are
 	 * set, the SUT consults `get_post_type()` (the WP-core helper) for
 	 * the loop's current post.

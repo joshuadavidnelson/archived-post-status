@@ -6,25 +6,15 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Plugin
  *
- * Phase 3 of the 0.4.0 cleanup runs as three sub-steps: 3A extract (this
- * step — additive), 3B rewire (constructor-inject the new classes into
- * existing hookables), 3C reorganize (relocate functions, rename CLI).
- *
- * Risk-mitigation per the plan's Phase 3 Risk section: a parity snapshot
- * over `Plugin::hookables()` catches regressions in the composition root
- * across sub-steps. This test:
+ * A parity snapshot over `Plugin::hookables()` catches regressions in the
+ * composition root:
  *
  *   1. Asserts the hookable count is stable.
  *   2. Asserts the serialised list of (FQCN, hook descriptors) is stable.
  *
- * Step 3A does NOT modify `Plugin::hookables()` — this test exists to
- * ensure 3A leaves the composition surface unchanged AND to provide a
- * pre-rewire baseline so Step 3B's constructor-injection rewiring can be
- * compared structurally against the 3A snapshot.
- *
- * Phase 3B will update this test in lockstep with the constructor-injection
- * rewiring (the new descriptor shape becomes the new snapshot). Phase 3A's
- * job is to make sure no incidental change to the hook surface slipped in.
+ * Any deliberate change to the wiring list (a new hookable, a reorder)
+ * must update this snapshot in the same change — an unexpected diff here
+ * means the composition surface moved without anyone deciding it should.
  */
 
 /**
@@ -98,10 +88,9 @@ class PluginHookablesParityTest extends TestCase {
 
 	/**
 	 * The serialised hook descriptor list (per hookable: FQCN + (type, hook,
-	 * priority, accepted_args) tuples) is stable across Phase 3A. Step 3B
-	 * will replace this snapshot with the post-rewire one; this assertion
-	 * exists so 3A's "we didn't touch the surface" promise has a test
-	 * watching it.
+	 * priority, accepted_args) tuples) is the locked snapshot; a deliberate
+	 * wiring change replaces it in the same change, and an unexpected diff
+	 * means the composition surface moved without a decision.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -180,7 +169,7 @@ class PluginHookablesParityTest extends TestCase {
 		$this->assertSame(
 			$expected_fqcn_order,
 			$actual_fqcn_order,
-			'Plugin::hookables() FQCN order must be stable across Phase 3A.'
+			'Plugin::hookables() FQCN order must match the locked snapshot.'
 		);
 
 		// Pin the two fixed-shape descriptor tuples that are most likely to

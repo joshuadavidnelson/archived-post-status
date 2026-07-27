@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Archive\ReadOnlyPolicy
  *
- * Phase 3A extraction (0.4.0): mirrors the facade tests in FunctionsTest
+ * Mirrors the facade tests in FunctionsTest
  * (`test_is_read_only_defaults_to_true_and_applies_filter`,
  * `test_read_only_mode_can_be_disabled_via_filter`) but exercises the
  * lifted SUT directly.

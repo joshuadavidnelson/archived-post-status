@@ -151,7 +151,7 @@ class UnarchiveStatusFilterTest extends TestCase {
 	public function test_competing_higher_priority_filter_wins_over_default_callback() {
 		$_GET = array( 'doaction' => 'undo' );
 
-		// H5 outer cap gate (Phase 1 follow-up): the handler now routes the
+		// Capability gate: the handler routes the
 		// outer gate through `aps_current_user_can_unarchive()` with no post
 		// id, which delegates to `current_user_can( 'edit_others_posts', 0 )`.
 		\WP_Mock::userFunction( 'current_user_can' )
@@ -242,7 +242,7 @@ class UnarchiveStatusFilterTest extends TestCase {
 		// that the filter dispatch returns its input unchanged when no
 		// other callbacks transform it. That's what we model below.
 
-		// H5 outer cap gate (Phase 1 follow-up): the handler now routes the
+		// Capability gate: the handler routes the
 		// outer gate through `aps_current_user_can_unarchive()` with no post
 		// id, which delegates to `current_user_can( 'edit_others_posts', 0 )`.
 		\WP_Mock::userFunction( 'current_user_can' )

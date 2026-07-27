@@ -63,7 +63,7 @@ class ArchiveColumnTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::hooks
 	 */
 	public function test_hooks_registers_column_filters_and_sort_action_per_supported_post_type() {
-		// Phase 3.3: drive aps_get_supported_post_types() through its real
+		// drive aps_get_supported_post_types() through its real
 		// WP-boundary + filter dependencies rather than stubbing the
 		// plugin-owned function itself. A regression in the real function
 		// (e.g. forgetting to apply the supported filter) now surfaces here.
@@ -154,7 +154,7 @@ class ArchiveColumnTest extends TestCase {
 
 	/**
 	 * Multi-status filters (`?post_status[]=publish&post_status[]=archive`)
-	 * expose `post_status` as an array. The §1.3 #11 fix wraps it through
+	 * expose `post_status` as an array. The multi-status-filter fix wraps it through
 	 * (array) + in_array so the column header still appears.
 	 *
 	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::add_column

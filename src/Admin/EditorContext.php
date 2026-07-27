@@ -24,15 +24,14 @@ final class EditorContext {
 	/**
 	 * Whether the current admin context is the classic editor.
 	 *
-	 * Default detection mirrors the pre-extraction logic in
-	 * `PostEditor::is_classic_editor()`:
+	 * Default detection:
 	 *
 	 *   1. If `get_current_screen()` returns a screen with `is_block_editor() === true`,
 	 *      the request is rendering the block editor — return false.
 	 *   2. Otherwise, return true iff the Classic Editor plugin
 	 *      (`classic-editor/classic-editor.php`) is currently active.
 	 *
-	 * The detection result is passed through the new {@see aps_is_classic_editor}
+	 * The detection result is passed through the {@see aps_is_classic_editor}
 	 * filter, letting third-party plugins that disable the block editor (a
 	 * custom rollback, a non-standard classic-editor port, an mu-plugin
 	 * shim) trip the flag explicitly without monkey-patching WordPress's
