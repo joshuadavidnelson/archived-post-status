@@ -34,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  *
  * @SuppressWarnings("PHPMD.CouplingBetweenObjects") -- composition root; the
  * coupling to every hookable class is inherent to a Plugin::hookables()
- * wiring list. A declarative-provider refactor is deferred (roadmap #5).
+ * wiring list.
  */
 final class Plugin {
 
@@ -137,9 +137,17 @@ final class Plugin {
 
 		$stored = get_option( 'archived_post_status_version', false );
 
-		// Fresh install: option does not yet exist. add_option is the
+		// Option absent: either a fresh install or an upgrade from a
+		// pre-0.4.0 release (which never wrote any options). Archived
+		// content is the only evidence that distinguishes the two — record
+		// the marker while it is still reliable, since a fresh install can
+		// accumulate archived posts of its own later. add_option is the
 		// race-safe creator (no-op if a concurrent request beat us to it).
 		if ( false === $stored ) {
+			if ( $this->has_pre_040_content() ) {
+				update_option( 'archived_post_status_previous_version', 'pre-0.4.0', false );
+			}
+
 			add_option( 'archived_post_status_version', $this->version, '', false );
 			return;
 		}
@@ -153,6 +161,29 @@ final class Plugin {
 		}
 
 		// No-op: stored version matches current. No writes required.
+	}
+
+	/**
+	 * Whether any pre-0.4.0 archived content exists.
+	 *
+	 * Runs at most once per site lifetime (only while the version option is
+	 * absent). A direct query is required: this runs on plugins_loaded,
+	 * before the archived status is registered, and WP_Query drops
+	 * unregistered statuses from its WHERE clause. The literal 'archive'
+	 * string — not the filterable slug — is the correct probe: pre-0.4.0
+	 * releases hardcoded it into every write regardless of the
+	 * aps_post_status_slug filter.
+	 *
+	 * @since 0.4.0
+	 * @return bool
+	 */
+	private function has_pre_040_content(): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-time upgrade probe, pre-registration.
+		return (bool) $wpdb->get_var(
+			"SELECT ID FROM {$wpdb->posts} WHERE post_status = 'archive' LIMIT 1"
+		);
 	}
 
 	private function load_textdomain(): void {

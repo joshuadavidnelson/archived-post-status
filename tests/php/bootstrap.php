@@ -112,4 +112,20 @@ require_once APS_PLUGIN_PATH . '/archived-post-status.php';
 // Calling here — at the file end, after every helper class and WP-Mock
 // constant is in scope — keeps the suite-level side effect explicit and
 // localized rather than scattered across per-test bootstraps.
+//
+// A benign wpdb double backs Plugin::upgrade_check()'s pre-0.4.0 content
+// probe during this bootstrap run (no real database exists here); tests
+// that exercise the probe install their own double per-test.
+$GLOBALS['wpdb'] = new class() {
+	public $posts = 'wp_posts';
+
+	/**
+	 * @param string $query Ignored.
+	 * @return null Always empty — the bootstrap site has no content.
+	 */
+	public function get_var( $query ) {
+		return null;
+	}
+};
 aps_run_plugin();
+unset( $GLOBALS['wpdb'] );
