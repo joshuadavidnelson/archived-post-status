@@ -112,14 +112,19 @@ final class PostStatusGuard implements HookableInterface {
 	 */
 	public function restore_state_on_exit( string $new_status, string $old_status, \WP_Post $post ): void {
 		$slug = PostStatusValue::resolved_slug();
-		if ( $slug !== $old_status || $slug === $new_status ) {
+
+		// Only transitions leaving the archived status — or leaving trash,
+		// which is where a trashed archived post's exit was deferred to —
+		// can conclude the archive lifecycle.
+		if ( $slug !== $old_status && 'trash' !== $old_status ) {
 			return;
 		}
 
-		// Trash is not an exit: core records the pre-trash status in
-		// _wp_trash_meta_status and untrash restores the post straight back
-		// to the archived status, so the meta must survive the round-trip.
-		if ( 'trash' === $new_status ) {
+		// Still inside the lifecycle: archive→trash defers the exit (core
+		// records the pre-trash status in _wp_trash_meta_status and the
+		// meta must survive for whatever concludes the round-trip), and
+		// trash→archive / no-op writes return to the archived state.
+		if ( $slug === $new_status || 'trash' === $new_status ) {
 			return;
 		}
 
