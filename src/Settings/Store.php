@@ -69,13 +69,21 @@ final class Store {
 	}
 
 	/**
-	 * Replace all settings at once (used by the settings page save handler).
+	 * Replace all settings at once (reserved for a future settings UI; unused today).
+	 *
+	 * Ordering matches {@see self::update()}: `update_option()` fires
+	 * first so the cache-flush hooks wired in {@see HookAdapter::hooks()}
+	 * run against the persisted value, then the cache is primed — so a
+	 * `get()` right after `save()` skips a redundant `get_option()` call.
 	 *
 	 * @param array<string, mixed> $settings
 	 */
 	public static function save( array $settings ): void {
-		self::$cache = array_merge( self::defaults(), $settings );
-		update_option( self::OPTION_KEY, self::$cache );
+		$merged = array_merge( self::defaults(), $settings );
+
+		update_option( self::OPTION_KEY, $merged );
+
+		self::$cache = $merged;
 	}
 
 	/**
