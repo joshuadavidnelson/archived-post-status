@@ -35,6 +35,8 @@ export const FIXTURE_TOGGLES = {
 	classicEditor: 'aps_test_classic_editor_enabled',
 	/** Deny the archive/unarchive capability for one post id (0 = off). */
 	deniedPostId: 'aps_test_denied_post_id',
+	/** Publish archived content: `aps_status_arg_public|private|exclude_from_search`. */
+	publicArchive: 'aps_test_public_archive_enabled',
 } as const;
 
 export type FixtureToggle =
@@ -50,6 +52,7 @@ const TOGGLE_OFF: Record< FixtureToggle, boolean | number > = {
 	[ FIXTURE_TOGGLES.titleFilters ]: false,
 	[ FIXTURE_TOGGLES.classicEditor ]: false,
 	[ FIXTURE_TOGGLES.deniedPostId ]: 0,
+	[ FIXTURE_TOGGLES.publicArchive ]: false,
 };
 
 /**

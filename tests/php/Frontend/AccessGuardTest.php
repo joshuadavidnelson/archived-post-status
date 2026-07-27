@@ -105,6 +105,8 @@ class AccessGuardTest extends TestCase {
 		// Real view chain (no facade stub): the filtered read capability is
 		// denied, and the visitor (user 3) does not own author-9's post, so
 		// the ownership fallback denies too.
+		$this->stubStatusObject( false );
+
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'read_private_posts', 7 )
 			->andReturn( false );
@@ -139,6 +141,8 @@ class AccessGuardTest extends TestCase {
 		\WP_Mock::userFunction( 'is_singular' )->andReturn( true );
 		\WP_Mock::userFunction( 'get_queried_object' )->andReturn( $post );
 
+		$this->stubStatusObject( false );
+
 		// Real view chain: the filtered read capability is granted.
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'read_private_posts', 7 )
@@ -170,6 +174,8 @@ class AccessGuardTest extends TestCase {
 		\WP_Mock::userFunction( 'is_singular' )->andReturn( true );
 		\WP_Mock::userFunction( 'get_queried_object' )->andReturn( $post );
 
+		$this->stubStatusObject( false );
+
 		// Real view chain: read capability denied, ownership fallback
 		// engages — the visitor authored the post and can edit_posts.
 		\WP_Mock::userFunction( 'get_post' )->with( 7 )->andReturn( $post );
@@ -185,6 +191,85 @@ class AccessGuardTest extends TestCase {
 
 		\WP_Mock::userFunction( 'status_header' )->never();
 		\WP_Mock::userFunction( 'nocache_headers' )->never();
+
+		$this->guard->enforce_access();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Stub the registered status object the guard reads to decide whether
+	 * the site has declared archived content public.
+	 *
+	 * @param bool $public Value of the registered status's `public` flag.
+	 */
+	private function stubStatusObject( bool $public ) {
+		$status         = new \stdClass();
+		$status->public = $public;
+
+		\WP_Mock::userFunction( 'get_post_status_object' )
+			->with( 'archive' )
+			->andReturn( $status );
+	}
+
+	/**
+	 * A site can publish archived content with the documented recipe
+	 * (`aps_status_arg_public` true, `aps_status_arg_private` false). When
+	 * the status is registered public the site has decided archived posts
+	 * are world-readable, so the guard stands down rather than overriding
+	 * that configuration with a 404.
+	 *
+	 * @covers ArchivedPostStatus\Frontend\AccessGuard::enforce_access
+	 */
+	public function test_enforce_access_stands_down_when_the_status_is_registered_public() {
+		$post              = new WP_Post();
+		$post->ID          = 7;
+		$post->post_status = 'archive';
+
+		\WP_Mock::userFunction( 'is_singular' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_queried_object' )->andReturn( $post );
+
+		$this->stubStatusObject( true );
+
+		// The guard must not even ask the capability question, let alone 404.
+		\WP_Mock::userFunction( 'current_user_can' )->never();
+		\WP_Mock::userFunction( 'status_header' )->never();
+		\WP_Mock::userFunction( 'nocache_headers' )->never();
+
+		$this->guard->enforce_access();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Defensive: if the status object cannot be resolved, fall through to
+	 * the capability check rather than assuming public.
+	 *
+	 * @covers ArchivedPostStatus\Frontend\AccessGuard::enforce_access
+	 */
+	public function test_enforce_access_enforces_when_the_status_object_is_missing() {
+		$post              = new WP_Post();
+		$post->ID          = 7;
+		$post->post_status = 'archive';
+		$post->post_author = 9;
+
+		\WP_Mock::userFunction( 'is_singular' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_queried_object' )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_status_object' )
+			->with( 'archive' )
+			->andReturn( null );
+
+		\WP_Mock::userFunction( 'current_user_can' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post' )->with( 7 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 3 );
+
+		$wp_query = \Mockery::mock( 'WP_Query' );
+		$wp_query->shouldReceive( 'set_404' )->once();
+		$GLOBALS['wp_query'] = $wp_query;
+
+		\WP_Mock::userFunction( 'status_header' )->once()->with( 404 );
+		\WP_Mock::userFunction( 'nocache_headers' )->once();
 
 		$this->guard->enforce_access();
 
