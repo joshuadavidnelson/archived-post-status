@@ -74,15 +74,17 @@ Note that 0.4.0 registers its hooks as callbacks on internal object instances, w
 
 ### Upgrade note for sites using the `aps_post_status_slug` filter
 
-This only applies if you changed the status slug with the `aps_post_status_slug` filter. Everyone else can update normally.
+**The status slug is still `archive`, exactly as in 0.3.x. Nothing to do here unless your site adds an `aps_post_status_slug` filter to rename it - if you have never used that filter, skip this section and update normally.**
 
-Because 0.3.x saved the literal `archive` to the database no matter what your filter returned, posts archived before this update still carry that old value and will no longer be recognized as archived once you upgrade. **Back up your database first**, then run a one-off query to bring the old rows in line:
+What changed is where the filter is honored. 0.3.x applied it only when registering the status and then saved the literal `archive` to the database regardless, so a site that renamed the slug ended up with rows the plugin no longer matches once 0.4.0 starts honoring the custom name everywhere.
+
+If that is your site: **back up your database first**, then bring the old rows in line, substituting your own slug for `your-custom-slug` and your own table prefix for `wp_`:
 
 ```sql
-UPDATE wp_posts SET post_status = 'archived' WHERE post_status = 'archive';
+UPDATE wp_posts SET post_status = 'your-custom-slug' WHERE post_status = 'archive';
 ```
 
-Replace `archived` with whatever slug your filter returns, and replace the `wp_` prefix with your site's actual table prefix if it differs.
+Do not run that query if you are not filtering the slug - it would rename your archived posts to a status the plugin does not recognize.
 
 ## 0.3.12 - Feb 16, 2026
 
