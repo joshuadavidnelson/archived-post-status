@@ -1,21 +1,34 @@
 name: Plugin asset/readme update
+
+# Syncs readme.txt and .wordpress-org assets to the plugin's SVN trunk.
+# Scoped to the files it actually ships so ordinary code commits to
+# stable do not invoke a credentialed write to WordPress.org.
 on:
   push:
     branches:
-    - stable
+      - stable
+    paths:
+      - "readme.txt"
+      - ".wordpress-org/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
 
 jobs:
   trunk:
     name: Push to trunk
     runs-on: ubuntu-latest
     steps:
-    - name: "Checkout"
-      uses: actions/checkout@master
+      - name: "Checkout"
+        uses: actions/checkout@v6
 
-    - name: WordPress.org plugin asset/readme update
-      uses: 10up/action-wordpress-plugin-asset-update@stable
-      env:
-        SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-        SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-        IGNORE_OTHER_FILES: true
-        SLUG: archived-post-status
+      - name: WordPress.org plugin asset/readme update
+        uses: 10up/action-wordpress-plugin-asset-update@2.2.0
+        env:
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          IGNORE_OTHER_FILES: true
+          SLUG: archived-post-status

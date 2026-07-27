@@ -14,17 +14,15 @@ jobs:
     steps:
     - name: "Checkout repository"
       uses: "actions/checkout@v6"
-    - name: "Install PHPCS"
-      run: |
-        composer require --no-plugins --dev wp-coding-standards/wpcs
-        composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-        composer run post-install-cmd
+    - name: "Install dependencies"
+      run: "composer install"
     - name: "Fix violations"
       run: |
-        # phpcbf exists with 1 on success
-        vendor/bin/phpcbf --standard=WordPress-Core *.php src/ || true
+        # phpcbf auto-discovers .phpcs.xml.dist — the same ruleset the
+        # integrate.yml quality gate enforces. phpcbf exits 1 on success.
+        vendor/bin/phpcbf || true
         # Complex errors need a second run
-        vendor/bin/phpcbf --standard=WordPress-Core *.php src/ || true
+        vendor/bin/phpcbf || true
     - name: "Check difference to repository"
       id: "list_diff"
       run: |
