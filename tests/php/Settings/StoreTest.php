@@ -286,4 +286,53 @@ class StoreTest extends TestCase {
 			'A get() after update() must see the newly-written value — without re-reading get_option().'
 		);
 	}
+
+	/**
+	 * Cache-flush regression for save(), mirroring
+	 * test_update_fires_update_option_before_priming_cache_so_get_serves_from_cache
+	 * — see that test for the hook/cache-flush mechanism. save() never
+	 * reads the option first, so ->never() replaces the sibling's ->once()
+	 * as a secondary no-read guard. The regression itself is caught by
+	 * the closing assertFalse(): a premature flush leaves get() falling
+	 * back to defaults()['is_read_only'] (true), not the saved false.
+	 *
+	 * @covers ArchivedPostStatus\Settings\Store::save
+	 * @covers ArchivedPostStatus\Settings\Store::flush_cache
+	 */
+	public function test_save_fires_update_option_before_priming_cache_so_get_serves_from_cache() {
+		// get_option must NEVER be called — save() doesn't read the
+		// option before writing, and the post-save get() must be served
+		// entirely from the cache save() primed.
+		\WP_Mock::userFunction( 'get_option' )->never();
+
+		// Model the cache-flush hook: when update_option fires (which
+		// happens because update_option_aps_settings is wired to
+		// Store::flush_cache via HookAdapter), the cache is cleared.
+		// If save() primed the cache BEFORE update_option, this
+		// stub-side flush would nuke the just-primed value — caught by
+		// the assertFalse() below, since get() would then fall back to
+		// defaults()['is_read_only'] (true) instead of the saved false.
+		\WP_Mock::userFunction( 'update_option' )
+			->once()
+			->with( Store::OPTION_KEY, array( 'is_read_only' => false ) )
+			->andReturnUsing(
+				static function () {
+					Store::flush_cache(); // simulate the hook-bound callback
+					return true;
+				}
+			);
+
+		Store::save( array( 'is_read_only' => false ) );
+
+		// The cache-flush contract: a get() immediately after save()
+		// returns the saved value — merged over defaults() — without
+		// ever touching get_option(). A regression is caught by the
+		// assertFalse() below (a flushed cache falls back to
+		// defaults()['is_read_only'] = true, not the saved false);
+		// never() above is only a secondary no-read guard.
+		$this->assertFalse(
+			Store::get( 'is_read_only' ),
+			'A get() after save() must see the newly-saved value — without ever calling get_option().'
+		);
+	}
 }
