@@ -430,14 +430,11 @@ class PluginTest extends TestCase {
 	}
 
 	/**
-	 * On a fresh install (no version option recorded yet), upgrade_check()
-	 * writes the current version via `add_option` (race-safe creator) and
-	 * does NOT touch the previous-version option — there is no previous
-	 * to record.
-	 *
-	 * Phase 2 H2 reshape: the fresh-install branch switched from
-	 * `update_option` to `add_option` so a concurrent request that already
-	 * created the option does not get its value clobbered.
+	 * On a fresh install (no version option recorded yet, no archived
+	 * content in the database), upgrade_check() writes the current version
+	 * via `add_option` (race-safe creator: a concurrent request that
+	 * already created the option is not clobbered) and does NOT touch the
+	 * previous-version option — there is no previous to record.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::run
 	 * @covers ArchivedPostStatus\Plugin::upgrade_check
@@ -447,6 +444,13 @@ class PluginTest extends TestCase {
 		\WP_Mock::userFunction( 'get_option' )
 			->with( 'archived_post_status_version', false )
 			->andReturn( false ); // no stored version
+
+		$GLOBALS['wpdb'] = new class() {
+			public $posts = 'wp_posts';
+			public function get_var( $query ) {
+				return null; // No archived content: a true fresh install.
+			}
+		};
 
 		\WP_Mock::userFunction( 'add_option' )
 			->with( 'archived_post_status_version', '0.4.0', '', false )
@@ -464,9 +468,62 @@ class PluginTest extends TestCase {
 		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
 
-		$this->plugin->run();
+		try {
+			$this->plugin->run();
+		} finally {
+			unset( $GLOBALS['wpdb'] );
+		}
 
 		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * A 0.3.x site upgrading to 0.4.0 has no version option either — the
+	 * pre-0.4.0 releases never wrote one. Archived content (rows holding
+	 * the literal 'archive' status) is the distinguishing evidence, and
+	 * upgrade_check() records the 'pre-0.4.0' marker so future migrations
+	 * can tell this site apart from a fresh install.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::run
+	 * @covers ArchivedPostStatus\Plugin::upgrade_check
+	 */
+	public function test_pre_040_upgrade_records_the_previous_version_marker() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_option' )
+			->with( 'archived_post_status_version', false )
+			->andReturn( false ); // 0.3.x never wrote the option.
+
+		$probed_query        = null;
+		$GLOBALS['wpdb'] = new class() {
+			public $posts = 'wp_posts';
+			public $last_query;
+			public function get_var( $query ) {
+				$this->last_query = $query;
+				return '42'; // An archived post exists.
+			}
+		};
+
+		\WP_Mock::userFunction( 'update_option' )
+			->once()
+			->with( 'archived_post_status_previous_version', 'pre-0.4.0', false );
+		\WP_Mock::userFunction( 'add_option' )
+			->with( 'archived_post_status_version', '0.4.0', '', false )
+			->once();
+
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
+
+		try {
+			$this->plugin->run();
+			// The probe targets the literal legacy status string, not the
+			// filterable slug — pre-0.4.0 writes hardcoded 'archive'.
+			$this->assertStringContainsString(
+				"post_status = 'archive'",
+				$GLOBALS['wpdb']->last_query
+			);
+		} finally {
+			unset( $GLOBALS['wpdb'] );
+		}
 	}
 
 	/**
