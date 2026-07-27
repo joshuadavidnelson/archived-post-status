@@ -7,7 +7,7 @@
  * external write is picked up without any cache-clearing hack at the call site.
  *
  * Both observable consequences of the setting are asserted: the editor guard and
- * the list-table script enqueue.
+ * the server-side removal of edit affordances on archived rows.
  */
 
 /**
@@ -29,11 +29,6 @@ import {
 } from '../../config/seed';
 import { pluginStrings } from '../../config/strings';
 import { wpCli } from '../../config/wp-cli';
-
-/**
- * Handle of the list-table script, as WordPress renders its `<script>` id.
- */
-const EDIT_SCREEN_SCRIPT = 'script#aps-edit-screen-js';
 
 test.describe( 'settings: read-only mode', () => {
 	const created: number[] = [];
@@ -86,24 +81,41 @@ test.describe( 'settings: read-only mode', () => {
 		);
 	} );
 
-	test( 'the list-table script follows the setting', async ( {
+	test( 'archived rows lose their edit affordances while read-only is on', async ( {
 		admin,
 		page,
 		requestUtils,
 	} ) => {
+		const title = uniqueTitle( 'Read only title link' );
 		const post = await seedPost( requestUtils, {
-			title: uniqueTitle( 'Read only enqueue' ),
+			title,
 			status: 'publish',
 		} );
 		created.push( post.id );
+		await archivePost( requestUtils, post.id );
 
-		await admin.visitAdminPage( 'edit.php', postListQuery() );
-		await expect( page.locator( EDIT_SCREEN_SCRIPT ) ).toHaveCount( 1 );
+		// Read-only on (default): PostEditorGuard denies edit_post on the
+		// archived row, so core renders the title as plain text — no
+		// row-title link, no Edit or Quick Edit actions. This replaced the
+		// old client-side edit-screen.js DOM stripping.
+		await admin.visitAdminPage(
+			'edit.php',
+			postListQuery( { postStatus: 'archive' } )
+		);
+		const row = page.locator( `#post-${ post.id }` );
+		await expect( row.locator( '.column-title' ) ).toContainText( title );
+		await expect( row.locator( 'a.row-title' ) ).toHaveCount( 0 );
+		await expect( row.locator( '.row-actions .edit' ) ).toHaveCount( 0 );
+		await expect( row.locator( '.row-actions .inline' ) ).toHaveCount( 0 );
 
+		// Read-only off: the title link returns (RowActionPolicy still
+		// strips the Edit/Quick Edit row actions for archived rows).
 		await setPluginSettings( requestUtils, false );
-
-		await admin.visitAdminPage( 'edit.php', postListQuery() );
-		await expect( page.locator( EDIT_SCREEN_SCRIPT ) ).toHaveCount( 0 );
+		await admin.visitAdminPage(
+			'edit.php',
+			postListQuery( { postStatus: 'archive' } )
+		);
+		await expect( row.locator( 'a.row-title' ) ).toHaveCount( 1 );
 	} );
 
 	test( 'an external update_option is visible to Store within the same request', async () => {

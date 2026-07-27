@@ -253,6 +253,10 @@ class ArchivePostLinkTest extends TestCase {
 		\WP_Mock::userFunction( 'admin_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=edit' );
 		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=archive' );
 		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=archive&_wpnonce=abc' );
+		// Ownership default resolution: anonymous → others-primitive; the
+		// stubbed post type object has no cap map, so the string default
+		// 'edit_others_posts' flows to the filters below.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 
 		\WP_Mock::onFilter( 'aps_default_archive_capability' )
 			->with( 'edit_others_posts', 42 )

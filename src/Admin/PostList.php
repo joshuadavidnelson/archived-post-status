@@ -47,7 +47,7 @@ final class PostList implements HookableInterface {
 	public function hooks(): array {
 		$hooks = array(
 			HookDescriptor::filter( 'query_vars', array( $this, 'query_vars' ) ),
-			HookDescriptor::action( 'admin_enqueue_scripts', array( $this, 'enqueue_edit_screen_js' ) ),
+			HookDescriptor::filter( 'wp_list_table_show_post_checkbox', array( $this, 'show_archived_row_checkbox' ), 10, 2 ),
 			HookDescriptor::action( 'post_action_archive', array( $this, 'post_action_archive' ) ),
 			HookDescriptor::action( 'post_action_unarchive', array( $this, 'post_action_unarchive' ) ),
 		);
@@ -89,28 +89,27 @@ final class PostList implements HookableInterface {
 	}
 
 	/**
-	 * Enqueue edit screen JavaScript.
+	 * Keep archived rows selectable for the plugin's own bulk actions.
+	 *
+	 * Core only renders the bulk checkbox when the user can edit_post,
+	 * which PostEditorGuard denies for archived posts in read-only mode.
+	 * Users who can unarchive a row still need to select it for bulk
+	 * Unarchive, so the checkbox is restored on that capability instead.
 	 *
 	 * @since 0.4.0
-	 * @param string $hook The current admin page.
-	 * @return void
+	 * @param bool     $show Whether core would show the checkbox.
+	 * @param \WP_Post $post The row's post.
+	 * @return bool
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
+	 * is the canonical filterable slug accessor.
 	 */
-	public function enqueue_edit_screen_js( string $hook ): void {
-		global $typenow;
-
-		if ( ! aps_is_supported_post_type( $typenow )
-			|| ! aps_is_read_only()
-			|| 'edit.php' !== $hook ) {
-				return;
+	public function show_archived_row_checkbox( bool $show, \WP_Post $post ): bool {
+		if ( $show || PostStatusValue::resolved_slug() !== $post->post_status ) {
+			return $show;
 		}
 
-		wp_enqueue_script(
-			'aps-edit-screen',
-			ARCHIVED_POST_STATUS_URL . 'assets/js/edit-screen.js',
-			array(),
-			ARCHIVED_POST_STATUS_VERSION,
-			true
-		);
+		return aps_current_user_can_unarchive( $post->ID );
 	}
 
 	/**

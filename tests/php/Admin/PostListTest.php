@@ -77,16 +77,15 @@ class PostListTest extends TestCase {
 
 	/**
 	 * hooks() returns the bundle of post-list-table integration hooks:
-	 * `query_vars` (filter), `admin_enqueue_scripts` (action),
-	 * `post_action_archive` + `post_action_unarchive` (admin-action
-	 * entry points), plus per-supported-post-type filters
+	 * `query_vars` (filter), `post_action_archive` + `post_action_unarchive`
+	 * (admin-action entry points), plus per-supported-post-type filters
 	 * `bulk_actions-edit-{type}`, `handle_bulk_actions-edit-{type}`,
 	 * `{type}_row_actions`.
 	 *
-	 * The minimum-viable assertion: the SUT registers the four global
+	 * The minimum-viable assertion: the SUT registers the three global
 	 * hooks plus one per-post-type bulk_actions entry. Stronger per-hook
 	 * contracts are covered in the handler-method tests
-	 * (PostListHandleActionTest, this file's enqueue tests).
+	 * (PostListHandleActionTest).
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::hooks
 	 */
@@ -99,7 +98,7 @@ class PostListTest extends TestCase {
 		$hook_names = array_map( static fn( $h ) => $h->hook, $hooks );
 
 		$this->assertContains( 'query_vars', $hook_names );
-		$this->assertContains( 'admin_enqueue_scripts', $hook_names );
+		$this->assertContains( 'wp_list_table_show_post_checkbox', $hook_names );
 		$this->assertContains( 'post_action_archive', $hook_names );
 		$this->assertContains( 'post_action_unarchive', $hook_names );
 		$this->assertContains( 'bulk_actions-edit-post', $hook_names );
@@ -133,119 +132,74 @@ class PostListTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// enqueue_edit_screen_js
+	// show_archived_row_checkbox
 	// -----------------------------------------------------------------------
 	//
-	// edit-screen.js is the small JS bundle that disables row clicks on
-	// archived posts (the read-only enforcement). It must enqueue only
-	// when all three preconditions are met: post type supported, plugin
-	// in read-only mode, screen is edit.php. Outside those gates it's a
-	// silent no-op.
+	// PostEditorGuard denies edit_post on archived rows in read-only mode,
+	// which would also hide core's bulk checkbox. The filter restores the
+	// checkbox on the unarchive capability so bulk Unarchive stays usable.
 
 	/**
-	 * On the post list table (`edit.php`) for a supported post type with
-	 * the plugin in read-only mode, `enqueue_edit_screen_js()` registers
-	 * the `aps-edit-screen` script. The version and footer-load flag
-	 * come from the production constants — we assert on the handle name
-	 * (the stable hook contract).
+	 * When core would already show the checkbox, the filter passes true
+	 * through without consulting the plugin at all.
 	 *
-	 * @covers ArchivedPostStatus\Admin\PostList::enqueue_edit_screen_js
+	 * @covers ArchivedPostStatus\Admin\PostList::show_archived_row_checkbox
 	 */
-	public function test_enqueue_edit_screen_js_enqueues_script_on_supported_edit_php() {
-		global $typenow;
-		$typenow = 'post';
+	public function test_show_archived_row_checkbox_passes_true_through() {
+		\WP_Mock::userFunction( 'current_user_can' )->never();
 
-		// Phase 4.5: real aps_is_supported_post_type resolves through the
-		// filter chain; aps_is_read_only resolves through its filter.
-		$this->stubSupportedPostTypesBoundary( array( 'post', 'page' ), array( 'post', 'page' ) );
-		\WP_Mock::onFilter( 'aps_is_read_only' )
-			->with( true )
-			->reply( true );
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'post',
+		] );
 
-		$enqueued = null;
-		\WP_Mock::userFunction( 'wp_enqueue_script' )
-			->once()
-			->andReturnUsing(
-				function ( $handle ) use ( &$enqueued ) {
-					$enqueued = $handle;
-				}
-			);
-
-		$this->post_list->enqueue_edit_screen_js( 'edit.php' );
-
-		$this->assertSame( 'aps-edit-screen', $enqueued );
+		$this->assertTrue( $this->post_list->show_archived_row_checkbox( true, $post ) );
 	}
 
 	/**
-	 * `enqueue_edit_screen_js()` short-circuits when the screen is not
-	 * `edit.php` — e.g. on `post.php` (the single-post editor), where
-	 * the row-action behavior doesn't apply.
+	 * Non-archived rows keep core's decision — a hidden checkbox on a
+	 * draft the user cannot edit stays hidden.
 	 *
-	 * @covers ArchivedPostStatus\Admin\PostList::enqueue_edit_screen_js
+	 * @covers ArchivedPostStatus\Admin\PostList::show_archived_row_checkbox
 	 */
-	public function test_enqueue_edit_screen_js_skips_on_non_edit_php_hook() {
-		global $typenow;
-		$typenow = 'post';
+	public function test_show_archived_row_checkbox_leaves_non_archived_rows_alone() {
+		\WP_Mock::userFunction( 'current_user_can' )->never();
 
-		$this->stubSupportedPostTypesBoundary( array( 'post' ), array( 'post' ) );
-		\WP_Mock::onFilter( 'aps_is_read_only' )
-			->with( true )
-			->reply( true );
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'draft',
+			'post_type'   => 'post',
+		] );
 
-		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
-
-		$this->post_list->enqueue_edit_screen_js( 'post.php' );
-
-		$this->addToAssertionCount( 1 );
+		$this->assertFalse( $this->post_list->show_archived_row_checkbox( false, $post ) );
 	}
 
 	/**
-	 * `enqueue_edit_screen_js()` short-circuits when read-only mode is
-	 * disabled (`aps_is_read_only` filter returned false). With
-	 * read-only off, the JS bundle is unnecessary — archived posts
-	 * remain clickable.
+	 * A hidden checkbox on an archived row is restored exactly when the
+	 * user can unarchive that row.
 	 *
-	 * @covers ArchivedPostStatus\Admin\PostList::enqueue_edit_screen_js
+	 * @covers ArchivedPostStatus\Admin\PostList::show_archived_row_checkbox
 	 */
-	public function test_enqueue_edit_screen_js_skips_when_not_read_only() {
-		global $typenow;
-		$typenow = 'post';
+	public function test_show_archived_row_checkbox_restores_checkbox_on_unarchive_capability() {
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'post',
+		] );
 
-		$this->stubSupportedPostTypesBoundary( array( 'post' ), array( 'post' ) );
-		\WP_Mock::onFilter( 'aps_is_read_only' )
-			->with( true )
-			->reply( false );
+		// Ownership-aware default: anonymous mock user resolves to the
+		// others-primitive; grant it for the positive case.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( null );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 5 )
+			->andReturn( true );
 
-		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
-
-		$this->post_list->enqueue_edit_screen_js( 'edit.php' );
-
-		$this->addToAssertionCount( 1 );
-	}
-
-	/**
-	 * `enqueue_edit_screen_js()` short-circuits when the current post
-	 * type is not in the supported list — viewing the attachment list,
-	 * for instance, doesn't need the row-click guard.
-	 *
-	 * Note: aps_is_read_only is gated behind the supported-type check (PHP
-	 * short-circuit evaluation on `!a || !b || …`), so its filter never
-	 * fires here. wp_enqueue_script must also never fire.
-	 *
-	 * @covers ArchivedPostStatus\Admin\PostList::enqueue_edit_screen_js
-	 */
-	public function test_enqueue_edit_screen_js_skips_for_unsupported_post_type() {
-		global $typenow;
-		$typenow = 'attachment';
-
-		// supported_post_types reply excludes attachment.
-		$this->stubSupportedPostTypesBoundary( array( 'post', 'page' ), array( 'post', 'page' ) );
-
-		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
-
-		$this->post_list->enqueue_edit_screen_js( 'edit.php' );
-
-		$this->addToAssertionCount( 1 );
+		$this->assertTrue( $this->post_list->show_archived_row_checkbox( false, $post ) );
 	}
 
 	// -----------------------------------------------------------------------
@@ -628,6 +582,9 @@ class PostListTest extends TestCase {
 	 */
 	public function test_post_action_archive_dies_when_aps_archive_post_returns_false() {
 		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 52 )
 			->andReturn( true );

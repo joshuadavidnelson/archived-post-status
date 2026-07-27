@@ -218,4 +218,93 @@ class PostEditorGuardTest extends TestCase {
 
 		$this->guard->enforce_read_only();
 	}
+
+	/**
+	 * hooks() registers the editor-access action and the map_meta_cap
+	 * editing deny.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::hooks
+	 */
+	public function test_hooks_registers_load_post_action_and_map_meta_cap_filter() {
+		$hooks = $this->guard->hooks();
+
+		$this->assertCount( 2, $hooks );
+		$this->assertSame( 'load-post.php', $hooks[0]->hook );
+		$this->assertSame( 'action', $hooks[0]->type );
+		$this->assertSame( 'map_meta_cap', $hooks[1]->hook );
+		$this->assertSame( 'filter', $hooks[1]->type );
+		$this->assertSame( 4, $hooks[1]->accepted_args );
+	}
+
+	/**
+	 * Read-only mode denies edit_post on archived posts, so core drops its
+	 * edit affordances (title link, Edit/Quick Edit) server-side.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_appends_do_not_allow_for_archived_post_when_read_only() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'post',
+		] );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+
+		$caps = $this->guard->deny_editing_archived( array( 'edit_posts' ), 'edit_post', 7, array( 5 ) );
+
+		$this->assertSame( array( 'edit_posts', 'do_not_allow' ), $caps );
+	}
+
+	/**
+	 * With read-only mode off, archived posts stay editable — the deny
+	 * never inspects the post.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_leaves_caps_when_read_only_off() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post' )->never();
+
+		$caps = $this->guard->deny_editing_archived( array( 'edit_posts' ), 'edit_post', 7, array( 5 ) );
+
+		$this->assertSame( array( 'edit_posts' ), $caps );
+	}
+
+	/**
+	 * Non-archived posts are untouched regardless of read-only mode.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_leaves_caps_for_non_archived_post() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'publish',
+			'post_type'   => 'post',
+		] );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+
+		$caps = $this->guard->deny_editing_archived( array( 'edit_posts' ), 'edit_post', 7, array( 5 ) );
+
+		$this->assertSame( array( 'edit_posts' ), $caps );
+	}
+
+	/**
+	 * Other meta caps pass through before any read-only or post lookup.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_ignores_other_caps_and_missing_args() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->never();
+		\WP_Mock::userFunction( 'get_post' )->never();
+
+		$untouched = $this->guard->deny_editing_archived( array( 'delete_posts' ), 'delete_post', 7, array( 5 ) );
+		$this->assertSame( array( 'delete_posts' ), $untouched );
+
+		$no_args = $this->guard->deny_editing_archived( array( 'edit_posts' ), 'edit_post', 7, array() );
+		$this->assertSame( array( 'edit_posts' ), $no_args );
+	}
 }

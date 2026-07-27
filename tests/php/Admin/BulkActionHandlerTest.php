@@ -27,13 +27,11 @@
  *
  * Each scenario stubs only the WP-boundary functions the real procedural
  * helpers traverse:
- *   - aps_current_user_can_*    → current_user_can('edit_others_posts', $id)
+ *   - aps_current_user_can_*    → current_user_can(<resolved cap>, $id)
  *                                  with the `aps_default_(un)archive_capability`
  *                                  filter callback registered to verify
- *                                  passthrough. The H5 outer gate routes
- *                                  through the same function with $post_id=0,
- *                                  so {@see stubOuterCapGate()} stubs
- *                                  current_user_can('edit_others_posts', 0).
+ *                                  passthrough. Enforcement is per-item;
+ *                                  there is no screen-level pre-gate.
  *   - aps_archive_post          → wp_update_post + get_post (the persist
  *                                  layer the real procedural function
  *                                  delegates to). Returns of true/false
@@ -89,26 +87,6 @@ class BulkActionHandlerTest extends TestCase {
 		parent::tear_down();
 	}
 
-	/**
-	 * Stub the outer cap gate added in Phase 1 (H5) and re-routed in the
-	 * Phase 1 follow-up to dispatch through the same centralized cap
-	 * function the per-id loop uses. The handler now calls
-	 * `$action->capability_function()` with no post id — for the archive
-	 * path that resolves to `aps_current_user_can_archive(0)`, which in
-	 * turn calls `current_user_can( 'edit_others_posts', 0 )` (the
-	 * `aps_default_archive_capability` default). Same shape for the
-	 * unarchive path via `aps_default_unarchive_capability`.
-	 *
-	 * Stubbing the post-id-0 form covers the outer gate without
-	 * conflicting with the per-id stubs every scenario layers on top.
-	 *
-	 * @param bool $granted Whether the outer cap is granted (default true).
-	 */
-	private function stubOuterCapGate( bool $granted = true ): void {
-		\WP_Mock::userFunction( 'current_user_can' )
-			->with( 'edit_others_posts', 0 )
-			->andReturn( $granted );
-	}
 
 	/**
 	 * Non-archive bulk actions (e.g. 'delete') are not ours — handle()
@@ -154,7 +132,6 @@ class BulkActionHandlerTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::denied_count
 	 */
 	public function test_bulk_archive_buckets_denied_per_item_instead_of_dying() {
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 5 )
@@ -188,7 +165,6 @@ class BulkActionHandlerTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 */
 	public function test_bulk_archive_records_locked_post_when_post_is_locked_by_another_user() {
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 7 )
@@ -223,7 +199,6 @@ class BulkActionHandlerTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 */
 	public function test_bulk_archive_records_wrong_status_when_status_not_archivable() {
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 8 )
@@ -264,7 +239,6 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_adds_undo_filter_when_doaction_is_undo() {
 		$_GET = array( 'doaction' => 'undo' );
 
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
@@ -308,7 +282,6 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_does_not_add_undo_filter_for_regular_bulk_action() {
 		$_GET = array(); // no doaction=undo
 
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
@@ -364,7 +337,6 @@ class BulkActionHandlerTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 */
 	public function test_bulk_archive_records_archived_count_on_successful_archive() {
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 42 )->andReturn( true );
@@ -411,7 +383,6 @@ class BulkActionHandlerTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_denied
 	 */
 	public function test_bulk_unarchive_buckets_denied_per_item_instead_of_dying() {
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 5 )
@@ -444,7 +415,6 @@ class BulkActionHandlerTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_wrong_status
 	 */
 	public function test_bulk_unarchive_buckets_persist_failure_instead_of_dying() {
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 7 )
@@ -493,7 +463,6 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_undo_path_passes_previous_status_to_wp_update_post() {
 		$_GET = array( 'doaction' => 'undo' );
 
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
@@ -558,7 +527,6 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_undo_path_falls_back_to_draft_when_previous_status_meta_missing() {
 		$_GET = array( 'doaction' => 'undo' );
 
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
@@ -619,7 +587,6 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_undo_path_passes_malformed_meta_verbatim() {
 		$_GET = array( 'doaction' => 'undo' );
 
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
@@ -780,7 +747,6 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_plain_bulk_unarchive_does_not_invoke_default_callback() {
 		$_GET = array(); // no doaction=undo
 
-		$this->stubOuterCapGate();
 
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
@@ -830,7 +796,7 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// Phase 1 — new regression tests (C2 + H5)
+	// Batch-robustness regression tests (C2)
 	// -----------------------------------------------------------------------
 
 	/**
@@ -848,12 +814,20 @@ class BulkActionHandlerTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record
 	 */
 	public function test_bulk_archive_continues_loop_and_aggregates_buckets_across_mixed_outcomes() {
-		$this->stubOuterCapGate();
 		$this->stubArchivableStatusesBoundary( array( 'publish' ) );
 
 		// post 100: denied — current_user_can returns false.
 		// post 200: wrong status (trash).
 		// post 300: archivable + success.
+		// The anonymous mock user (id 0) makes the ownership-aware default
+		// resolve to the others-primitive for every id.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'get_post' )->with( 100 )->andReturn(
+			$this->createMockPost( array( 'ID' => 100, 'post_status' => 'publish' ) )
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 200 )->andReturn(
+			$this->createMockPost( array( 'ID' => 200, 'post_status' => 'trash' ) )
+		);
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 100 )->andReturn( false );
 		\WP_Mock::userFunction( 'current_user_can' )
@@ -901,75 +875,4 @@ class BulkActionHandlerTest extends TestCase {
 		$this->assertIsString( $result, 'handle() must return a redirect URL — never throw mid-batch.' );
 	}
 
-	/**
-	 * H5 regression: the outer cap gate at handle() entry must fail-closed.
-	 * The handler dispatches the cap check through the same
-	 * `aps_current_user_can_archive` / `_unarchive` function the per-id
-	 * loop uses — when that returns false (here: `current_user_can` denied
-	 * the screen-level `edit_others_posts` check) the batch aborts and
-	 * the sendback comes back UNCHANGED.
-	 *
-	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
-	 */
-	public function test_handle_aborts_silently_when_outer_capability_is_denied() {
-		// Outer cap denied via the centralized cap function.
-		// $action->capability_function() returns 'aps_current_user_can_archive',
-		// which calls current_user_can( 'edit_others_posts', 0 ).
-		\WP_Mock::userFunction( 'current_user_can' )
-			->with( 'edit_others_posts', 0 )
-			->andReturn( false );
-
-		// No per-id work should run.
-		\WP_Mock::userFunction( 'wp_update_post' )->never();
-		\WP_Mock::userFunction( 'wp_check_post_lock' )->never();
-		\WP_Mock::userFunction( 'remove_query_arg' )->never();
-
-		$sendback = 'http://example.com/wp-admin/edit.php?paged=2';
-		$result   = $this->handler->handle( $sendback, 'archive', array( 1, 2, 3 ) );
-
-		$this->assertSame(
-			$sendback,
-			$result,
-			'When the outer cap gate denies, handle() must return the sendback unchanged.'
-		);
-	}
-
-	/**
-	 * H5 filter-override regression: the outer cap gate now routes through
-	 * `aps_current_user_can_archive()`, which consults the
-	 * `aps_default_archive_capability` filter to resolve the capability
-	 * string. Filtering the cap to one the user lacks → outer gate denies.
-	 *
-	 * Proves the outer gate picks up the same filter surface as the per-id
-	 * loop (vs. the prior hardcoded `edit_posts` constant which ignored
-	 * the filter entirely).
-	 *
-	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
-	 */
-	public function test_handle_outer_cap_gate_respects_archive_capability_filter_override() {
-		// Filter swaps the default 'edit_others_posts' for a cap the user
-		// does not have. The handler must invoke current_user_can() with
-		// the post-filter cap, not the default.
-		\WP_Mock::onFilter( 'aps_default_archive_capability' )
-			->with( 'edit_others_posts', 0 )
-			->reply( 'aps_nonexistent_archive_cap' );
-
-		\WP_Mock::userFunction( 'current_user_can' )
-			->with( 'aps_nonexistent_archive_cap', 0 )
-			->andReturn( false );
-
-		// No per-id work should run when the filtered cap is denied.
-		\WP_Mock::userFunction( 'wp_update_post' )->never();
-		\WP_Mock::userFunction( 'wp_check_post_lock' )->never();
-		\WP_Mock::userFunction( 'remove_query_arg' )->never();
-
-		$sendback = 'http://example.com/wp-admin/edit.php?paged=2';
-		$result   = $this->handler->handle( $sendback, 'archive', array( 1, 2, 3 ) );
-
-		$this->assertSame(
-			$sendback,
-			$result,
-			'Filtering aps_default_archive_capability to a denied cap must close the outer gate.'
-		);
-	}
 }

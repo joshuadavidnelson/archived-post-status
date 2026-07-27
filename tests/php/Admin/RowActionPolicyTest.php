@@ -57,6 +57,11 @@ class RowActionPolicyTest extends TestCase {
 			->with( \Mockery::type( 'array' ) )
 			->reply( array( 'publish', 'future', 'draft', 'pending', 'private' ) );
 
+		// Anonymous mock user (id 0): the ownership-aware capability
+		// defaults resolve to the others-primitive, and ViewCapability's
+		// author fallback never engages.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', $post_id )
 			->andReturn( $can_archive );
