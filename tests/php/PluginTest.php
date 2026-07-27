@@ -6,18 +6,12 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Plugin
  *
- * Refactor note (0.4.0):
- *   Three legacy `enqueue_plugin_screen_js` test blocks were removed
- *   from this file during §1.1 of the 0.4.0 finalization. The plugin-
- *   screen JS feature itself was deleted in the refactor (no class now
- *   owns it). The previous tests were skipped placeholders containing
- *   `assertTrue(true)`, so there were no live behavior assertions to
- *   port. If the feature returns it will need a new home (likely a new
- *   `Admin\PluginScreen` hookable) and a fresh behavioral test.
+ * The plugin-deactivation warning lives in the `Admin\PluginScreen`
+ * hookable, covered separately by `tests/php/Admin/PluginScreenTest.php`;
+ * its composition-root wiring is covered here alongside the other
+ * admin-only hookables.
  *
- *   The constructor signature is `(string $version)` per src/Plugin.php —
- *   the previously stored `$file` parameter was dead code and was dropped
- *   before hand-off (phpstan was flagging it as never-read).
+ * The constructor signature is `(string $version)` per src/Plugin.php.
  */
 
 /**
@@ -190,9 +184,10 @@ class PluginTest extends TestCase {
 	}
 
 	/**
-	 * The admin-only set — PostList (post list table) and ArchiveColumn
-	 * (the archive metadata column) — only matter on admin page loads.
-	 * Gating them via is_admin() avoids hooking front-end queries.
+	 * The admin-only set — PostList (post list table), ArchiveColumn (the
+	 * archive metadata column), and PluginScreen (the deactivation warning)
+	 * — only matter on admin page loads. Gating them via is_admin() avoids
+	 * hooking front-end queries.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -204,6 +199,7 @@ class PluginTest extends TestCase {
 
 		$this->assertContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 	}
 
 	/**
@@ -262,6 +258,7 @@ class PluginTest extends TestCase {
 
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 	}
 
 	/**

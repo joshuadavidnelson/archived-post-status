@@ -80,9 +80,9 @@ class PluginHookablesParityTest extends TestCase {
 
 	/**
 	 * The hookable list under the canonical (admin + archive-meta-enabled,
-	 * no WP-CLI) composition is exactly 10 hookables today. Phase 3A is
-	 * additive — it MUST leave this count unchanged. A delta here means
-	 * something slipped into the composition root that shouldn't have.
+	 * no WP-CLI) composition is exactly 12 hookables today. This is a
+	 * parity snapshot — a delta here means something slipped into (or was
+	 * silently dropped from) the composition root.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -90,9 +90,9 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			11,
+			12,
 			$hookables,
-			'Phase 3A must leave Plugin::hookables() unchanged. Count delta indicates a composition change slipped in.'
+			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
 	}
 
@@ -159,19 +159,21 @@ class PluginHookablesParityTest extends TestCase {
 			),
 		);
 
-		// The Admin\ArchiveColumn hookable also lands in the list under
-		// is_admin = true, but for the snapshot we assert the FQCN order +
-		// the two well-known fixed descriptors above (PostStatus, ArchiveMetaListener),
-		// and let `hooks_for()` resolve the rest by class. A class going
-		// missing or having its descriptor tuple change will trip the
-		// `hooks_for()` lookup or the resulting tuple mismatch.
+		// The Admin\ArchiveColumn and Admin\PluginScreen hookables also land
+		// in the list under is_admin = true, but for the snapshot we assert
+		// the FQCN order + the two well-known fixed descriptors above
+		// (PostStatus, ArchiveMetaListener), and let `hooks_for()` resolve
+		// the rest by class. A class going missing or having its descriptor
+		// tuple change will trip the `hooks_for()` lookup or the resulting
+		// tuple mismatch.
 
 		// Pin the FQCN order — composition-root sequencing matters for hook
 		// registration order with WP_Mock, and order changes are also a
 		// regression signal.
 		$expected_fqcn_order = array_map( static fn( $row ) => $row['class'], $expected );
-		// ArchiveColumn lives at the end of the admin block.
+		// ArchiveColumn and PluginScreen live at the end of the admin block.
 		$expected_fqcn_order[] = ArchivedPostStatus\Admin\ArchiveColumn::class;
+		$expected_fqcn_order[] = ArchivedPostStatus\Admin\PluginScreen::class;
 
 		$actual_fqcn_order = array_map( static fn( $row ) => $row['class'], $snapshot );
 
