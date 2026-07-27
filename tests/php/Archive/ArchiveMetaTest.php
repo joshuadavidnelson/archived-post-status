@@ -152,33 +152,38 @@ class ArchiveMetaTest extends TestCase {
 
 	/**
 	 * save() writes all five archive meta keys for the given post id with
-	 * the value object's properties as the meta values.
+	 * the value object's properties as the meta values. The write must be
+	 * idempotent — update_post_meta() overwrites any stale rows left by an
+	 * interrupted archive/unarchive cycle, where add_post_meta() would
+	 * append duplicates and get_post_meta( ..., true ) would keep
+	 * returning the oldest (stale) row.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveMeta::save
 	 */
-	public function test_save_writes_all_five_archive_meta_keys() {
+	public function test_save_writes_all_five_archive_meta_keys_idempotently() {
 		$meta = new ArchiveMeta( 'publish', 1700000000, 7, 'open', 'closed' );
 
-		\WP_Mock::userFunction( 'add_post_meta' )
+		\WP_Mock::userFunction( 'update_post_meta' )
 			->once()
 			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, 'publish' )
-			->andReturn( 1 );
-		\WP_Mock::userFunction( 'add_post_meta' )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
 			->once()
 			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, 1700000000 )
-			->andReturn( 2 );
-		\WP_Mock::userFunction( 'add_post_meta' )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
 			->once()
 			->with( 42, ArchiveMeta::META_ARCHIVE_USER, 7 )
-			->andReturn( 3 );
-		\WP_Mock::userFunction( 'add_post_meta' )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
 			->once()
 			->with( 42, ArchiveMeta::META_COMMENT_STATUS, 'open' )
-			->andReturn( 4 );
-		\WP_Mock::userFunction( 'add_post_meta' )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
 			->once()
 			->with( 42, ArchiveMeta::META_PING_STATUS, 'closed' )
-			->andReturn( 5 );
+			->andReturn( true );
+		\WP_Mock::userFunction( 'add_post_meta' )->never();
 
 		$meta->save( 42 );
 

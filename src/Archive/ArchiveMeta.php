@@ -97,16 +97,21 @@ final class ArchiveMeta {
 	/**
 	 * Save this archive meta to post meta.
 	 *
+	 * update_post_meta() keeps the write idempotent: if a prior cycle left
+	 * stale rows behind (meta cleanup on unarchive is best-effort), a
+	 * re-archive overwrites them instead of appending duplicates that
+	 * get_post_meta( ..., true ) would resolve to the oldest row.
+	 *
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to save meta to.
 	 * @return void
 	 */
 	public function save( int $post_id ): void {
-		add_post_meta( $post_id, self::META_PREVIOUS_STATUS, $this->previous_status );
-		add_post_meta( $post_id, self::META_ARCHIVE_DATE, $this->archive_date );
-		add_post_meta( $post_id, self::META_ARCHIVE_USER, $this->archive_user );
-		add_post_meta( $post_id, self::META_COMMENT_STATUS, $this->comment_status );
-		add_post_meta( $post_id, self::META_PING_STATUS, $this->ping_status );
+		update_post_meta( $post_id, self::META_PREVIOUS_STATUS, $this->previous_status );
+		update_post_meta( $post_id, self::META_ARCHIVE_DATE, $this->archive_date );
+		update_post_meta( $post_id, self::META_ARCHIVE_USER, $this->archive_user );
+		update_post_meta( $post_id, self::META_COMMENT_STATUS, $this->comment_status );
+		update_post_meta( $post_id, self::META_PING_STATUS, $this->ping_status );
 	}
 
 	/**

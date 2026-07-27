@@ -82,7 +82,7 @@ class ArchiveMetaListenerTest extends TestCase {
 
 	/**
 	 * save_meta() captures the post's status fields plus the current user
-	 * and timestamp into the five archive meta keys via add_post_meta —
+	 * and timestamp into the five archive meta keys via update_post_meta —
 	 * exercises the ArchiveMeta::from_post(...)->save() dispatch end to end.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveMetaListener::save_meta
@@ -95,10 +95,10 @@ class ArchiveMetaListenerTest extends TestCase {
 		$post->ping_status    = 'closed';
 
 		$writes = array();
-		\WP_Mock::userFunction( 'add_post_meta' )
+		\WP_Mock::userFunction( 'update_post_meta' )
 			->andReturnUsing( function ( $post_id, $key, $value ) use ( &$writes ) {
 				$writes[] = array( $post_id, $key, $value );
-				return 1;
+				return true;
 			} );
 
 		$this->listener->save_meta( 42, 'publish', $post );

@@ -29,6 +29,28 @@ use ArchivedPostStatus\Status\PostStatusValue;
 final class UnarchiveOperation {
 
 	/**
+	 * True while dispatch_update() is writing the restore transition.
+	 *
+	 * @var bool
+	 */
+	private static bool $in_flight = false;
+
+	/**
+	 * Whether this operation is currently writing its own status transition.
+	 *
+	 * {@see \ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit()}
+	 * consults this so the plugin's own unarchive write — which already
+	 * restores comment/ping state and triggers meta cleanup via
+	 * {@see ArchiveMetaListener} — is never treated as an out-of-band exit.
+	 *
+	 * @since 0.4.0
+	 * @return bool
+	 */
+	public static function in_flight(): bool {
+		return self::$in_flight;
+	}
+
+	/**
 	 * Unarchive a post.
 	 *
 	 * Modeled after the core `wp_untrash_post()` function — `perform()`
@@ -89,7 +111,13 @@ final class UnarchiveOperation {
 		 */
 		do_action( 'aps_unarchive_post', $post_id, $previous_status );
 
-		$persisted = self::dispatch_update( $post_id, $new_status, $comment_status, $ping_status, $previous_status );
+		self::$in_flight = true;
+		try {
+			$persisted = self::dispatch_update( $post_id, $new_status, $comment_status, $ping_status, $previous_status );
+		} finally {
+			self::$in_flight = false;
+		}
+
 		if ( ! $persisted ) {
 			return false;
 		}

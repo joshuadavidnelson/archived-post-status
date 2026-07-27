@@ -540,15 +540,15 @@ class PublicApiTest extends TestCase {
 				}
 			);
 
-		// Capture every add_post_meta call the listener dispatches via
+		// Capture every update_post_meta call the listener dispatches via
 		// ArchiveMeta::from_post()->save(). The map of key → value is the
 		// behavioral assertion (vs. an opaque `expectAction` check).
 		$writes = array();
-		\WP_Mock::userFunction( 'add_post_meta' )
+		\WP_Mock::userFunction( 'update_post_meta' )
 			->andReturnUsing(
 				function ( $post_id, $key, $value ) use ( &$writes ) {
 					$writes[] = array( $post_id, $key, $value );
-					return 1;
+					return true;
 				}
 			);
 

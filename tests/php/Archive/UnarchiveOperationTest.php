@@ -97,6 +97,69 @@ class UnarchiveOperationTest extends TestCase {
 	}
 
 	/**
+	 * The in-flight flag is raised only while the restore write dispatches,
+	 * so PostStatusGuard's transition_post_status exit guard can tell the
+	 * plugin's own unarchive apart from an out-of-band status change.
+	 *
+	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::perform
+	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::in_flight
+	 */
+	public function test_perform_raises_in_flight_only_during_the_restore_write() {
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 42,
+				'post_status' => 'archive',
+				'post_type'   => 'post',
+			)
+		);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( $post );
+		$this->stubArchiveMetaBoundary( 42, 'publish' );
+
+		$in_flight_during_write = null;
+		\WP_Mock::userFunction( 'wp_update_post' )->andReturnUsing(
+			static function () use ( &$in_flight_during_write ) {
+				$in_flight_during_write = UnarchiveOperation::in_flight();
+				return 42;
+			}
+		);
+
+		$this->assertFalse( UnarchiveOperation::in_flight(), 'flag must start lowered' );
+
+		UnarchiveOperation::perform( 42 );
+
+		$this->assertTrue( $in_flight_during_write, 'flag must be raised while wp_update_post runs' );
+		$this->assertFalse( UnarchiveOperation::in_flight(), 'flag must be lowered after perform()' );
+	}
+
+	/**
+	 * The in-flight flag is lowered even when the restore write fails —
+	 * the try/finally must not leak a raised flag into later transitions.
+	 *
+	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::perform
+	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::in_flight
+	 */
+	public function test_perform_lowers_in_flight_when_the_restore_write_fails() {
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 42,
+				'post_status' => 'archive',
+				'post_type'   => 'post',
+			)
+		);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( $post );
+		$this->stubArchiveMetaBoundary( 42, 'publish' );
+
+		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 0 );
+
+		$result = UnarchiveOperation::perform( 42 );
+
+		$this->assertFalse( $result );
+		$this->assertFalse( UnarchiveOperation::in_flight(), 'flag must be lowered after a failed write' );
+	}
+
+	/**
 	 * Edge case: a missing post short-circuits to `false`.
 	 *
 	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::perform
