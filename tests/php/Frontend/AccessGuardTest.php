@@ -97,12 +97,19 @@ class AccessGuardTest extends TestCase {
 		$post              = new WP_Post();
 		$post->ID          = 7;
 		$post->post_status = 'archive';
+		$post->post_author = 9;
 
 		\WP_Mock::userFunction( 'is_singular' )->andReturn( true );
 		\WP_Mock::userFunction( 'get_queried_object' )->andReturn( $post );
-		\WP_Mock::userFunction( 'aps_current_user_can_view' )
-			->with( 7 )
+
+		// Real view chain (no facade stub): the filtered read capability is
+		// denied, and the visitor (user 3) does not own author-9's post, so
+		// the ownership fallback denies too.
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'read_private_posts', 7 )
 			->andReturn( false );
+		\WP_Mock::userFunction( 'get_post' )->with( 7 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 3 );
 
 		$wp_query = \Mockery::mock( 'WP_Query' );
 		$wp_query->shouldReceive( 'set_404' )->once();
@@ -131,11 +138,51 @@ class AccessGuardTest extends TestCase {
 
 		\WP_Mock::userFunction( 'is_singular' )->andReturn( true );
 		\WP_Mock::userFunction( 'get_queried_object' )->andReturn( $post );
-		\WP_Mock::userFunction( 'aps_current_user_can_view' )
-			->with( 7 )
+
+		// Real view chain: the filtered read capability is granted.
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'read_private_posts', 7 )
 			->andReturn( true );
 
 		// Capability passes — no 404 stack should be touched.
+		\WP_Mock::userFunction( 'status_header' )->never();
+		\WP_Mock::userFunction( 'nocache_headers' )->never();
+
+		$this->guard->enforce_access();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Archived singular post + the post's own author — the ownership
+	 * fallback grants view access even without the read capability, so
+	 * authors are never 404ed off their own archived content.
+	 *
+	 * @covers ArchivedPostStatus\Frontend\AccessGuard::enforce_access
+	 */
+	public function test_enforce_access_passes_through_for_the_posts_own_author() {
+		$post              = new WP_Post();
+		$post->ID          = 7;
+		$post->post_status = 'archive';
+		$post->post_type   = 'post';
+		$post->post_author = 3;
+
+		\WP_Mock::userFunction( 'is_singular' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_queried_object' )->andReturn( $post );
+
+		// Real view chain: read capability denied, ownership fallback
+		// engages — the visitor authored the post and can edit_posts.
+		\WP_Mock::userFunction( 'get_post' )->with( 7 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 3 );
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( null );
+		\WP_Mock::userFunction( 'current_user_can' )->andReturnUsing(
+			static function ( $capability ) {
+				return 'edit_posts' === $capability;
+			}
+		);
+
 		\WP_Mock::userFunction( 'status_header' )->never();
 		\WP_Mock::userFunction( 'nocache_headers' )->never();
 

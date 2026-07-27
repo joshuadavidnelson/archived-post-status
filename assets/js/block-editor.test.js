@@ -1,123 +1,110 @@
 /**
- * @jest-environment jsdom
+ * Behavior tests for the shipped block-editor.js — the module under test is
+ * imported, never re-implemented, so a regression in the real source fails
+ * here. (The rendered button is additionally covered end-to-end by the
+ * Playwright editor specs.)
  */
+const {
+	apsArchiveButton,
+	apsRegisterArchiveButton,
+} = require( './block-editor' );
 
-import { setupWordPressGlobals, createArchivedPostStatusConfig, cleanupTestEnvironment } from './test-utils.js';
+describe( 'block-editor: archive button', () => {
+	let globals;
 
-describe('Archive Button in Block Editor', () => {
-    let mockCreateElement;
-    let mockRegisterPlugin;
-    let confirmMock;
+	beforeEach( () => {
+		globals = {
+			wp: {
+				element: {
+					// Record the element tree as plain objects so structure
+					// and props are directly assertable.
+					createElement: jest.fn( ( type, props, ...children ) => ( {
+						type,
+						props,
+						children,
+					} ) ),
+				},
+				plugins: { registerPlugin: jest.fn() },
+				editPost: { PluginPostStatusInfo: 'PluginPostStatusInfo' },
+				i18n: { __: jest.fn( ( text ) => text ) },
+			},
+			archivedPostStatus: {
+				canArchive: true,
+				archiveUrl:
+					'http://example.com/wp-admin/post.php?post=1&action=archive&_wpnonce=abc',
+			},
+			confirm: jest.fn( () => true ),
+		};
+	} );
 
-    beforeEach(() => {
-        cleanupTestEnvironment();
-        const mocks = setupWordPressGlobals({
-            confirmDefault: true,
-            archivedPostStatus: createArchivedPostStatusConfig()
-        });
-        mockCreateElement = mocks.mockCreateElement;
-        mockRegisterPlugin = mocks.mockRegisterPlugin;
-        confirmMock = mocks.confirmMock;
-    });
+	test( 'renders nothing when the user cannot archive', () => {
+		globals.archivedPostStatus.canArchive = false;
 
-    afterEach(() => {
-        cleanupTestEnvironment();
-    });
+		expect( apsArchiveButton( globals ) ).toBeNull();
+		expect( globals.wp.element.createElement ).not.toHaveBeenCalled();
+	} );
 
-    describe('Button Visibility Based on User Permissions', () => {
-        test('shows archive button when user has permission to archive posts', () => {
-            global.archivedPostStatus.canArchive = true;
+	test( 'renders the button inside the post-status panel with the archive URL', () => {
+		const tree = apsArchiveButton( globals );
 
-            // Simulate the archive button function
-            function archiveButton() {
-                return global.archivedPostStatus.canArchive ?
-                    mockCreateElement('PluginPostStatusInfo', {}, 'Archive Button') : null;
-            }
+		expect( tree.type ).toBe( 'PluginPostStatusInfo' );
 
-            expect(archiveButton()).not.toBeNull();
-        });
+		const anchor = tree.children[ 0 ];
+		expect( anchor.type ).toBe( 'a' );
+		expect( anchor.props.href ).toBe(
+			globals.archivedPostStatus.archiveUrl
+		);
+		expect( anchor.props.className ).toContain( 'editor-post-archive' );
+		expect( anchor.props.className ).toContain( 'is-destructive' );
+		expect( anchor.children[ 0 ] ).toBe( 'Archive' );
+	} );
 
-        test('hides archive button when user lacks permission to archive posts', () => {
-            global.archivedPostStatus.canArchive = false;
+	test( 'dismissing the confirm blocks the navigation', () => {
+		globals.confirm.mockReturnValue( false );
+		const anchor = apsArchiveButton( globals ).children[ 0 ];
+		const event = { preventDefault: jest.fn() };
 
-            // Simulate the archive button function
-            function archiveButton() {
-                return global.archivedPostStatus.canArchive ?
-                    mockCreateElement('PluginPostStatusInfo', {}, 'Archive Button') : null;
-            }
+		anchor.props.onClick( event );
 
-            expect(archiveButton()).toBeNull();
-        });
-    });
+		expect( globals.confirm ).toHaveBeenCalledWith(
+			'Are you sure you want to archive this post?'
+		);
+		expect( event.preventDefault ).toHaveBeenCalled();
+	} );
 
-    describe('Archive Confirmation Behavior', () => {
-        test('prompts user for confirmation when clicking archive button', () => {
-            const mockEvent = { preventDefault: jest.fn() };
+	test( 'accepting the confirm lets the navigation proceed', () => {
+		globals.confirm.mockReturnValue( true );
+		const anchor = apsArchiveButton( globals ).children[ 0 ];
+		const event = { preventDefault: jest.fn() };
 
-            const onClick = (event) => {
-                if (!confirmMock('Are you sure you want to archive this post?')) {
-                    event.preventDefault();
-                }
-            };
+		anchor.props.onClick( event );
 
-            onClick(mockEvent);
-            expect(confirmMock).toHaveBeenCalledWith('Are you sure you want to archive this post?');
-        });
+		expect( event.preventDefault ).not.toHaveBeenCalled();
+	} );
 
-        test('prevents archiving when user cancels confirmation', () => {
-            confirmMock.mockReturnValue(false);
-            const mockEvent = { preventDefault: jest.fn() };
+	test( 'labels are translated with the plugin text domain', () => {
+		apsArchiveButton( globals );
 
-            const onClick = (event) => {
-                if (!confirmMock('Are you sure you want to archive this post?')) {
-                    event.preventDefault();
-                }
-            };
+		expect( globals.wp.i18n.__ ).toHaveBeenCalledWith(
+			'Archive',
+			'archived-post-status'
+		);
+	} );
 
-            onClick(mockEvent);
-            expect(mockEvent.preventDefault).toHaveBeenCalled();
-        });
+	test( 'registerPlugin wires a render that reflects live capability data', () => {
+		apsRegisterArchiveButton( globals );
 
-        test('allows archiving when user confirms', () => {
-            confirmMock.mockReturnValue(true);
-            const mockEvent = { preventDefault: jest.fn() };
+		expect( globals.wp.plugins.registerPlugin ).toHaveBeenCalledWith(
+			'archive-button',
+			expect.objectContaining( { render: expect.any( Function ) } )
+		);
 
-            const onClick = (event) => {
-                if (!confirmMock('Are you sure you want to archive this post?')) {
-                    event.preventDefault();
-                }
-            };
+		const { render } =
+			globals.wp.plugins.registerPlugin.mock.calls[ 0 ][ 1 ];
 
-            onClick(mockEvent);
-            expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-        });
-    });
+		expect( render().type ).toBe( 'PluginPostStatusInfo' );
 
-    describe('Plugin Integration', () => {
-        test('registers with WordPress plugin system', () => {
-            function archiveButton() {
-                return mockCreateElement('PluginPostStatusInfo', {}, 'Archive Button');
-            }
-
-            global.wp.plugins.registerPlugin('archive-button', { render: archiveButton });
-
-            expect(mockRegisterPlugin).toHaveBeenCalledWith('archive-button', {
-                render: expect.any(Function)
-            });
-        });
-
-        test('creates button with proper styling for destructive action', () => {
-            const buttonElement = mockCreateElement('a', {
-                className: 'components-button editor-post-archive is-destructive is-primary'
-            }, 'Archive');
-
-            expect(mockCreateElement).toHaveBeenCalledWith(
-                'a',
-                expect.objectContaining({
-                    className: expect.stringContaining('is-destructive')
-                }),
-                'Archive'
-            );
-        });
-    });
-});
+		globals.archivedPostStatus.canArchive = false;
+		expect( render() ).toBeNull();
+	} );
+} );
