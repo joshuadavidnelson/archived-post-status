@@ -43,20 +43,25 @@ class PostStatusGuardTest extends TestCase {
 	}
 
 	/**
-	 * Test hooks registration returns a single save_post action descriptor.
+	 * Test hooks registration returns the entry (save_post) and exit
+	 * (transition_post_status) action descriptors.
 	 *
 	 * @covers ArchivedPostStatus\Status\PostStatusGuard::hooks
 	 */
-	public function test_hooks_returns_save_post_descriptor() {
+	public function test_hooks_returns_entry_and_exit_descriptors() {
 		// Act
 		$hooks = $this->guard->hooks();
 
 		// Assert
 		$this->assertIsArray( $hooks );
-		$this->assertCount( 1, $hooks );
+		$this->assertCount( 2, $hooks );
 		$this->assertInstanceOf( ArchivedPostStatus\Hooks\HookDescriptor::class, $hooks[0] );
 		$this->assertSame( 'save_post', $hooks[0]->hook );
 		$this->assertSame( 'action', $hooks[0]->type );
+		$this->assertInstanceOf( ArchivedPostStatus\Hooks\HookDescriptor::class, $hooks[1] );
+		$this->assertSame( 'transition_post_status', $hooks[1]->hook );
+		$this->assertSame( 'action', $hooks[1]->type );
+		$this->assertSame( 3, $hooks[1]->accepted_args );
 	}
 
 	/**
@@ -290,6 +295,254 @@ class PostStatusGuardTest extends TestCase {
 
 		// WP_Mock verifies the never()/once() expectations above during tearDown;
 		// register the assertion explicitly so PHPUnit doesn't flag it as risky.
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Stub the archive-meta read boundary for the exit guard: META_PREVIOUS_STATUS
+	 * first (ArchiveMeta::for_post() short-circuits to null on empty), then the
+	 * remaining four keys when a full value object will be built.
+	 *
+	 * @param int    $post_id         The post id under test.
+	 * @param string $previous_status Value for META_PREVIOUS_STATUS ('' → null object).
+	 * @param string $comment_status  Value for META_COMMENT_STATUS.
+	 * @param string $ping_status     Value for META_PING_STATUS.
+	 */
+	private function stubExitMetaBoundary( int $post_id, string $previous_status, string $comment_status = 'open', string $ping_status = 'open' ) {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( $post_id, ArchivedPostStatus\Archive\ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( $previous_status );
+
+		if ( '' === $previous_status ) {
+			return;
+		}
+
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( $post_id, ArchivedPostStatus\Archive\ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( 1700000000 );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( $post_id, ArchivedPostStatus\Archive\ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( $post_id, ArchivedPostStatus\Archive\ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( $comment_status );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( $post_id, ArchivedPostStatus\Archive\ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( $ping_status );
+	}
+
+	/**
+	 * Expect all five archive meta keys to be deleted for the post.
+	 *
+	 * @param int $post_id The post id under test.
+	 */
+	private function expectMetaDeleted( int $post_id ) {
+		foreach ( array(
+			ArchivedPostStatus\Archive\ArchiveMeta::META_PREVIOUS_STATUS,
+			ArchivedPostStatus\Archive\ArchiveMeta::META_ARCHIVE_DATE,
+			ArchivedPostStatus\Archive\ArchiveMeta::META_ARCHIVE_USER,
+			ArchivedPostStatus\Archive\ArchiveMeta::META_COMMENT_STATUS,
+			ArchivedPostStatus\Archive\ArchiveMeta::META_PING_STATUS,
+		) as $key ) {
+			\WP_Mock::userFunction( 'delete_post_meta' )
+				->once()
+				->with( $post_id, $key )
+				->andReturn( true );
+		}
+	}
+
+	/**
+	 * Core behavior: an out-of-band exit from the archived status (core Bulk
+	 * Edit, direct wp_update_post) restores comment/ping from archive meta
+	 * and deletes the meta rows.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_restores_comment_ping_and_deletes_meta() {
+		$this->stubExitMetaBoundary( 1, 'publish', 'open', 'open' );
+		$this->expectMetaDeleted( 1 );
+
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with( [
+				'ID'             => 1,
+				'comment_status' => 'open',
+				'ping_status'    => 'open',
+			] )
+			->andReturn( 1 );
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'draft',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'draft', 'archive', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Trashing an archived post is not an exit: core records the status in
+	 * _wp_trash_meta_status and untrash restores the post to the archived
+	 * status, so the archive meta must survive the trash round-trip intact.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_ignores_trash_transitions() {
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'delete_post_meta' )->never();
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'trash',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'trash', 'archive', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * A failed corrective write must not cost the recorded state: when
+	 * wp_update_post() returns falsy the meta rows survive so a later exit
+	 * (or unarchive) can still restore from them.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_keeps_meta_when_restore_write_fails() {
+		$this->stubExitMetaBoundary( 1, 'publish', 'open', 'open' );
+
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->andReturn( 0 );
+		\WP_Mock::userFunction( 'delete_post_meta' )->never();
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'draft',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'draft', 'archive', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * The plugin's own unarchive path must not double-fire the exit guard:
+	 * while UnarchiveOperation reports in_flight(), the guard is a no-op.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_skips_while_unarchive_operation_in_flight() {
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'delete_post_meta' )->never();
+
+		$flag = new \ReflectionProperty( ArchivedPostStatus\Archive\UnarchiveOperation::class, 'in_flight' );
+		$flag->setAccessible( true );
+		$flag->setValue( null, true );
+
+		try {
+			$post = new \WP_Post( [
+				'ID'             => 1,
+				'post_status'    => 'publish',
+				'post_type'      => 'post',
+				'comment_status' => 'closed',
+				'ping_status'    => 'closed',
+			] );
+
+			$this->guard->restore_state_on_exit( 'publish', 'archive', $post );
+		} finally {
+			$flag->setValue( null, false );
+		}
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Legacy archives (no meta recorded, pre-0.4.0) exit silently: nothing
+	 * to restore, nothing to delete.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_noops_for_meta_less_legacy_posts() {
+		$this->stubExitMetaBoundary( 1, '' );
+
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'delete_post_meta' )->never();
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'draft',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'draft', 'archive', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Transitions that do not leave the archived status are ignored: between
+	 * two non-archive statuses, and entering the archived status (owned by
+	 * enforce_archive_state), and archive→archive no-op writes.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_ignores_non_exit_transitions() {
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'delete_post_meta' )->never();
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'publish',
+			'post_type'      => 'post',
+			'comment_status' => 'open',
+			'ping_status'    => 'open',
+		] );
+
+		$this->guard->restore_state_on_exit( 'publish', 'draft', $post );
+		$this->guard->restore_state_on_exit( 'archive', 'draft', $post );
+		$this->guard->restore_state_on_exit( 'archive', 'archive', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * When the post's comment/ping already match the recorded meta the
+	 * corrective write is skipped, but the meta rows are still cleaned up.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_skips_write_when_state_matches_but_still_deletes_meta() {
+		$this->stubExitMetaBoundary( 1, 'publish', 'closed', 'closed' );
+		$this->expectMetaDeleted( 1 );
+
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'draft',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'draft', 'archive', $post );
+
 		$this->addToAssertionCount( 1 );
 	}
 }
