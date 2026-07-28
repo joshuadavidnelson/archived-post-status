@@ -9,8 +9,10 @@
  * of the internals doesn't silently break consumers.
  *
  * Scope:
- *   - aps_get_archive_post_link()    — three branches (unsupported type,
- *                                       supported + can, supported + cannot).
+ *   - aps_get_archive_post_link()    — two branches (unsupported type,
+ *                                       supported type). Capability is the
+ *                                       caller's concern, not the link
+ *                                       builder's — see Admin\ArchivePostLink.
  *   - aps_get_unarchive_post_link()  — delegates through aps_get_archive_post_link.
  *   - aps_archived_post_link filter  — alternate link function for archived
  *                                       posts in the front-end.
@@ -57,9 +59,12 @@ class PublicApiTest extends TestCase {
 	 * aps_supported_post_types / aps_excluded_post_types filters) supplied
 	 * here as boundary stubs.
 	 *
-	 * @param bool $current_user_can Whether current_user_can() should return true.
+	 * Also does NOT stub current_user_can() — aps_get_archive_post_link()
+	 * consults no capability; ArchivePostLink::build() only decides whether
+	 * a link is constructible (post exists, post type is supported), not
+	 * whether the caller is authorized. See Admin\ArchivePostLink.
 	 */
-	private function mockArchiveLinkWpBoundary( bool $current_user_can = true ): void {
+	private function mockArchiveLinkWpBoundary(): void {
 		// aps_get_supported_post_types() depends on get_post_types + the
 		// aps_excluded_post_types and aps_supported_post_types filters.
 		\WP_Mock::userFunction( 'get_post_types' )
@@ -70,13 +75,6 @@ class PublicApiTest extends TestCase {
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
 			->with( array( 'post', 'page' ) )
 			->reply( array( 'post', 'page' ) );
-
-		// aps_current_user_can_archive() applies the
-		// `aps_default_archive_capability` filter, then calls
-		// current_user_can( 'edit_others_posts', $post_id ). The without-
-		// `with()` constraint here lets both the filtered cap and the post
-		// id flow through unchecked.
-		\WP_Mock::userFunction( 'current_user_can' )->andReturn( $current_user_can );
 
 		// admin_url + add_query_arg + wp_nonce_url + esc_url form the URL
 		// pipeline aps_get_archive_post_link() pushes its output through.
@@ -159,7 +157,7 @@ class PublicApiTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// aps_get_archive_post_link — three-branch coverage 
+	// aps_get_archive_post_link — branch coverage
 	// -----------------------------------------------------------------------
 
 	/**
@@ -208,30 +206,6 @@ class PublicApiTest extends TestCase {
 	}
 
 	/**
-	 * Supported post type + capability denied → aps_get_archive_post_link()
-	 * returns false without building a URL. Tests the capability-gate
-	 * branch in isolation (the unsupported-type branch is asserted above).
-	 *
-	 * @covers ::aps_get_archive_post_link
-	 */
-	public function test_aps_get_archive_post_link_returns_false_when_user_lacks_capability() {
-		$post = $this->createMockPost( array( 'ID' => 201, 'post_type' => 'post' ) );
-
-		\WP_Mock::userFunction( 'get_post' )
-			->with( 201 )
-			->andReturn( $post );
-
-		$this->mockArchiveLinkWpBoundary( false ); // current_user_can → false
-
-		// Downstream URL plumbing must never fire when capability denied.
-		\WP_Mock::userFunction( 'wp_nonce_url' )->never();
-
-		$result = aps_get_archive_post_link( 201 );
-
-		$this->assertFalse( $result );
-	}
-
-	/**
 	 * Supported post type + capability granted → aps_get_archive_post_link()
 	 * returns a non-empty string URL that contains the nonce token. This
 	 * complements the filter-replacement tests above by asserting on the
@@ -247,7 +221,7 @@ class PublicApiTest extends TestCase {
 			->with( 202 )
 			->andReturn( $post );
 
-		$this->mockArchiveLinkWpBoundary( true );
+		$this->mockArchiveLinkWpBoundary();
 
 		$result = aps_get_archive_post_link( 202 );
 
@@ -280,7 +254,7 @@ class PublicApiTest extends TestCase {
 			->with( 203 )
 			->andReturn( $post );
 
-		$this->mockArchiveLinkWpBoundary( true );
+		$this->mockArchiveLinkWpBoundary();
 
 		$result = aps_get_unarchive_post_link( 203 );
 

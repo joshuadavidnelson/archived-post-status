@@ -192,4 +192,52 @@ class PostEditorTest extends TestCase {
 			$deps
 		);
 	}
+
+	/**
+	 * Denied-capability branch of enqueue_scripts(): `ArchivePostLink::build()`
+	 * no longer checks capability itself, so a user who cannot archive must
+	 * not receive a working, nonce-signed `archiveUrl` in the localized
+	 * script data — that data is serialized straight into the page source
+	 * via `wp_localize_script()`, readable by anyone who can view source,
+	 * regardless of what the block-editor JS does with `canArchive`
+	 * client-side. This is the safety net for that gate: asserts both that
+	 * `aps_get_archive_post_link()` never runs on the denied branch (mirrors
+	 * `test_post_submitbox_archive_button_emits_nothing_when_user_cannot_archive`'s
+	 * `->never()` pattern) and that the localized `archiveUrl` value itself
+	 * is `false`.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditor::enqueue_scripts
+	 */
+	public function test_enqueue_scripts_omits_archive_url_when_user_cannot_archive() {
+		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( null );
+		\WP_Mock::userFunction( 'is_plugin_active' )
+			->with( 'classic-editor/classic-editor.php' )->andReturn( false );
+		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( false )->reply( false );
+
+		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->with( 7 )->andReturn( false );
+
+		// Must never run on the denied branch — a call here would mean a
+		// working URL was built regardless of the gate.
+		\WP_Mock::userFunction( 'aps_get_archive_post_link' )->never();
+
+		\WP_Mock::userFunction( 'wp_enqueue_script' )->once();
+
+		$localized = null;
+		\WP_Mock::userFunction( 'wp_localize_script' )
+			->once()
+			->andReturnUsing(
+				static function ( $handle, $object_name, $l10n ) use ( &$localized ) {
+					$localized = $l10n;
+				}
+			);
+
+		$this->post_editor->enqueue_scripts( 'post.php' );
+
+		$this->assertFalse(
+			$localized['archiveUrl'],
+			'archiveUrl must not be a usable URL when the user cannot archive'
+		);
+		$this->assertFalse( $localized['canArchive'] );
+	}
 }

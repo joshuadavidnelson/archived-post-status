@@ -92,14 +92,21 @@ final class PostEditor implements HookableInterface {
 			plugin_dir_path( dirname( __DIR__ ) ) . '/languages/'
 		);
 
-		$post_id = get_the_ID();
-		$cap     = ArchiveAction::Archive->capability_function();
+		$post_id     = get_the_ID();
+		$cap         = ArchiveAction::Archive->capability_function();
+		$can_archive = $cap( $post_id );
+
+		// ArchivePostLink::build() no longer checks capability itself — a
+		// user who cannot archive must not receive a working, nonce-signed
+		// archiveUrl in the localized script data, even though the block
+		// editor JS also checks canArchive before rendering. Mirrors the
+		// gate in post_submitbox_archive_button() for the classic editor.
 		wp_localize_script(
 			'aps-block-editor',
 			'archivedPostStatus',
 			array(
-				'archiveUrl' => aps_get_archive_post_link( $post_id ),
-				'canArchive' => $cap( $post_id ),
+				'archiveUrl' => $can_archive ? aps_get_archive_post_link( $post_id ) : false,
+				'canArchive' => $can_archive,
 			)
 		);
 	}

@@ -179,7 +179,7 @@ function aps_current_user_can_edit( $post_id = 0 ) {
  * @param int    $post    Optional. Post ID. Default is the global `$post`.
  * @param string $context Optional. The context. Default is 'display'.
  * @param string $action  Optional. The action. Default is 'archive'.
- * @return string|false URL used for the post preview, or false if the post does not exist.
+ * @return string|false URL used to perform the un/archive action, or false if the post does not exist or its post type is not supported.
  *
  * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchivePostLink::build()}; the {@see ArchiveAction::tryFrom()} call
@@ -197,7 +197,7 @@ function aps_get_archive_post_link( $post = 0, $context = 'display', $action = '
  * @since 0.4.0
  * @param int    $post    Optional. Post ID. Default is the global `$post`.
  * @param string $context Optional. The context. Default is 'display'.
- * @return string|false
+ * @return string|false URL used to perform the unarchive action, or false if the post does not exist or its post type is not supported.
  *
  * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
  * {@see ArchivePostLink::build()}.
