@@ -614,6 +614,105 @@ class PostListTest extends TestCase {
 		$this->post_list->post_action_archive( 52 );
 	}
 
+	// -----------------------------------------------------------------------
+	// post_action_archive — wp_check_post_lock branch
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Pin the normal locked-post case: wp_check_post_lock() returns the
+	 * editing user's id, get_userdata() resolves a real user, and the
+	 * wp_die() message names that user by their display_name. This is the
+	 * currently-working path — a regression here would silently drop the
+	 * user's name from the notice.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
+	 */
+	public function test_post_action_archive_dies_when_post_is_locked_by_an_existing_user() {
+		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 53 )
+			->andReturn( true );
+
+		$post              = new \stdClass();
+		$post->ID          = 53;
+		$post->post_type   = 'post';
+		$post->post_status = 'publish';
+		\WP_Mock::userFunction( 'get_post' )->with( 53 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 53 )
+			->andReturn( 7 );
+
+		$locking_user               = new \stdClass();
+		$locking_user->display_name = 'Jane Doe';
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 7 )
+			->andReturn( $locking_user );
+
+		// The method must die here — persistence and redirect never fire.
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'wp_safe_redirect' )->never();
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/Jane Doe is currently editing/' );
+
+		$this->post_list->post_action_archive( 53 );
+	}
+
+	/**
+	 * Deleted-user regression guard: when the user holding the edit lock no
+	 * longer exists, get_userdata() returns false. handle_post_action() must
+	 * degrade to the "Another user" fallback rather than dereferencing
+	 * display_name on false — and without leaving an empty gap where the
+	 * name would have been.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
+	 */
+	public function test_post_action_archive_dies_when_post_is_locked_by_a_deleted_user() {
+		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 54 )
+			->andReturn( true );
+
+		$post              = new \stdClass();
+		$post->ID          = 54;
+		$post->post_type   = 'post';
+		$post->post_status = 'publish';
+		\WP_Mock::userFunction( 'get_post' )->with( 54 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 54 )
+			->andReturn( 8 );
+
+		// The locking user's account no longer exists.
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 8 )
+			->andReturn( false );
+
+		// The method must die here — persistence and redirect never fire.
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'wp_safe_redirect' )->never();
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/Another user is currently editing/' );
+
+		$this->post_list->post_action_archive( 54 );
+	}
+
 	/**
 	 * Mirror coverage for the unarchive entry point — nonce key shape must
 	 * match the `unarchive-{id}` contract that pairs with the row-action URL.

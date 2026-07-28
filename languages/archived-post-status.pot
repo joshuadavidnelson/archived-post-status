@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-26T20:45:59+00:00\n"
+"POT-Creation-Date: 2026-07-28T02:43:10+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: archived-post-status\n"
@@ -41,35 +41,35 @@ msgstr ""
 
 #. translators: header label for the Archived list-table column; also used as the cell value for legacy posts with no recorded archive date.
 #. translators: The label used for the status.
-#: src/Admin/ArchiveColumn.php:36
-#: src/Status/ArchiveLabel.php:29
+#: src/Admin/ArchiveColumn.php:39
+#: src/Status/ArchiveLabel.php:32
 msgid "Archived"
 msgstr ""
 
 #. translators: attribution shown when a post was archived with no user context (anonymous WP-CLI, cron).
-#: src/Admin/ArchiveColumn.php:49
+#: src/Admin/ArchiveColumn.php:52
 msgctxt "archive agent"
 msgid "system"
 msgstr ""
 
 #. translators: attribution shown when the archiving user's account no longer exists.
-#: src/Admin/ArchiveColumn.php:62
+#: src/Admin/ArchiveColumn.php:65
 msgid "Unknown"
 msgstr ""
 
 #. translators: %1$s: user display name
-#: src/Admin/ArchiveColumn.php:75
+#: src/Admin/ArchiveColumn.php:78
 #, php-format
 msgid "Archived by %1$s"
 msgstr ""
 
 #. translators: label for the undo link appended to the archive success notice.
-#: src/Admin/NoticeBuilder.php:60
+#: src/Admin/NoticeBuilder.php:63
 msgid "Undo"
 msgstr ""
 
 #. translators: %s: Number of locked posts
-#: src/Admin/NoticeBuilder.php:117
+#: src/Admin/NoticeBuilder.php:120
 #, php-format
 msgid "%s post not archived, somebody is editing it."
 msgid_plural "%s posts not archived, somebody is editing them."
@@ -77,7 +77,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts skipped because the user lacks the capability
-#: src/Admin/NoticeBuilder.php:120
+#: src/Admin/NoticeBuilder.php:123
 #, php-format
 msgid "%s post skipped: you are not allowed to perform this action on it."
 msgid_plural "%s posts skipped: you are not allowed to perform this action on them."
@@ -85,7 +85,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts skipped because they could not be located
-#: src/Admin/NoticeBuilder.php:123
+#: src/Admin/NoticeBuilder.php:126
 #, php-format
 msgid "%s post skipped: it no longer exists or its type is unsupported."
 msgid_plural "%s posts skipped: they no longer exist or their types are unsupported."
@@ -93,7 +93,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts skipped because their status disqualifies them
-#: src/Admin/NoticeBuilder.php:126
+#: src/Admin/NoticeBuilder.php:129
 #, php-format
 msgid "%s post skipped: its status is not eligible for this action."
 msgid_plural "%s posts skipped: their status is not eligible for this action."
@@ -101,7 +101,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts archived
-#: src/Admin/NoticeBuilder.php:147
+#: src/Admin/NoticeBuilder.php:150
 #, php-format
 msgid "%s post moved to the Archive."
 msgid_plural "%s posts moved to the Archive."
@@ -109,7 +109,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts unarchived
-#: src/Admin/NoticeBuilder.php:184
+#: src/Admin/NoticeBuilder.php:187
 #, php-format
 msgid "%s post restored from the Archive."
 msgid_plural "%s posts restored from the Archive."
@@ -117,66 +117,68 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: label for the "Archive" row action link.
-#: src/Admin/PostEditor.php:49
-#: src/Admin/PostList.php:137
-#: src/Admin/RowActionPolicy.php:38
-#: assets/js/block-editor.js:36
+#: src/Admin/PostEditor.php:52
+#: src/Admin/PostList.php:139
+#: src/Admin/RowActionPolicy.php:41
+#: assets/js/block-editor.js:51
 msgid "Archive"
 msgstr ""
 
 #. translators: wp_die() message shown when a direct edit attempt on an archived post is blocked.
-#: src/Admin/PostEditorGuard.php:54
+#: src/Admin/PostEditorGuard.php:94
 msgid "You can't edit this item because it has been Archived. Please change the post status and try again."
 msgstr ""
 
-#: src/Admin/PostEditorGuard.php:96
+#: src/Admin/PostEditorGuard.php:136
 msgid "WordPress &rsaquo; Error"
 msgstr ""
 
 #. translators: label for the "Unarchive" row action link.
-#: src/Admin/PostList.php:143
-#: src/Admin/RowActionPolicy.php:50
+#: src/Admin/PostList.php:145
+#: src/Admin/RowActionPolicy.php:53
 msgid "Unarchive"
 msgstr ""
 
-#: src/Admin/PostList.php:233
+#: src/Admin/PostList.php:235
 msgid "Invalid post type."
 msgstr ""
 
-#. translators: %s: User's display name.
+#. translators: fallback name shown when the post-lock holder's account no longer exists.
 #: src/Admin/PostList.php:242
+msgid "Another user"
+msgstr ""
+
+#. translators: %s: User's display name.
+#: src/Admin/PostList.php:246
 #, php-format
 msgid "You cannot archive this item. %s is currently editing."
 msgstr ""
 
-#: src/Admin/PostList.php:249
+#: src/Admin/PostList.php:253
 msgid "Error in archiving this item."
 msgstr ""
 
-#: src/Admin/RowActionPolicy.php:103
+#: src/Admin/RowActionPolicy.php:106
 msgid "Archive this post"
 msgstr ""
 
-#: src/Admin/RowActionPolicy.php:127
+#: src/Admin/RowActionPolicy.php:130
 msgid "Unarchive this post"
 msgstr ""
 
 #. translators: %s: post count
-#: src/Status/PostStatus.php:161
+#: src/Status/PostStatus.php:172
 #, php-format
 msgid "Archived <span class=\"count\">(%s)</span>"
 msgid_plural "Archived <span class=\"count\">(%s)</span>"
 msgstr[0] ""
 msgstr[1] ""
 
-#: assets/js/block-editor.js:31
+#: assets/js/block-editor.js:41
 msgid "Are you sure you want to archive this post?"
 msgstr ""
 
 #. translators: warning about deactivating the plugin with archived content.
-#: assets/js/plugin-screen.js:8
-#: assets/js/plugin-screen.test.js:121
-#: assets/js/plugin-screen.test.js:167
-#: assets/js/plugin-screen.test.js:190
+#: assets/js/plugin-screen.js:25
 msgid "Warning! Deactivating this plugin will remove the 'archive' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin."
 msgstr ""
