@@ -239,7 +239,9 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_adds_undo_filter_when_doaction_is_undo() {
 		$_GET = array( 'doaction' => 'undo' );
 
-
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
 			->andReturn( true );
@@ -282,7 +284,9 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_does_not_add_undo_filter_for_regular_bulk_action() {
 		$_GET = array(); // no doaction=undo
 
-
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
 			->andReturn( true );
@@ -338,6 +342,9 @@ class BulkActionHandlerTest extends TestCase {
 	 */
 	public function test_bulk_archive_records_archived_count_on_successful_archive() {
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 42 )->andReturn( true );
 		\WP_Mock::userFunction( 'wp_check_post_lock' )
@@ -499,6 +506,9 @@ class BulkActionHandlerTest extends TestCase {
 	 */
 	public function test_bulk_unarchive_buckets_persist_failure_instead_of_dying() {
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 7 )
 			->andReturn( true );
@@ -546,7 +556,9 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_undo_path_passes_previous_status_to_wp_update_post() {
 		$_GET = array( 'doaction' => 'undo' );
 
-
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
 			->andReturn( true );
@@ -610,7 +622,9 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_undo_path_falls_back_to_draft_when_previous_status_meta_missing() {
 		$_GET = array( 'doaction' => 'undo' );
 
-
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
 			->andReturn( true );
@@ -670,7 +684,9 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_bulk_unarchive_undo_path_passes_malformed_meta_verbatim() {
 		$_GET = array( 'doaction' => 'undo' );
 
-
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
 			->andReturn( true );
@@ -830,7 +846,9 @@ class BulkActionHandlerTest extends TestCase {
 	public function test_plain_bulk_unarchive_does_not_invoke_default_callback() {
 		$_GET = array(); // no doaction=undo
 
-
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 10 )
 			->andReturn( true );

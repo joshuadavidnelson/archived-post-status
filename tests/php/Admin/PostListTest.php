@@ -321,6 +321,10 @@ class PostListTest extends TestCase {
 		$this->stubSupportedPostTypesBoundary( array( 'post' ), array( 'post' ) );
 		$this->stubArchivableStatusesBoundary( array( 'publish', 'draft' ) );
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+
 		// Cap check: real aps_current_user_can_archive resolves through
 		// the `aps_default_archive_capability` filter then current_user_can.
 		\WP_Mock::userFunction( 'current_user_can' )
@@ -403,6 +407,10 @@ class PostListTest extends TestCase {
 		// Status is 'archive' — first branch (archivable + can-archive) is
 		// false because 'archive' is not in the archivable list.
 		$this->stubArchivableStatusesBoundary( array( 'publish', 'draft' ) );
+
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 
 		// Cap routing: the SUT calls three different aps_current_user_can_*
 		// helpers, each of which calls current_user_can with a distinct
@@ -560,6 +568,9 @@ class PostListTest extends TestCase {
 			->once()
 			->with( 'archive-99' );
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 99 )
 			->andReturn( false ); // short-circuit before archive
@@ -845,6 +856,9 @@ class PostListTest extends TestCase {
 			->once()
 			->with( 'unarchive-99' );
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 99 )
 			->andReturn( false );
