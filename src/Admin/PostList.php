@@ -238,11 +238,13 @@ final class PostList implements HookableInterface {
 		$user_id = wp_check_post_lock( $post_id );
 		if ( $user_id ) {
 			$user = get_userdata( $user_id );
+			/* translators: fallback name shown when the post-lock holder's account no longer exists. */
+			$user_name = $user ? $user->display_name : __( 'Another user', 'archived-post-status' );
 			wp_die(
 				sprintf(
 					/* translators: %s: User's display name. */
 					__( 'You cannot archive this item. %s is currently editing.', 'archived-post-status' ),
-					esc_html( $user->display_name )
+					esc_html( $user_name )
 				)
 			);
 		}
