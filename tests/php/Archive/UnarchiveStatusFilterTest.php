@@ -151,6 +151,10 @@ class UnarchiveStatusFilterTest extends TestCase {
 	public function test_competing_higher_priority_filter_wins_over_default_callback() {
 		$_GET = array( 'doaction' => 'undo' );
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+
 		// Capability gate: the handler routes the
 		// outer gate through `aps_current_user_can_unarchive()` with no post
 		// id, which delegates to `current_user_can( 'edit_others_posts', 0 )`.
@@ -241,6 +245,10 @@ class UnarchiveStatusFilterTest extends TestCase {
 		// We don't need to "execute" that here — the canonical effect is
 		// that the filter dispatch returns its input unchanged when no
 		// other callbacks transform it. That's what we model below.
+
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 
 		// Capability gate: the handler routes the
 		// outer gate through `aps_current_user_can_unarchive()` with no post
