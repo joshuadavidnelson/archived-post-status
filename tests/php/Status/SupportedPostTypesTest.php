@@ -42,7 +42,7 @@ class SupportedPostTypesTest extends TestCase {
 			->reply( array( 'attachment' ) );
 
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'post' => 'post', 'page' => 'page' ) )
 			->reply( array( 'post', 'page' ) );
 
 		$result = SupportedPostTypes::all();
@@ -129,7 +129,7 @@ class SupportedPostTypesTest extends TestCase {
 			->reply( array( 'attachment' ) );
 
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'post' => 'post', 'page' => 'page' ) )
 			->reply( array( 'post', 'page' ) );
 
 		$this->assertTrue( SupportedPostTypes::includes( 'post' ) );

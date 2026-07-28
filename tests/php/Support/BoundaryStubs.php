@@ -60,7 +60,7 @@ trait BoundaryStubs {
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array_diff( $public_types, array( 'attachment' ) ) )
 			->reply( $supported );
 	}
 
@@ -82,7 +82,7 @@ trait BoundaryStubs {
 		\WP_Mock::userFunction( 'esc_attr' )
 			->andReturnUsing( static fn( $v ) => $v );
 		\WP_Mock::onFilter( 'aps_archivable_statuses' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'publish', 'future', 'draft', 'pending', 'private' ) )
 			->reply( $statuses );
 	}
 
