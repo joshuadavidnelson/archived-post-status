@@ -41,7 +41,17 @@ class ArchiveOperationTest extends TestCase {
 		);
 
 		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( $post );
-		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 42 );
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with(
+				array(
+					'ID'             => 42,
+					'post_status'    => 'archive',
+					'comment_status' => 'closed',
+					'ping_status'    => 'closed',
+				)
+			)
+			->andReturn( 42 );
 
 		\WP_Mock::onFilter( 'aps_pre_archive_post' )
 			->with( null, $post, 'publish' )
@@ -170,7 +180,17 @@ class ArchiveOperationTest extends TestCase {
 				}
 			);
 
-		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 42 );
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with(
+				array(
+					'ID'             => 42,
+					'post_status'    => 'archive',
+					'comment_status' => 'closed',
+					'ping_status'    => 'closed',
+				)
+			)
+			->andReturn( 42 );
 
 		\WP_Mock::onFilter( 'aps_pre_archive_post' )
 			->with( null, $post, 'publish' )

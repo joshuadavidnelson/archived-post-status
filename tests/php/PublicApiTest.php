@@ -363,7 +363,17 @@ class PublicApiTest extends TestCase {
 			->with( 123 )
 			->andReturn( $post );
 
-		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 123 );
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with(
+				array(
+					'ID'             => 123,
+					'post_status'    => 'archive',
+					'comment_status' => 'closed',
+					'ping_status'    => 'closed',
+				)
+			)
+			->andReturn( 123 );
 
 		\WP_Mock::onFilter( 'aps_pre_archive_post' )
 			->with( null, $post, 'publish' )
@@ -448,7 +458,17 @@ class PublicApiTest extends TestCase {
 		\WP_Mock::expectFilter( 'aps_unarchive_post_comment_status', 'open', 123, 'publish' );
 		\WP_Mock::expectFilter( 'aps_unarchive_post_ping_status', 'open', 123, 'publish' );
 
-		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 123 );
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with(
+				array(
+					'ID'             => 123,
+					'post_status'    => 'publish',
+					'comment_status' => 'open',
+					'ping_status'    => 'open',
+				)
+			)
+			->andReturn( 123 );
 		\WP_Mock::userFunction( 'delete_post_meta' )->andReturn( true );
 		\WP_Mock::expectAction( 'aps_unarchived_post', 123, 'publish', $post );
 

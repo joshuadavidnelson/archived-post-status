@@ -86,7 +86,17 @@ class UnarchiveOperationTest extends TestCase {
 			->with( 'open', 42, 'publish' )
 			->reply( 'open' );
 
-		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 42 );
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with(
+				array(
+					'ID'             => 42,
+					'post_status'    => 'publish',
+					'comment_status' => 'open',
+					'ping_status'    => 'open',
+				)
+			)
+			->andReturn( 42 );
 
 		\WP_Mock::expectAction( 'aps_unarchive_post', 42, 'publish' );
 		\WP_Mock::expectAction( 'aps_unarchived_post', 42, 'publish', $post );
