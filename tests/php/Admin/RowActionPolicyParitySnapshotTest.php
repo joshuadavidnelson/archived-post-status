@@ -162,12 +162,12 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'post' => 'post' ) )
 			->reply( array( 'post' ) );
 
 		// Archivable statuses.
 		\WP_Mock::onFilter( 'aps_archivable_statuses' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'publish', 'future', 'draft', 'pending', 'private' ) )
 			->reply( array( 'publish', 'future', 'draft', 'pending', 'private' ) );
 
 		// Capability resolution. The grid's mock user is anonymous (id 0),

@@ -111,7 +111,7 @@ class FunctionsTest extends TestCase {
 			->with( array( 'attachment' ) )
 			->reply( array() );
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'post' => 'post' ) )
 			->reply( array( 'post' ) );
 
 		$this->assertTrue( aps_is_supported_post_type( 'post' ) );

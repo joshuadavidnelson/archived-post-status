@@ -50,11 +50,11 @@ class RowActionPolicyTest extends TestCase {
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'post' => 'post' ) )
 			->reply( array( 'post' ) );
 
 		\WP_Mock::onFilter( 'aps_archivable_statuses' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'publish', 'future', 'draft', 'pending', 'private' ) )
 			->reply( array( 'publish', 'future', 'draft', 'pending', 'private' ) );
 
 		// Anonymous mock user (id 0): the ownership-aware capability
@@ -247,7 +247,7 @@ class RowActionPolicyTest extends TestCase {
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( \Mockery::type( 'array' ) )
+			->with( array( 'post' => 'post' ) )
 			->reply( array( 'post' ) );
 
 		// Cap functions must never even be consulted — the post-type gate
