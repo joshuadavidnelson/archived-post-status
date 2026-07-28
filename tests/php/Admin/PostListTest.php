@@ -202,6 +202,65 @@ class PostListTest extends TestCase {
 		$this->assertTrue( $this->post_list->show_archived_row_checkbox( false, $post ) );
 	}
 
+	/**
+	 * Ownership default: the post's own author needs only the post type's
+	 * edit_posts primitive to have the checkbox restored. The test above
+	 * stubs get_current_user_id() to the anonymous id 0 against a 'post'
+	 * type object with no post_author set, so it never reaches the
+	 * ownership comparison in ArchiveCapability::default_capability().
+	 * This test sets post_author = get_current_user_id() and asserts the
+	 * *primitive* current_user_can() receives, not merely that the
+	 * checkbox is restored — asserting only the outcome would still pass
+	 * if the ownership branch were deleted and every post resolved to
+	 * edit_others_posts.
+	 *
+	 * Uses a 'book' post type (edit_books / edit_others_books, mirroring
+	 * ArchiveCapabilityTest::stubOwnershipBoundary()) so the assertion
+	 * cannot pass by coincidence with the generic edit_others_posts string
+	 * the test above pins.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::show_archived_row_checkbox
+	 */
+	public function test_show_archived_row_checkbox_consults_edit_posts_primitive_for_authors_own_post() {
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'book',
+			'post_author' => 7,
+		] );
+
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+
+		$type_object      = new \stdClass();
+		$type_object->cap = (object) array(
+			'edit_posts'        => 'edit_books',
+			'edit_others_posts' => 'edit_others_books',
+		);
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'book' )
+			->andReturn( $type_object );
+
+		$received_capability = null;
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		$this->assertTrue( $this->post_list->show_archived_row_checkbox( false, $post ) );
+		$this->assertSame(
+			'edit_books',
+			$received_capability,
+			"the post type's edit_posts primitive must be consulted for the author's own post"
+		);
+	}
+
 	// -----------------------------------------------------------------------
 	// row_actions
 	// -----------------------------------------------------------------------

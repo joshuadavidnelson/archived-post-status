@@ -268,4 +268,107 @@ class RowActionPolicyTest extends TestCase {
 
 		$this->assertSame( $incoming, $result );
 	}
+
+	/**
+	 * Ownership default: the post's own author needs only the post type's
+	 * edit_posts primitive to see the Archive row action. Every test above
+	 * routes through {@see configure_boundary()}, which stubs
+	 * get_current_user_id() to the anonymous id 0 — that never equals a
+	 * post_author, so none of them ever reach the ownership comparison in
+	 * ArchiveCapability::default_capability(). This test sets post_author
+	 * equal to the current user id and asserts the *primitive*
+	 * current_user_can() receives, not merely that the archive entry
+	 * appears — asserting only the outcome would still pass if the
+	 * ownership branch were deleted and every post resolved to
+	 * edit_others_posts.
+	 *
+	 * Uses a 'book' post type (edit_books / edit_others_books, mirroring
+	 * ArchiveCapabilityTest::stubOwnershipBoundary()) so the assertion
+	 * cannot pass by coincidence with configure_boundary()'s generic
+	 * edit_others_posts string. Stubs the boundary inline rather than via
+	 * configure_boundary() — that helper hardcodes the anonymous user and
+	 * the 'post' type, both of which this scenario needs to override.
+	 *
+	 * @covers ArchivedPostStatus\Admin\RowActionPolicy::for_post
+	 */
+	public function test_for_post_consults_edit_posts_primitive_for_authors_own_post() {
+		$post_id = 16;
+
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( array( 'book' => 'book' ) );
+		\WP_Mock::userFunction( 'esc_attr' )
+			->andReturnUsing( static fn( $v ) => $v );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( array( 'book' => 'book' ) )
+			->reply( array( 'book' ) );
+
+		\WP_Mock::onFilter( 'aps_archivable_statuses' )
+			->with( array( 'publish', 'future', 'draft', 'pending', 'private' ) )
+			->reply( array( 'publish', 'future', 'draft', 'pending', 'private' ) );
+
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 7 );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => $post_id,
+				'post_type'   => 'book',
+				'post_status' => 'publish',
+				'post_author' => 7,
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( $post_id )->andReturn( $post );
+
+		// Serves both consumers that call get_post_type_object('book'):
+		// ArchiveCapability::default_capability() (needs ->cap) and
+		// ArchivePostLink::build() (needs ->_edit_link) — for_post() calls
+		// the archive capability function once directly and once more
+		// inside aps_get_archive_post_link() while composing the href.
+		$type_object      = (object) array(
+			'_edit_link' => 'post.php?post=%d&action=edit',
+			'cap'        => (object) array(
+				'edit_posts'        => 'edit_books',
+				'edit_others_posts' => 'edit_others_books',
+			),
+		);
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'book' )
+			->andReturn( $type_object );
+
+		$received_capability = null;
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'return' => function ( $capability ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::userFunction( 'admin_url' )
+			->andReturnUsing( static fn( $path ) => 'http://example.com/wp-admin/' . $path );
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing( static fn( $arg, $value, $url ) => $url . '&' . $arg . '=' . $value );
+		\WP_Mock::userFunction( 'wp_nonce_url' )
+			->andReturnUsing( static fn( $url ) => $url . '&_wpnonce=abc' );
+		\WP_Mock::userFunction( 'esc_url' )
+			->andReturnUsing( static fn( $url ) => $url );
+
+		$incoming = array(
+			'edit' => '<a>Edit</a>',
+			'view' => '<a>View</a>',
+		);
+
+		$result = RowActionPolicy::for_post( $post, $incoming );
+
+		$this->assertSame(
+			'edit_books',
+			$received_capability,
+			"the post type's edit_posts primitive must be consulted for the author's own post"
+		);
+		$this->assertArrayHasKey( 'archive', $result );
+	}
 }
