@@ -37,6 +37,7 @@ import {
 	POST_TITLE,
 	postListQuery,
 	rowActionLocator,
+	rowCheckboxLocator,
 	rowLocator,
 } from '../../config/admin';
 import {
@@ -313,6 +314,57 @@ test.describe( "roles: author on another author's content", () => {
 		await expect(
 			rowActionLocator( page, archivedSeed.id, 'unarchive' )
 		).toHaveCount( 0 );
+	} );
+
+	test( 'shows the bulk-select checkbox only on the row the author can unarchive', async ( {
+		page,
+		requestUtils,
+	} ) => {
+		// PostEditorGuard denies edit_post on every archived post while
+		// read-only mode is active — including to this row's own author's
+		// account, if it belonged to them — so core itself would drop both
+		// checkboxes below. PostList::show_archived_row_checkbox() restores
+		// the checkbox per row, ownership-aware, via
+		// aps_current_user_can_unarchive(). This test pins both outcomes of
+		// that restore in one list view.
+
+		// Foreign: authored by the admin (user 1). The author under test has
+		// neither edit_others_posts nor authorship of this row, so the
+		// restore must not fire and the checkbox must stay absent.
+		const foreign = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Matrix other-author checkbox foreign' ),
+			status: 'publish',
+			author: 1,
+		} );
+		created.push( foreign.id );
+		await archivePost( requestUtils, foreign.id );
+
+		// Own: authored by the author under test. They hold edit_posts on
+		// their own content, so the restore must fire. Seeded into the same
+		// archived list view as the foreign row above: without this half, a
+		// regression that hid every checkbox unconditionally would pass
+		// silently.
+		const own = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Matrix other-author checkbox own' ),
+			status: 'publish',
+			author: await authorIdFor( requestUtils, 'author' ),
+		} );
+		created.push( own.id );
+		await archivePost( requestUtils, own.id );
+
+		await page.goto(
+			`/wp-admin/edit.php?${ postListQuery( {
+				postStatus: ARCHIVED_STATUS_SLUG,
+			} ) }`
+		);
+
+		// Pin both rows first: a checkbox assertion means nothing against a
+		// row that never rendered.
+		await expect( rowLocator( page, foreign.id ) ).toBeVisible();
+		await expect( rowLocator( page, own.id ) ).toBeVisible();
+
+		await expect( rowCheckboxLocator( page, foreign.id ) ).toHaveCount( 0 );
+		await expect( rowCheckboxLocator( page, own.id ) ).toHaveCount( 1 );
 	} );
 } );
 

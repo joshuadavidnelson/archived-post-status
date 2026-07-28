@@ -105,6 +105,20 @@ export function rowActionLocator(
 }
 
 /**
+ * The bulk-select checkbox inside a post's row.
+ *
+ * Core names every row's checkbox `post[]`; scoping to the row (rather than a
+ * page-wide `input[name="post[]"]` selector) is what makes the locator
+ * resolve to exactly one element per post id.
+ *
+ * @param page Page under test.
+ * @param id   Post id.
+ */
+export function rowCheckboxLocator( page: Page, id: number ): Locator {
+	return rowLocator( page, id ).locator( 'input[name="post[]"]' );
+}
+
+/**
  * Tick the bulk-action checkbox for each of the given posts.
  *
  * @param page Page under test.
@@ -112,7 +126,7 @@ export function rowActionLocator(
  */
 export async function selectRows( page: Page, ids: number[] ): Promise< void > {
 	for ( const id of ids ) {
-		await rowLocator( page, id ).locator( 'input[name="post[]"]' ).check();
+		await rowCheckboxLocator( page, id ).check();
 	}
 }
 
