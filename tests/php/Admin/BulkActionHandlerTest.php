@@ -375,6 +375,89 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	/**
+	 * Ownership default: the post's own author needs only the post type's
+	 * edit_posts primitive to archive it via the bulk action. Every other
+	 * capability assertion in this file pins 'edit_others_posts' because
+	 * post_author is left unset on the fixture posts (createMockPost() has
+	 * no post_author default) — that never equals the mock current-user id,
+	 * so the ownership comparison in
+	 * ArchiveCapability::default_capability() never resolves true. This
+	 * test sets post_author = get_current_user_id() and asserts the
+	 * *primitive* current_user_can() receives, not merely that the archive
+	 * succeeds — asserting only the outcome would still pass if the
+	 * ownership branch were deleted and every post resolved to
+	 * edit_others_posts.
+	 *
+	 * Uses a 'book' post type (edit_books / edit_others_books, mirroring
+	 * ArchiveCapabilityTest::stubOwnershipBoundary()) so the assertion
+	 * cannot pass by coincidence with the two generic capability strings
+	 * every other test in this file pins.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
+	 */
+	public function test_bulk_archive_consults_type_edit_posts_primitive_for_authors_own_post() {
+
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 7 );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 60,
+				'post_type'   => 'book',
+				'post_status' => 'publish',
+				'post_author' => 7,
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 60 )->andReturn( $post );
+
+		$type_object      = new \stdClass();
+		$type_object->cap = (object) array(
+			'edit_posts'        => 'edit_books',
+			'edit_others_posts' => 'edit_others_books',
+		);
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'book' )->andReturn( $type_object );
+
+		$received_capability = null;
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 60 )->andReturn( false );
+		$this->stubArchivableStatusesBoundary( array( 'publish', 'draft' ) );
+		\WP_Mock::userFunction( 'get_post_status' )
+			->with( 60 )->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 60 );
+
+		$captured = array();
+		\WP_Mock::userFunction( 'add_query_arg' )->andReturnUsing(
+			function ( $key, $value, $url ) use ( &$captured ) {
+				$captured[ $key ] = $value;
+				return $url;
+			}
+		);
+
+		$this->handler->handle(
+			'http://example.com/wp-admin/edit.php',
+			'archive',
+			array( 60 )
+		);
+
+		$this->assertSame(
+			'edit_books',
+			$received_capability,
+			"the post type's edit_posts primitive must be consulted for the author's own post"
+		);
+		$this->assertSame( 1, $captured['archived'] ?? null, 'archived counter must register the successful archive' );
+	}
+
+	/**
 	 * Unarchive bulk action — per-item capability denial buckets into
 	 * `denied` and continues the batch. The legacy mid-batch
 	 * wp_die() was removed in the 0.4.0 refactor.
