@@ -19,6 +19,13 @@ use ArchivedPostStatus\Archive\ArchiveAction;
  * (validating an arbitrary string in `in_array( $action, ['archive', 'unarchive'], true )`)
  * is eliminated inside this method body — the enum is the only legal input.
  *
+ * `build()` does not check the archive/unarchive capability — it only
+ * decides whether a link is constructible (post exists, post type is
+ * supported). Authorization is the caller's responsibility; a caller that
+ * exposes the built URL to the current request (rendering it, localizing
+ * it to a script) must gate on the matching `aps_current_user_can_*`
+ * capability first.
+ *
  * @since 0.4.0
  */
 final class ArchivePostLink {
@@ -36,7 +43,7 @@ final class ArchivePostLink {
 	 * @param int|\WP_Post  $post    Post ID or WP_Post object. Defaults to the global `$post` via get_post().
 	 * @param ArchiveAction $action  Archive action enum (Archive or Unarchive).
 	 * @param string        $context Optional. The context. Default is 'display'.
-	 * @return string|false URL used to perform the un/archive action, or false if the post is not eligible.
+	 * @return string|false URL used to perform the un/archive action, or false if the post does not exist or its post type is not supported.
 	 */
 	public static function build( int|\WP_Post $post, ArchiveAction $action, string $context = 'display' ): string|false {
 
@@ -49,11 +56,6 @@ final class ArchivePostLink {
 		if ( ! $post_type_object
 			|| ! aps_is_supported_post_type( $post->post_type ) ) {
 				return false;
-		}
-
-		$cap = $action->capability_function();
-		if ( ! $cap( $post->ID ) ) {
-			return false;
 		}
 
 		$link = add_query_arg( 'action', $action->value, admin_url( sprintf( $post_type_object->_edit_link, $post->ID ) ) );
