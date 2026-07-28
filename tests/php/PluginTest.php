@@ -527,6 +527,51 @@ class PluginTest extends TestCase {
 	}
 
 	/**
+	 * Steady state: the stored version already matches the current one.
+	 * This is the branch every admin request hits on an already-upgraded
+	 * site, i.e. nearly every admin page load in the wild. get_option()
+	 * legitimately fires — the branch has to read the stored version to
+	 * discover there is nothing to do — but neither write function may
+	 * fire. A regression here means a database write on every admin
+	 * request instead of none.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::run
+	 * @covers ArchivedPostStatus\Plugin::upgrade_check
+	 */
+	public function test_upgrade_check_writes_nothing_when_stored_version_matches_current() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_option' )
+			->with( 'archived_post_status_version', false )
+			->andReturn( '0.4.0' ); // steady state: stored === current.
+
+		// Defensive: if this ever regressed into the first-install branch,
+		// has_pre_040_content() would dereference $wpdb. Stubbing it means
+		// such a regression fails on the update_option/add_option
+		// assertions below instead of a null-pointer crash.
+		$GLOBALS['wpdb'] = new class() {
+			public $posts = 'wp_posts';
+			public function get_var( $query ) {
+				return null;
+			}
+		};
+
+		// This is the no-op branch — neither write function may fire.
+		\WP_Mock::userFunction( 'update_option' )->never();
+		\WP_Mock::userFunction( 'add_option' )->never();
+
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
+
+		try {
+			$this->plugin->run();
+		} finally {
+			unset( $GLOBALS['wpdb'] );
+		}
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
 	 * upgrade_check() is admin-only — it's a "while we're rendering an
 	 * admin page anyway" hook. Front-end requests should bypass option
 	 * writes entirely to avoid the autoloaded-options cost on every
