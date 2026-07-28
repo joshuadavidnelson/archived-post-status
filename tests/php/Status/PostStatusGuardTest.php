@@ -385,6 +385,45 @@ class PostStatusGuardTest extends TestCase {
 	}
 
 	/**
+	 * Key-to-value mapping pin: the corrective wp_update_post() payload must
+	 * place comment_status and ping_status under their own keys, not
+	 * transpose them. Every other exit-restore fixture in this file stubs
+	 * both meta values identically ('open'/'open' or 'closed'/'closed'), so
+	 * an exact ->with() gate built from those fixtures cannot distinguish
+	 * correct code from a same-shape key swap (comment_status <-> ping_status
+	 * in the array literal) — both produce the same two values, just under
+	 * swapped keys. This test uses asymmetric meta so the mapping is
+	 * unambiguous.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::restore_state_on_exit
+	 */
+	public function test_restore_state_on_exit_maps_comment_and_ping_status_to_distinct_keys_when_asymmetric() {
+		$this->stubExitMetaBoundary( 1, 'publish', 'open', 'closed' );
+		$this->expectMetaDeleted( 1 );
+
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with( [
+				'ID'             => 1,
+				'comment_status' => 'open',
+				'ping_status'    => 'closed',
+			] )
+			->andReturn( 1 );
+
+		$post = new \WP_Post( [
+			'ID'             => 1,
+			'post_status'    => 'draft',
+			'post_type'      => 'post',
+			'comment_status' => 'closed',
+			'ping_status'    => 'closed',
+		] );
+
+		$this->guard->restore_state_on_exit( 'draft', 'archive', $post );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
 	 * Trashing an archived post defers the exit: core records the status in
 	 * _wp_trash_meta_status, and the archive meta must survive so whatever
 	 * concludes the trash round-trip can still restore faithfully.
