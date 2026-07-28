@@ -157,16 +157,26 @@ class SlugFilterIntegrationTest extends TestCase {
 
 		// Filters that the unarchive operation consults to derive the
 		// restored status. The defaults reach apply_filters; WP_Mock
-		// returns the default when no `onFilter` is registered.
+		// returns the default when no `onFilter` is registered. No archive
+		// meta is recorded here (get_post_meta stubbed to '' above), so
+		// resolve_restore_values() takes the legacy branch — new_status
+		// 'draft', comment/ping 'closed' — and all three pass through
+		// apply_filters unchanged, landing verbatim in the payload below.
+		//
+		// THE assertion: post_status is 'draft' — the inverse contract pin.
+		// The new status must NOT be the filtered archive slug ('archived');
+		// unarchiving leaves the archived state rather than re-writing it.
 		\WP_Mock::userFunction( 'wp_update_post' )
 			->once()
-			->andReturnUsing(
-				static function ( $args ) {
-					// Pin the inverse contract — the new status must NOT be the
-					// filtered archive slug (we are leaving it).
-					return 42;
-				}
-			);
+			->with(
+				array(
+					'ID'             => 42,
+					'post_status'    => 'draft',
+					'comment_status' => 'closed',
+					'ping_status'    => 'closed',
+				)
+			)
+			->andReturn( 42 );
 
 		\WP_Mock::onFilter( 'aps_pre_unarchive_post' )
 			->with( null, $post, 'draft' )

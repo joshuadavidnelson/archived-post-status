@@ -107,6 +107,79 @@ class UnarchiveOperationTest extends TestCase {
 	}
 
 	/**
+	 * Key-to-value mapping pin: `dispatch_update()` must place comment_status
+	 * and ping_status under their own keys in the wp_update_post payload, not
+	 * transpose them. Every other fixture in this suite stubs both meta
+	 * values identically ('open'/'open' or 'closed'/'closed'), so an exact
+	 * ->with() gate built from those fixtures cannot distinguish correct code
+	 * from a same-shape key swap (comment_status <-> ping_status in the
+	 * array literal) — both produce the same four values, just under
+	 * swapped keys. This test uses asymmetric values so the mapping is
+	 * unambiguous.
+	 *
+	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::perform
+	 */
+	public function test_perform_maps_comment_and_ping_status_to_distinct_keys_when_asymmetric() {
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 42,
+				'post_status' => 'archive',
+				'post_type'   => 'post',
+			)
+		);
+
+		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( time() );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( 1 );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( 'open' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( 'closed' );
+
+		\WP_Mock::onFilter( 'aps_pre_unarchive_post' )
+			->with( null, $post, 'publish' )
+			->reply( null );
+		\WP_Mock::onFilter( 'aps_unarchive_post_status' )
+			->with( 'publish', 42, 'publish' )
+			->reply( 'publish' );
+		\WP_Mock::onFilter( 'aps_unarchive_post_comment_status' )
+			->with( 'open', 42, 'publish' )
+			->reply( 'open' );
+		\WP_Mock::onFilter( 'aps_unarchive_post_ping_status' )
+			->with( 'closed', 42, 'publish' )
+			->reply( 'closed' );
+
+		\WP_Mock::userFunction( 'wp_update_post' )
+			->once()
+			->with(
+				array(
+					'ID'             => 42,
+					'post_status'    => 'publish',
+					'comment_status' => 'open',
+					'ping_status'    => 'closed',
+				)
+			)
+			->andReturn( 42 );
+
+		\WP_Mock::expectAction( 'aps_unarchive_post', 42, 'publish' );
+		\WP_Mock::expectAction( 'aps_unarchived_post', 42, 'publish', $post );
+
+		$result = UnarchiveOperation::perform( 42 );
+
+		$this->assertSame( $post, $result );
+	}
+
+	/**
 	 * The in-flight flag is raised only while the restore write dispatches,
 	 * so PostStatusGuard's transition_post_status exit guard can tell the
 	 * plugin's own unarchive apart from an out-of-band status change.
