@@ -157,7 +157,7 @@ class ArchivePostLinkTest extends TestCase {
 			}
 		);
 		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
-		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->with( 42 )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_current_user_can_unarchive' )->with( 42 )->andReturn( true );
 		\WP_Mock::userFunction( 'admin_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=edit' );
 		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=unarchive' );
 		\WP_Mock::userFunction( 'wp_nonce_url' )->andReturn( 'http://example.com/wp-admin/post.php?post=42&action=unarchive&_wpnonce=def' );

@@ -37,6 +37,9 @@ trait BoundaryStubs {
 	 *   - `get_post_types()` returns $public_types
 	 *   - `esc_attr` is stubbed as identity (the production function applies
 	 *     it per element)
+	 *   - `post_type_exists()` returns true (the default-exclusions list is
+	 *     only kept if the excluded slug actually exists — see
+	 *     {@see \ArchivedPostStatus\Status\SupportedPostTypes::all()})
 	 *   - `aps_excluded_post_types` filter replies with `array('attachment')`
 	 *   - `aps_supported_post_types` filter replies with $supported
 	 *
@@ -51,6 +54,8 @@ trait BoundaryStubs {
 			->andReturn( $public_types );
 		\WP_Mock::userFunction( 'esc_attr' )
 			->andReturnUsing( static fn( $v ) => $v );
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );

@@ -32,6 +32,11 @@ class SupportedPostTypesTest extends TestCase {
 		\WP_Mock::userFunction( 'get_post_types' )
 			->andReturn( array( 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ) );
 
+		// The default-exclusions list is only kept if the excluded slug
+		// actually exists.
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
+
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );
@@ -58,6 +63,11 @@ class SupportedPostTypesTest extends TestCase {
 		\WP_Mock::userFunction( 'get_post_types' )
 			->andReturn( array( 'post', 'page', 'attachment', 'product' ) );
 
+		// Both 'attachment' and the filter-added 'product' must exist for
+		// the exclusion to be kept (WooCommerce registers 'product').
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
+
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment', 'product' ) );
@@ -82,6 +92,11 @@ class SupportedPostTypesTest extends TestCase {
 		\WP_Mock::userFunction( 'get_post_types' )
 			->andReturn( array( 'post', 'page', 'attachment' ) );
 
+		// The default-exclusions list is only kept if the excluded slug
+		// actually exists.
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
+
 		\WP_Mock::expectFilter( 'aps_excluded_post_types', array( 'attachment' ) );
 
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
@@ -103,6 +118,11 @@ class SupportedPostTypesTest extends TestCase {
 	public function test_includes_returns_true_for_supported_types_and_false_otherwise() {
 		\WP_Mock::userFunction( 'get_post_types' )
 			->andReturn( array( 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ) );
+
+		// The default-exclusions list is only kept if the excluded slug
+		// actually exists.
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
 
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( array( 'attachment' ) )

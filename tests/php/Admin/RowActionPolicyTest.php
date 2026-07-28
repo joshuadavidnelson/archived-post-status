@@ -239,6 +239,10 @@ class RowActionPolicyTest extends TestCase {
 			->andReturn( array( 'post' => 'post', 'attachment' => 'attachment' ) );
 		\WP_Mock::userFunction( 'esc_attr' )
 			->andReturnUsing( static fn( $v ) => $v );
+		// The default-exclusions list is only kept if the excluded slug
+		// actually exists — see SupportedPostTypes::all().
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );

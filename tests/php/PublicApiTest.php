@@ -181,6 +181,10 @@ class PublicApiTest extends TestCase {
 		// → returns false for 'attachment'.
 		\WP_Mock::userFunction( 'get_post_types' )
 			->andReturn( array( 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ) );
+		// The default-exclusions list is only kept if the excluded slug
+		// actually exists — see SupportedPostTypes::all().
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );
