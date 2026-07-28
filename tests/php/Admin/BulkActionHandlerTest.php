@@ -133,9 +133,15 @@ class BulkActionHandlerTest extends TestCase {
 	 */
 	public function test_bulk_archive_buckets_denied_per_item_instead_of_dying() {
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 5 )
 			->andReturn( false );
+
+		$post = $this->createMockPost( array( 'ID' => 5 ) );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
 
 		// Per-item cap denial must NOT trigger wp_update_post (the post is
 		// never archived) AND must NOT wp_die (no exception thrown).
@@ -166,9 +172,16 @@ class BulkActionHandlerTest extends TestCase {
 	 */
 	public function test_bulk_archive_records_locked_post_when_post_is_locked_by_another_user() {
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 7 )
 			->andReturn( true );
+
+		$post = $this->createMockPost( array( 'ID' => 7 ) );
+		\WP_Mock::userFunction( 'get_post' )->with( 7 )->andReturn( $post );
+
 		\WP_Mock::userFunction( 'wp_check_post_lock' )
 			->with( 7 )
 			->andReturn( 99 ); // a different user holds the lock
@@ -200,9 +213,21 @@ class BulkActionHandlerTest extends TestCase {
 	 */
 	public function test_bulk_archive_records_wrong_status_when_status_not_archivable() {
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 8 )
 			->andReturn( true );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 8,
+				'post_status' => 'trash',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 8 )->andReturn( $post );
+
 		\WP_Mock::userFunction( 'wp_check_post_lock' )->andReturn( false );
 		$this->stubArchivableStatusesBoundary( array( 'publish' ) );
 		\WP_Mock::userFunction( 'get_post_status' )
@@ -474,9 +499,20 @@ class BulkActionHandlerTest extends TestCase {
 	 */
 	public function test_bulk_unarchive_buckets_denied_per_item_instead_of_dying() {
 
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 5 )
 			->andReturn( false );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 5,
+				'post_status' => 'archive',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
 
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
