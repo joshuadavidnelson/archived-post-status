@@ -855,4 +855,221 @@ class PostListTest extends TestCase {
 
 		$this->addToAssertionCount( 1 );
 	}
+
+	// -----------------------------------------------------------------------
+	// handle_post_action — success-path redirect (archive + unarchive)
+	// -----------------------------------------------------------------------
+	//
+	// No test above reaches the success branch at the end of
+	// handle_post_action(): every scenario exercises a rejection or a
+	// wp_die() path. Without this, the redirect target, the query args the
+	// admin notice keys off, and the post id handed back are all unpinned.
+	// Both actions are covered — not just one — because
+	// ArchiveAction::query_arg() differs between them ('archived' vs
+	// 'unarchived'); a regression that hardcoded one literal for both
+	// actions would still pass a single-action test. Each test asserts the
+	// *exact* array passed to add_query_arg() (the action's query arg + the
+	// post id under 'ids') and the exact base URL it's applied to
+	// (BulkActionHandler::get_redirect_url()'s result) — asserting only
+	// that a redirect happened would miss precisely these regressions.
+	//
+	// Uses the same throw-on-redirect technique as
+	// PostEditorGuardTest::test_enforce_read_only_redirects_after_save_to_list_table()
+	// to observe state past the `exit` that follows wp_safe_redirect().
+
+	/**
+	 * Success path for the single-post archive action.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
+	 */
+	public function test_post_action_archive_redirects_with_archived_flag_and_post_id_on_success() {
+		$post              = $this->createMockPost(
+			array(
+				'ID'          => 60,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 60 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'check_admin_referer' )
+			->once()
+			->with( 'archive-60' );
+
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 60 )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 60 )
+			->andReturn( false );
+
+		// perform() runs for real; this test trusts its return value to reach
+		// the redirect below. Internals are pinned by ArchiveOperationTest.
+		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 60 );
+
+		// get_redirect_url('post'): no referer, so it falls back through
+		// PostListUrlBuilder to admin_url('edit.php'), then the
+		// strip-query-args pass-through leaves that URL untouched.
+		\WP_Mock::userFunction( 'wp_get_referer' )->andReturn( false );
+		\WP_Mock::userFunction( 'admin_url' )
+			->with( 'edit.php' )
+			->andReturn( 'http://example.com/wp-admin/edit.php' );
+		\WP_Mock::userFunction( 'remove_query_arg' )
+			->with(
+				array( 'archived', 'unarchived', 'ids' ),
+				'http://example.com/wp-admin/edit.php'
+			)
+			->andReturn( 'http://example.com/wp-admin/edit.php' );
+
+		$captured_args = null;
+		$captured_url  = null;
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->once()
+			->andReturnUsing(
+				function ( $args, $url ) use ( &$captured_args, &$captured_url ) {
+					$captured_args = $args;
+					$captured_url  = $url;
+					return 'http://example.com/wp-admin/edit.php?archived=1&ids=60';
+				}
+			);
+
+		\WP_Mock::userFunction( 'wp_die' )->never();
+
+		// Detect the redirect by throwing — the production code follows
+		// wp_safe_redirect() with exit; which would halt PHPUnit otherwise.
+		\WP_Mock::userFunction( 'wp_safe_redirect' )
+			->with( 'http://example.com/wp-admin/edit.php?archived=1&ids=60' )
+			->andReturnUsing( function () {
+				throw new \RuntimeException( 'redirected' );
+			} );
+
+		try {
+			$this->post_list->post_action_archive( 60 );
+			$this->fail( 'Expected redirect to short-circuit execution.' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'redirected', $e->getMessage() );
+		}
+
+		$this->assertSame(
+			array(
+				'archived' => 1,
+				'ids'      => 60,
+			),
+			$captured_args,
+			'add_query_arg must receive the archive query arg set to 1 and the post id under "ids"'
+		);
+		$this->assertSame(
+			'http://example.com/wp-admin/edit.php',
+			$captured_url,
+			'add_query_arg must be applied to the URL get_redirect_url() produced'
+		);
+	}
+
+	/**
+	 * Mirror of the archive success-path test above for unarchive.
+	 * ArchiveAction::query_arg() returns 'unarchived' — not 'archived' — for
+	 * this action, so a regression that reused the archive literal (or
+	 * hardcoded the redirect target) would pass the archive test above while
+	 * failing here.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_unarchive
+	 */
+	public function test_post_action_unarchive_redirects_with_unarchived_flag_and_post_id_on_success() {
+		$post              = $this->createMockPost(
+			array(
+				'ID'          => 61,
+				'post_type'   => 'post',
+				'post_status' => 'archive',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 61 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'check_admin_referer' )
+			->once()
+			->with( 'unarchive-61' );
+
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 61 )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 61 )
+			->andReturn( false );
+
+		// perform() runs for real; this test trusts its return value to reach
+		// the redirect below. Internals are pinned by UnarchiveOperationTest.
+		$this->stubUnarchivePersistBoundary( 61 );
+
+		// get_redirect_url('post'): no referer, so it falls back through
+		// PostListUrlBuilder to admin_url('edit.php'), then the
+		// strip-query-args pass-through leaves that URL untouched.
+		\WP_Mock::userFunction( 'wp_get_referer' )->andReturn( false );
+		\WP_Mock::userFunction( 'admin_url' )
+			->with( 'edit.php' )
+			->andReturn( 'http://example.com/wp-admin/edit.php' );
+		\WP_Mock::userFunction( 'remove_query_arg' )
+			->with(
+				array( 'archived', 'unarchived', 'ids' ),
+				'http://example.com/wp-admin/edit.php'
+			)
+			->andReturn( 'http://example.com/wp-admin/edit.php' );
+
+		$captured_args = null;
+		$captured_url  = null;
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->once()
+			->andReturnUsing(
+				function ( $args, $url ) use ( &$captured_args, &$captured_url ) {
+					$captured_args = $args;
+					$captured_url  = $url;
+					return 'http://example.com/wp-admin/edit.php?unarchived=1&ids=61';
+				}
+			);
+
+		\WP_Mock::userFunction( 'wp_die' )->never();
+
+		// Detect the redirect by throwing — the production code follows
+		// wp_safe_redirect() with exit; which would halt PHPUnit otherwise.
+		\WP_Mock::userFunction( 'wp_safe_redirect' )
+			->with( 'http://example.com/wp-admin/edit.php?unarchived=1&ids=61' )
+			->andReturnUsing( function () {
+				throw new \RuntimeException( 'redirected' );
+			} );
+
+		try {
+			$this->post_list->post_action_unarchive( 61 );
+			$this->fail( 'Expected redirect to short-circuit execution.' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'redirected', $e->getMessage() );
+		}
+
+		$this->assertSame(
+			array(
+				'unarchived' => 1,
+				'ids'        => 61,
+			),
+			$captured_args,
+			'add_query_arg must receive the unarchive query arg set to 1 and the post id under "ids"'
+		);
+		$this->assertSame(
+			'http://example.com/wp-admin/edit.php',
+			$captured_url,
+			'add_query_arg must be applied to the URL get_redirect_url() produced'
+		);
+	}
 }
