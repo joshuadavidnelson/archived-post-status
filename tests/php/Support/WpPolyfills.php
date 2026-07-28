@@ -129,7 +129,7 @@ function sanitize_title( $title ) {
  * @return bool
  */
 function post_type_exists( $post_type ) {
-	return true;
+	return false;
 }
 
 /**
@@ -162,14 +162,14 @@ function load_plugin_textdomain( $domain, $deprecated = false, $plugin_rel_path 
  * Mock is_admin() function.
  */
 function is_admin() {
-	return true;
+	return false;
 }
 
 /**
  * Mock current_user_can() function.
  */
 function current_user_can( $capability, ...$args ) {
-	return true;
+	return false;
 }
 
 /**
