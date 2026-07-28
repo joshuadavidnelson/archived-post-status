@@ -14,7 +14,7 @@ import {
 	ARCHIVED_STATUS_SLUG,
 	PLUGIN_SLUG,
 } from './roles';
-import { resetPluginSettings } from './seed';
+import { POST_TYPES, resetPluginSettings } from './seed';
 
 /**
  * Upper bound on sweep iterations, so a delete that never takes effect fails
@@ -31,7 +31,7 @@ const MAX_SWEEP_PAGES = 50;
  * runs. Paginates rather than assuming a single 100-item page.
  *
  * @param requestUtils Authenticated admin request utils.
- * @param postType     REST base of the post type to sweep (`posts`, `pages`).
+ * @param postType     REST base of the post type to sweep (see {@link POST_TYPES}).
  */
 async function deleteAllArchived(
 	requestUtils: RequestUtils,
@@ -72,10 +72,10 @@ async function deleteAllArchived(
  *
  * Signs in as the wp-env admin and persists the authenticated state so the
  * `auth` setup project and every spec have a session to start from, makes sure
- * the plugin under test is active, clears posts and pages — including the
- * archived ones the upstream helpers cannot see — and resets the mutable
- * options the suite depends on, so specs begin from a known-empty content set
- * and stock plugin/fixture behaviour.
+ * the plugin under test is active, clears posts, pages and the CPT fixture's
+ * content — including the archived items the upstream helpers cannot see —
+ * and resets the mutable options the suite depends on, so specs begin from a
+ * known-empty content set and stock plugin/fixture behaviour.
  *
  * The option reset matters because a run that dies before a spec's `afterEach`
  * strands state in the database: a leftover `aps_settings` with
@@ -103,11 +103,17 @@ async function globalSetup( config: FullConfig ): Promise< void > {
 	// while the plugin is running.
 	await requestUtils.activatePlugin( PLUGIN_SLUG );
 
-	// Start from a clean content set.
+	// Start from a clean content set. `deleteAllPosts()` / `deleteAllPages()`
+	// are upstream helpers with no equivalent for the `aps_book` fixture post
+	// type (tests/e2e/fixtures/aps-cpt.php), so the archived-content sweep
+	// below runs for every post type under test, `aps_book` included — an
+	// archived post is otherwise invisible to both upstream helpers regardless
+	// of type, per `deleteAllArchived()`'s own docblock.
 	await requestUtils.deleteAllPosts();
 	await requestUtils.deleteAllPages();
-	await deleteAllArchived( requestUtils, 'posts' );
-	await deleteAllArchived( requestUtils, 'pages' );
+	for ( const { restBase } of POST_TYPES ) {
+		await deleteAllArchived( requestUtils, restBase );
+	}
 
 	// Start from stock plugin settings and every fixture toggle off.
 	await resetPluginSettings( requestUtils );

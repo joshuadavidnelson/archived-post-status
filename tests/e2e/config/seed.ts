@@ -44,6 +44,48 @@ export interface SeededPost {
 	link: string;
 }
 
+/**
+ * One post type the suite runs against.
+ */
+export interface PostTypeUnderTest {
+	/** Short alias used in test titles/describe blocks. */
+	key: 'post' | 'page' | 'book';
+	/** REST base — the `/wp/v2/<restBase>` path segment `seedPost`/`deletePosts` use. */
+	restBase: 'posts' | 'pages' | 'aps_book';
+	/** `post_type` query arg for the post-list screen (`edit.php`, see `postListQuery()` in `./admin`). */
+	queryArg: 'post' | 'page' | 'aps_book';
+	/** Human label for test titles, e.g. `` `${ label } archive roundtrip` ``. */
+	label: string;
+}
+
+/**
+ * Every post type the suite runs against.
+ *
+ * `post` and `page` are core's own default-`capability_type` types. `book`
+ * (post type slug `aps_book`) is the e2e fixture's custom-`capability_type`
+ * type, whose primitives are `edit_books` / `edit_others_books` rather than
+ * `edit_posts` / `edit_others_posts`. A spec that iterates this table
+ * exercises `Archive\ArchiveCapability` / `Archive\ViewCapability`'s
+ * post-type-primitive resolution against a primitive set that actually
+ * differs from `post`'s, rather than only against types that happen to share
+ * it.
+ *
+ * `restBase` and `queryArg` differ for the core types (REST uses the plural
+ * `posts` / `pages`; the query arg uses the singular `post` / `page`) but are
+ * identical for `book`, which the fixture registers with an explicit
+ * `rest_base` equal to its slug.
+ *
+ * A plain array rather than a keyed lookup: every current use is "run this
+ * assertion for each post type", so a `for…of` is the whole idiom.
+ *
+ * @see tests/e2e/fixtures/aps-cpt.php
+ */
+export const POST_TYPES: readonly PostTypeUnderTest[] = [
+	{ key: 'post', restBase: 'posts', queryArg: 'post', label: 'Post' },
+	{ key: 'page', restBase: 'pages', queryArg: 'page', label: 'Page' },
+	{ key: 'book', restBase: 'aps_book', queryArg: 'aps_book', label: 'Book' },
+];
+
 export interface SeedPayload {
 	title: string;
 	status?: string;
@@ -51,7 +93,7 @@ export interface SeedPayload {
 	comment_status?: 'open' | 'closed';
 	ping_status?: 'open' | 'closed';
 	author?: number;
-	type?: 'posts' | 'pages';
+	type?: PostTypeUnderTest[ 'restBase' ];
 }
 
 let titleCounter = 0;
@@ -71,10 +113,10 @@ export function uniqueTitle( prefix: string ): string {
 }
 
 /**
- * Create a post (or page) over the core REST API.
+ * Create a post over the core REST API, for any post type under test.
  *
  * @param requestUtils Admin request utils.
- * @param payload      Post attributes. `status` accepts any registered status.
+ * @param payload      Post attributes; `type` accepts any {@link POST_TYPES} REST base.
  */
 export async function seedPost(
 	requestUtils: RequestUtils,
@@ -100,12 +142,12 @@ export async function seedPost(
  *
  * @param requestUtils Admin request utils.
  * @param ids          Post ids to remove.
- * @param type         REST base of the post type. Defaults to `posts`.
+ * @param type         REST base of the post type (see {@link POST_TYPES}). Defaults to `posts`.
  */
 export async function deletePosts(
 	requestUtils: RequestUtils,
 	ids: number[],
-	type: 'posts' | 'pages' = 'posts'
+	type: PostTypeUnderTest[ 'restBase' ] = 'posts'
 ): Promise< void > {
 	await Promise.all(
 		ids.map( async ( id ) => {
