@@ -44,6 +44,15 @@ export default defineConfig( {
 	// Resolved relative to this config file.
 	globalSetup: './tests/e2e/config/global-setup.ts',
 
+	// `@wordpress/scripts`' base config already sets this to 1, but only as an
+	// inherited default — this repo never pins it itself, so a future upstream
+	// config change could silently parallelise workers. The whole suite (CLI
+	// specs included) shares one wp-env site and assumes serial execution:
+	// `global-setup.ts` wipes all content once up front rather than per test,
+	// and specs seed/clean up against that single shared site. Pinned here so
+	// the assumption is enforced by this repo, not borrowed from upstream.
+	workers: 1,
+
 	use: {
 		...baseConfig.use,
 		storageState: ADMIN_STORAGE_STATE,
