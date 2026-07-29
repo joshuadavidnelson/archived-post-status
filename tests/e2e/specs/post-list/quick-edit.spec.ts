@@ -6,6 +6,35 @@
  * Edit's status select. Both directions are pinned here — the select on an
  * archivable post offers no archived option, and an archived row offers no
  * Quick Edit at all.
+ *
+ * Neither test loops {@link POST_TYPES}: for both, no per-type registration
+ * in this plugin gates the observed behaviour, so there is no per-type
+ * mutation a registration-loop bug could produce.
+ *
+ *   - The status select: WordPress core builds `<select name="_status">`'s
+ *     option list itself (`WP_Posts_List_Table::inline_edit()` in
+ *     wp-admin/includes/class-wp-posts-list-table.php), independent of
+ *     `register_post_status()`'s args, and nothing in `src/` hooks the
+ *     `quick_edit_statuses` filter (or the legacy `quick_edit_custom_box` /
+ *     `bulk_edit_custom_box`) for any post type — confirmed by grep. There
+ *     is no plugin-owned code path here, per-type or otherwise, to break.
+ *   - The Quick Edit trigger: core only adds the `'inline hide-if-no-js'`
+ *     row action (the `button.editinline` this test looks for) when
+ *     `current_user_can( 'edit_post', ... )` is true (same file,
+ *     `handle_row_actions()`). `PostEditorGuard::deny_editing_archived()`
+ *     denies that capability for every archived post while read-only mode
+ *     is active — this suite's stock default, unset by any test here — via
+ *     a `map_meta_cap` filter keyed only on post status, never post type.
+ *     Core itself withholds the button before `RowActionPolicy`'s own
+ *     per-type-gated removal of the same action ever gets a chance to
+ *     matter — the same "core gate front-runs the plugin check" trap that
+ *     defeated the original, unparameterized capability-matrix sweep.
+ *     Confirmed by mutating `PostList::hooks()`'s per-type loop to wire
+ *     `post` only and re-running this exact check against an archived
+ *     `page`: `button.editinline` stayed absent (0) both before and after
+ *     the mutation, while the row's Unarchive link — genuinely gated by
+ *     that same loop — dropped from 1 to 0. See the task report for the
+ *     full mutation results.
  */
 
 /**
