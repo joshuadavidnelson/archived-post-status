@@ -44,14 +44,48 @@ import {
 	archivePost,
 	deletePosts,
 	lockPost,
+	POST_TYPES,
 	postState,
 	roleUserIds,
 	seedPost,
 	uniqueTitle,
 } from '../../config/seed';
+import type { PostTypeUnderTest } from '../../config/seed';
 import { pluginStrings } from '../../config/strings';
 
-const ARCHIVED_VIEW = postListQuery( { postStatus: ARCHIVED_STATUS_SLUG } );
+/**
+ * A post created during a test, tagged with the REST base `deletePosts()`
+ * needs to remove it again. The two tests that loop {@link POST_TYPES} seed
+ * more than one type into the same `created` array, so a single hardcoded
+ * base would silently fail to delete anything but `post`.
+ */
+interface CreatedPost {
+	id: number;
+	type: PostTypeUnderTest[ 'restBase' ];
+}
+
+/**
+ * Delete every tracked post, grouped by REST base.
+ *
+ * @param requestUtils Admin request utils.
+ * @param posts        Posts pushed onto the describe block's `created` array.
+ */
+async function deleteCreated(
+	requestUtils: Parameters< typeof deletePosts >[ 0 ],
+	posts: CreatedPost[]
+): Promise< void > {
+	await Promise.all(
+		POST_TYPES.map( ( { restBase } ) =>
+			deletePosts(
+				requestUtils,
+				posts
+					.filter( ( post ) => post.type === restBase )
+					.map( ( post ) => post.id ),
+				restBase
+			)
+		)
+	);
+}
 
 /**
  * Assert that nothing reintroduces the `invalid` bucket deleted in 0.4.0.
@@ -68,7 +102,7 @@ async function expectNoInvalidBucket(
 }
 
 test.describe( 'post list: bulk actions', () => {
-	const created: number[] = [];
+	const created: CreatedPost[] = [];
 	let strings: Awaited< ReturnType< typeof pluginStrings > >;
 
 	test.beforeAll( async ( { requestUtils } ) => {
@@ -76,105 +110,160 @@ test.describe( 'post list: bulk actions', () => {
 	} );
 
 	test.afterEach( async ( { requestUtils } ) => {
-		await deletePosts( requestUtils, created.splice( 0 ) );
+		await deleteCreated( requestUtils, created.splice( 0 ) );
 		await resetFixtures( requestUtils, [
 			FIXTURE_TOGGLES.deniedPostId,
 			FIXTURE_TOGGLES.restrictStatuses,
 		] );
 	} );
 
-	test( 'bulk Archive archives every selected post and offers Undo', async ( {
-		admin,
-		page,
-		requestUtils,
-	} ) => {
-		const first = await seedPost( requestUtils, {
-			title: uniqueTitle( 'Bulk archive one' ),
-			status: 'publish',
-		} );
-		const second = await seedPost( requestUtils, {
-			title: uniqueTitle( 'Bulk archive two' ),
-			status: 'publish',
-		} );
-		created.push( first.id, second.id );
-
-		await admin.visitAdminPage( 'edit.php', postListQuery() );
-		await selectRows( page, [ first.id, second.id ] );
-		const params = await applyBulkAction( page, 'archive' );
-
-		await expect(
-			noticeWith( page, strings.archived_notice_many )
-		).toBeVisible();
-		expect( params.get( 'archived' ) ).toBe( '2' );
-		// The form submits ids in list-table order, so compare as a set.
-		expect(
-			params.get( 'ids' )?.split( ',' ).map( Number ).sort()
-		).toEqual( [ first.id, second.id ].sort() );
-		expect( params.has( 'skipped' ) ).toBe( false );
-		await expectNoInvalidBucket( page, params );
-
-		for ( const id of [ first.id, second.id ] ) {
-			expect( ( await postState( requestUtils, id ) ).post_status ).toBe(
-				ARCHIVED_STATUS_SLUG
+	// The two tests below loop every {@link POST_TYPES} entry: both the
+	// dropdown option (`PostList::bulk_actions()`) and the handler
+	// (`BulkActionHandler::handle()`) are wired per post type via
+	// `bulk_actions-edit-{type}` / `handle_bulk_actions-edit-{type}`
+	// (src/Admin/PostList.php::hooks()) — a registration loop that only
+	// wired `post` would leave `page`/`book` with no bulk Archive/Unarchive
+	// option at all, or an option that silently does nothing on submit.
+	// Together the two tests exercise both directions of that wiring: this
+	// one covers the Archive branch (dropdown option + handler) plus Undo,
+	// which round-trips back through the Unarchive handler via a GET link
+	// rather than the dropdown.
+	for ( const postType of POST_TYPES ) {
+		test( `${ postType.label }: bulk Archive archives every selected post and offers Undo`, async ( {
+			admin,
+			page,
+			requestUtils,
+		} ) => {
+			const first = await seedPost( requestUtils, {
+				title: uniqueTitle( `Bulk archive one ${ postType.key }` ),
+				status: 'publish',
+				type: postType.restBase,
+			} );
+			const second = await seedPost( requestUtils, {
+				title: uniqueTitle( `Bulk archive two ${ postType.key }` ),
+				status: 'publish',
+				type: postType.restBase,
+			} );
+			created.push(
+				{ id: first.id, type: postType.restBase },
+				{ id: second.id, type: postType.restBase }
 			);
-		}
 
-		// Undo restores the status each post held before archiving.
-		const undo = noticeLocator( page ).getByRole( 'link', {
-			name: strings.undo_label,
-		} );
-		await expect( undo ).toBeVisible();
-
-		await Promise.all( [ page.waitForURL( /edit\.php/ ), undo.click() ] );
-
-		await expect(
-			noticeWith( page, strings.unarchived_notice_many )
-		).toBeVisible();
-
-		for ( const id of [ first.id, second.id ] ) {
-			expect( ( await postState( requestUtils, id ) ).post_status ).toBe(
-				'publish'
+			await admin.visitAdminPage(
+				'edit.php',
+				postListQuery( { postType: postType.queryArg } )
 			);
-		}
-	} );
+			await selectRows( page, [ first.id, second.id ] );
+			const params = await applyBulkAction( page, 'archive' );
 
-	test( 'bulk Unarchive restores every selected post', async ( {
-		admin,
-		page,
-		requestUtils,
-	} ) => {
-		const published = await seedPost( requestUtils, {
-			title: uniqueTitle( 'Bulk unarchive publish' ),
-			status: 'publish',
+			await expect(
+				noticeWith( page, strings.archived_notice_many )
+			).toBeVisible();
+			expect( params.get( 'archived' ) ).toBe( '2' );
+			// The form submits ids in list-table order, so compare as a set.
+			expect(
+				params.get( 'ids' )?.split( ',' ).map( Number ).sort()
+			).toEqual( [ first.id, second.id ].sort() );
+			expect( params.has( 'skipped' ) ).toBe( false );
+			await expectNoInvalidBucket( page, params );
+
+			for ( const id of [ first.id, second.id ] ) {
+				expect(
+					( await postState( requestUtils, id ) ).post_status
+				).toBe( ARCHIVED_STATUS_SLUG );
+			}
+
+			// Undo restores the status each post held before archiving.
+			const undo = noticeLocator( page ).getByRole( 'link', {
+				name: strings.undo_label,
+			} );
+			await expect( undo ).toBeVisible();
+
+			await Promise.all( [
+				page.waitForURL( /edit\.php/ ),
+				undo.click(),
+			] );
+
+			await expect(
+				noticeWith( page, strings.unarchived_notice_many )
+			).toBeVisible();
+
+			for ( const id of [ first.id, second.id ] ) {
+				expect(
+					( await postState( requestUtils, id ) ).post_status
+				).toBe( 'publish' );
+			}
 		} );
-		const draft = await seedPost( requestUtils, {
-			title: uniqueTitle( 'Bulk unarchive draft' ),
-			status: 'draft',
+	}
+
+	// The Unarchive-branch counterpart to the Archive test above: reaches
+	// the archived-view dropdown's Unarchive option directly (rather than
+	// Undo's GET link), and additionally pins that each post restores its
+	// OWN previous status rather than a shared default — a check that has
+	// nothing to do with post type but is cheap to keep per-type since the
+	// loop is already here for the wiring proof.
+	for ( const postType of POST_TYPES ) {
+		test( `${ postType.label }: bulk Unarchive restores every selected post`, async ( {
+			admin,
+			page,
+			requestUtils,
+		} ) => {
+			const published = await seedPost( requestUtils, {
+				title: uniqueTitle( `Bulk unarchive publish ${ postType.key }` ),
+				status: 'publish',
+				type: postType.restBase,
+			} );
+			const draft = await seedPost( requestUtils, {
+				title: uniqueTitle( `Bulk unarchive draft ${ postType.key }` ),
+				status: 'draft',
+				type: postType.restBase,
+			} );
+			created.push(
+				{ id: published.id, type: postType.restBase },
+				{ id: draft.id, type: postType.restBase }
+			);
+
+			await archivePost( requestUtils, published.id );
+			await archivePost( requestUtils, draft.id );
+
+			await admin.visitAdminPage(
+				'edit.php',
+				postListQuery( {
+					postType: postType.queryArg,
+					postStatus: ARCHIVED_STATUS_SLUG,
+				} )
+			);
+			await selectRows( page, [ published.id, draft.id ] );
+			const params = await applyBulkAction( page, 'unarchive' );
+
+			await expect(
+				noticeWith( page, strings.unarchived_notice_many )
+			).toBeVisible();
+			expect( params.get( 'unarchived' ) ).toBe( '2' );
+			await expectNoInvalidBucket( page, params );
+
+			// Each post returns to its own previous status, not a shared default.
+			expect(
+				( await postState( requestUtils, published.id ) ).post_status
+			).toBe( 'publish' );
+			expect(
+				( await postState( requestUtils, draft.id ) ).post_status
+			).toBe( 'draft' );
 		} );
-		created.push( published.id, draft.id );
+	}
 
-		await archivePost( requestUtils, published.id );
-		await archivePost( requestUtils, draft.id );
-
-		await admin.visitAdminPage( 'edit.php', ARCHIVED_VIEW );
-		await selectRows( page, [ published.id, draft.id ] );
-		const params = await applyBulkAction( page, 'unarchive' );
-
-		await expect(
-			noticeWith( page, strings.unarchived_notice_many )
-		).toBeVisible();
-		expect( params.get( 'unarchived' ) ).toBe( '2' );
-		await expectNoInvalidBucket( page, params );
-
-		// Each post returns to its own previous status, not a shared default.
-		expect(
-			( await postState( requestUtils, published.id ) ).post_status
-		).toBe( 'publish' );
-		expect(
-			( await postState( requestUtils, draft.id ) ).post_status
-		).toBe( 'draft' );
-	} );
-
+	// Deliberately NOT parameterized over POST_TYPES from here down: every
+	// bucket below (locked / denied / wrong_status / the aggregate) is
+	// decided by BulkActionHandler::process_archive_post() /
+	// process_unarchive_post(), and neither branches on post type —
+	// wp_check_post_lock(), ArchiveCapability::can_archive(),
+	// get_post_status() and ArchivableStatuses::includes() all take a bare
+	// post id, nothing type-shaped. The one thing that DOES vary per type —
+	// whether handle_bulk_actions-edit-{type} is wired at all — is already
+	// proven by the two loops above, which exercise both the Archive and
+	// Unarchive branches for every {@link POST_TYPES} entry. Looping the
+	// bucket tests too would re-prove that same wiring three more times per
+	// test for no additional signal.
 	test( 'a post locked by another user lands in the locked bucket', async ( {
 		admin,
 		page,
@@ -188,7 +277,10 @@ test.describe( 'post list: bulk actions', () => {
 			title: uniqueTitle( 'Bulk lock held' ),
 			status: 'publish',
 		} );
-		created.push( free.id, locked.id );
+		created.push(
+			{ id: free.id, type: 'posts' },
+			{ id: locked.id, type: 'posts' }
+		);
 
 		const users = await roleUserIds( requestUtils );
 
@@ -234,7 +326,10 @@ test.describe( 'post list: bulk actions', () => {
 			title: uniqueTitle( 'Bulk denied blocked' ),
 			status: 'publish',
 		} );
-		created.push( allowed.id, denied.id );
+		created.push(
+			{ id: allowed.id, type: 'posts' },
+			{ id: denied.id, type: 'posts' }
+		);
 
 		// Per-post denial: the screen-level gate in BulkActionHandler::handle()
 		// still passes, so the batch runs and exactly one item is skipped.
@@ -278,7 +373,10 @@ test.describe( 'post list: bulk actions', () => {
 			title: uniqueTitle( 'Bulk status draft' ),
 			status: 'draft',
 		} );
-		created.push( published.id, draft.id );
+		created.push(
+			{ id: published.id, type: 'posts' },
+			{ id: draft.id, type: 'posts' }
+		);
 
 		// `aps_archivable_statuses` narrowed to publish only.
 		await setFixtures( requestUtils, {
@@ -326,7 +424,11 @@ test.describe( 'post list: bulk actions', () => {
 			title: uniqueTitle( 'Bulk mixed missing' ),
 			status: 'publish',
 		} );
-		created.push( ok.id, locked.id, denied.id );
+		created.push(
+			{ id: ok.id, type: 'posts' },
+			{ id: locked.id, type: 'posts' },
+			{ id: denied.id, type: 'posts' }
+		);
 
 		const users = await roleUserIds( requestUtils );
 		await setFixtures( requestUtils, {
