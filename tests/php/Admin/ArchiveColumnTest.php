@@ -52,44 +52,77 @@ class ArchiveColumnTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * hooks() registers (a) one pre_get_posts action for sorting, plus
-	 * (b) three descriptors per supported post type: the column header
-	 * filter, the cell render action, and the sortable column filter.
+	 * hooks() registers exactly two descriptors: the `pre_get_posts`
+	 * sorting action, and the `wp_loaded` deferral that later registers
+	 * the per-post-type column hooks (see
+	 * test_register_post_type_hooks_registers_column_hooks_per_supported_post_type()
+	 * below).
 	 *
-	 * Asserting against the hook names is the strongest contract here:
-	 * those strings are baked into WordPress core's filter dispatch and
-	 * a typo silently drops the column from the table.
+	 * Before the 0.4.0 CPT-timing fix, hooks() enumerated
+	 * aps_get_supported_post_types() directly and built three descriptors
+	 * per type here — evaluated on `plugins_loaded`, before third-party
+	 * custom post types exist. That enumeration moved to
+	 * post_type_hooks(), invoked only once `wp_loaded` fires, so this test
+	 * no longer needs to stub the supported-post-types boundary at all.
 	 *
 	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::hooks
 	 */
-	public function test_hooks_registers_column_filters_and_sort_action_per_supported_post_type() {
+	public function test_hooks_registers_sort_action_and_defers_column_hooks_to_wp_loaded() {
+		$descriptors = $this->column->hooks();
+
+		$this->assertCount( 2, $descriptors );
+
+		$hook_names = array_map( static fn( $d ) => $d->hook, $descriptors );
+
+		$this->assertContains( 'pre_get_posts', $hook_names );
+		$this->assertContains( 'wp_loaded', $hook_names );
+	}
+
+	/**
+	 * register_post_type_hooks() is the `wp_loaded` callback hooks()
+	 * defers to. Once custom post types are guaranteed to exist, it must
+	 * register the column-header filter, the cell-render action, and the
+	 * sortable-column filter for EVERY supported post type — including a
+	 * custom post type (`book`) that would not have existed yet had this
+	 * run eagerly on `plugins_loaded`, which is exactly the 0.4.0
+	 * CPT-timing bug this deferral fixes.
+	 *
+	 * Asserting against the hook names AND the exact callback array is the
+	 * strongest contract here: those strings are baked into WordPress
+	 * core's filter dispatch and a typo silently drops the column from the
+	 * table.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::register_post_type_hooks
+	 */
+	public function test_register_post_type_hooks_registers_column_hooks_per_supported_post_type() {
 		// drive aps_get_supported_post_types() through its real
 		// WP-boundary + filter dependencies rather than stubbing the
 		// plugin-owned function itself. A regression in the real function
 		// (e.g. forgetting to apply the supported filter) now surfaces here.
 		\WP_Mock::userFunction( 'get_post_types' )
-			->andReturn( array( 'post' => 'post', 'page' => 'page' ) );
+			->andReturn( array( 'post' => 'post', 'page' => 'page', 'book' => 'book' ) );
 		\WP_Mock::onFilter( 'aps_excluded_post_types' )
 			->with( array( 'attachment' ) )
 			->reply( array( 'attachment' ) );
 		\WP_Mock::onFilter( 'aps_supported_post_types' )
-			->with( array( 'post', 'page' ) )
-			->reply( array( 'post', 'page' ) );
+			->with( array( 'post', 'page', 'book' ) )
+			->reply( array( 'post', 'page', 'book' ) );
 
-		$descriptors = $this->column->hooks();
+		\WP_Mock::expectFilterAdded( 'manage_post_posts_columns', array( $this->column, 'add_column' ), 10, 1 );
+		\WP_Mock::expectActionAdded( 'manage_post_posts_custom_column', array( $this->column, 'render_cell' ), 10, 2 );
+		\WP_Mock::expectFilterAdded( 'manage_edit-post_sortable_columns', array( $this->column, 'register_sortable' ), 10, 1 );
+		\WP_Mock::expectFilterAdded( 'manage_page_posts_columns', array( $this->column, 'add_column' ), 10, 1 );
+		\WP_Mock::expectActionAdded( 'manage_page_posts_custom_column', array( $this->column, 'render_cell' ), 10, 2 );
+		\WP_Mock::expectFilterAdded( 'manage_edit-page_sortable_columns', array( $this->column, 'register_sortable' ), 10, 1 );
+		\WP_Mock::expectFilterAdded( 'manage_book_posts_columns', array( $this->column, 'add_column' ), 10, 1 );
+		\WP_Mock::expectActionAdded( 'manage_book_posts_custom_column', array( $this->column, 'render_cell' ), 10, 2 );
+		\WP_Mock::expectFilterAdded( 'manage_edit-book_sortable_columns', array( $this->column, 'register_sortable' ), 10, 1 );
 
-		// 1 pre_get_posts + (3 hooks per post type) * 2 post types = 7.
-		$this->assertCount( 7, $descriptors );
+		$this->column->register_post_type_hooks();
 
-		$hook_names = array_map( static fn( $d ) => $d->hook, $descriptors );
-
-		$this->assertContains( 'pre_get_posts', $hook_names );
-		$this->assertContains( 'manage_post_posts_columns', $hook_names );
-		$this->assertContains( 'manage_post_posts_custom_column', $hook_names );
-		$this->assertContains( 'manage_edit-post_sortable_columns', $hook_names );
-		$this->assertContains( 'manage_page_posts_columns', $hook_names );
-		$this->assertContains( 'manage_page_posts_custom_column', $hook_names );
-		$this->assertContains( 'manage_edit-page_sortable_columns', $hook_names );
+		// WP_Mock verifies the expectFilterAdded()/expectActionAdded()
+		// expectations during tearDown.
+		$this->addToAssertionCount( 1 );
 	}
 
 	// -----------------------------------------------------------------------

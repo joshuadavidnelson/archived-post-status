@@ -9,6 +9,7 @@ use ArchivedPostStatus\Archive\ArchivableStatuses;
 use ArchivedPostStatus\Archive\ArchiveAction;
 use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
+use ArchivedPostStatus\Hooks\HookLoader;
 use ArchivedPostStatus\Status\PostStatusValue;
 // RowActionPolicy is in the same namespace — no `use` needed, but referenced
 // explicitly at the use site for IDE / search ergonomics.
@@ -40,6 +41,16 @@ final class PostList implements HookableInterface {
 	/**
 	 * Return an array of HookDescriptor objects.
 	 *
+	 * Row actions are registered here unconditionally on WordPress's two
+	 * REAL row-actions hooks (`post_row_actions`, `page_row_actions` — see
+	 * `row_actions()`'s docblock) rather than per supported post type: core
+	 * fires exactly those two names for every post type, hierarchical or
+	 * not, so a per-type `"{$post_type}_row_actions"` registration would
+	 * only ever match the literal slugs `post`/`page` and never fire for
+	 * any other type. Because these two hooks don't depend on the
+	 * supported-post-types list, they need no deferral — unlike the
+	 * bulk-action hooks below, which do.
+	 *
 	 * @since 0.4.0
 	 * @return HookDescriptor[]
 	 *
@@ -48,23 +59,69 @@ final class PostList implements HookableInterface {
 	 * access is the WP convention for value-object construction in hook registration.
 	 */
 	public function hooks(): array {
-		$hooks = array(
+		return array(
 			HookDescriptor::filter( 'query_vars', array( $this, 'query_vars' ) ),
 			HookDescriptor::filter( 'wp_list_table_show_post_checkbox', array( $this, 'show_archived_row_checkbox' ), 10, 2 ),
 			HookDescriptor::action( 'post_action_archive', array( $this, 'post_action_archive' ) ),
 			HookDescriptor::action( 'post_action_unarchive', array( $this, 'post_action_unarchive' ) ),
+			HookDescriptor::filter( 'post_row_actions', array( $this, 'row_actions' ), 10, 2 ),
+			HookDescriptor::filter( 'page_row_actions', array( $this, 'row_actions' ), 10, 2 ),
+			HookDescriptor::action( 'wp_loaded', array( $this, 'register_post_type_hooks' ) ),
 		);
+	}
 
-		// Register bulk actions and row actions for each supported post type
-		$post_types = aps_get_supported_post_types();
-		foreach ( $post_types as $post_type ) {
-			// Bulk actions
+	/**
+	 * Register the per-post-type bulk-action hooks once custom post types exist.
+	 *
+	 * `hooks()` runs on `plugins_loaded` (see `aps_run_plugin()` in the
+	 * plugin bootstrap file), before third-party custom post types
+	 * register — conventionally on `init` at the default priority 10.
+	 * Enumerating `aps_get_supported_post_types()` directly inside
+	 * `hooks()` would therefore permanently miss any custom post type on
+	 * every request: core's own `post`/`page` exist by `plugins_loaded`,
+	 * but a plugin- or theme-registered type does not yet.
+	 *
+	 * Deferred to `wp_loaded` rather than a late `init` priority: `init`
+	 * fires at every registered priority before `wp_loaded` fires at all,
+	 * so `wp_loaded` is the first point in the WordPress lifecycle
+	 * guaranteed to run after EVERY `init` callback — not just ones at or
+	 * below some priority number we'd otherwise have to guess. The
+	 * hooks built here (`bulk_actions-edit-{$screen}`,
+	 * `handle_bulk_actions-edit-{$screen}`) don't themselves fire until
+	 * the post-list admin screen renders, long after `wp_loaded`, so
+	 * nothing is lost by registering this late.
+	 *
+	 * Goes through `HookLoader::register()` (rather than add_action() /
+	 * add_filter() directly) so HookLoader remains the only class in the
+	 * codebase that calls those two functions, even for this second,
+	 * deferred registration pass.
+	 *
+	 * @since 0.4.0
+	 * @return void
+	 */
+	public function register_post_type_hooks(): void {
+		( new HookLoader() )->register( $this->post_type_hooks() );
+	}
+
+	/**
+	 * Build the bulk-action hook descriptors for each supported post type.
+	 *
+	 * @since 0.4.0
+	 * @return HookDescriptor[]
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
+	 * are named-constructor factories for the HookDescriptor value object; static
+	 * access is the WP convention for value-object construction in hook registration.
+	 * Same rationale as hooks() above — this is the same construction moved to a
+	 * second, deferred call site, not a new pattern.
+	 */
+	private function post_type_hooks(): array {
+		$hooks = array();
+
+		foreach ( aps_get_supported_post_types() as $post_type ) {
 			$screen  = 'edit-' . $post_type;
 			$hooks[] = HookDescriptor::filter( "bulk_actions-{$screen}", array( $this, 'bulk_actions' ) );
 			$hooks[] = HookDescriptor::filter( "handle_bulk_actions-{$screen}", array( $this->bulk_handler, 'handle' ), 10, 3 );
-
-			// Row actions
-			$hooks[] = HookDescriptor::filter( "{$post_type}_row_actions", array( $this, 'row_actions' ), 10, 2 );
 		}
 
 		return $hooks;
@@ -150,6 +207,15 @@ final class PostList implements HookableInterface {
 
 	/**
 	 * Add an Unarchive & Archive link to the post row actions.
+	 *
+	 * Registered in `hooks()` on both `post_row_actions` and
+	 * `page_row_actions` — the only two row-actions hooks WordPress core
+	 * actually fires (`WP_Posts_List_Table::handle_row_actions()`), for
+	 * every post type, hierarchical or not. This callback therefore has no
+	 * dependency on the supported-post-types list at registration time;
+	 * per-post-type filtering happens here, at call time, via
+	 * {@see RowActionPolicy::for_post()}'s `aps_is_supported_post_type()`
+	 * gate, which always sees the live list.
 	 *
 	 * The policy branches live in the pure-static
 	 * {@see RowActionPolicy::for_post()} helper; this filter callback is a

@@ -183,4 +183,86 @@ class HookLoaderTest extends TestCase {
 		// add_action/add_filter call fires).
 		$this->addToAssertionCount( 1 );
 	}
+
+	// -----------------------------------------------------------------------
+	// register() — the deferred-registration extension point
+	// -----------------------------------------------------------------------
+	//
+	// Added alongside the 0.4.0 CPT-timing fix: some hookables (PostList,
+	// ArchiveColumn) must register part of their hooks later than the
+	// composition root's single run() pass — after wp_loaded, once custom
+	// post types exist — via a second, direct call. register() is what
+	// keeps HookLoader the sole caller of add_action()/add_filter() even
+	// for that second pass; these tests pin it independently of run().
+
+	/**
+	 * register() dispatches an action descriptor straight to add_action(),
+	 * without needing a HookableInterface object or the add()/run() flow.
+	 *
+	 * @covers ArchivedPostStatus\Hooks\HookLoader::register
+	 */
+	public function test_register_dispatches_action_descriptor_via_add_action() {
+		$callback   = function () {};
+		$descriptor = HookDescriptor::action( 'wp_loaded', $callback, 20, 0 );
+
+		\WP_Mock::expectActionAdded( 'wp_loaded', $callback, 20, 0 );
+
+		( new HookLoader() )->register( array( $descriptor ) );
+
+		// WP_Mock verifies the expectation during tearDown.
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * register() dispatches a filter descriptor straight to add_filter().
+	 *
+	 * @covers ArchivedPostStatus\Hooks\HookLoader::register
+	 */
+	public function test_register_dispatches_filter_descriptor_via_add_filter() {
+		$callback   = function () {};
+		$descriptor = HookDescriptor::filter( 'bulk_actions-edit-book', $callback );
+
+		\WP_Mock::expectFilterAdded( 'bulk_actions-edit-book', $callback, 10, 1 );
+
+		( new HookLoader() )->register( array( $descriptor ) );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * register() iterates every descriptor handed to it, not just the
+	 * first — mirrors test_run_iterates_all_registered_hookables() at the
+	 * single-call level.
+	 *
+	 * @covers ArchivedPostStatus\Hooks\HookLoader::register
+	 */
+	public function test_register_dispatches_every_descriptor_in_the_array() {
+		$cb_one = function () {};
+		$cb_two = function () {};
+
+		\WP_Mock::expectFilterAdded( 'manage_post_posts_columns', $cb_one, 10, 1 );
+		\WP_Mock::expectActionAdded( 'manage_post_posts_custom_column', $cb_two, 10, 2 );
+
+		( new HookLoader() )->register(
+			array(
+				HookDescriptor::filter( 'manage_post_posts_columns', $cb_one ),
+				HookDescriptor::action( 'manage_post_posts_custom_column', $cb_two, 10, 2 ),
+			)
+		);
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * register() with an empty array is a no-op.
+	 *
+	 * @covers ArchivedPostStatus\Hooks\HookLoader::register
+	 */
+	public function test_register_no_ops_for_empty_descriptor_array() {
+		( new HookLoader() )->register( array() );
+
+		// WP_Mock fails the test if any unexpected add_action/add_filter
+		// call fires; reaching here without one is the assertion.
+		$this->addToAssertionCount( 1 );
+	}
 }
