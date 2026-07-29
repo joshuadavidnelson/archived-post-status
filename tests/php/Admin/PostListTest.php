@@ -46,15 +46,25 @@ class PostListTest extends TestCase {
 	protected $post_list;
 
 	/**
+	 * The BulkActionHandler instance `$post_list` is constructed with. Kept
+	 * accessible (rather than constructed inline in set_up()) so
+	 * hook-registration tests can assert the exact callback array
+	 * (`[ $this->bulk_handler, 'handle' ]`) PostList hands to add_filter() —
+	 * see test_register_post_type_hooks_registers_bulk_action_hooks_per_supported_post_type().
+	 *
+	 * @var ArchivedPostStatus\Admin\BulkActionHandler
+	 */
+	protected $bulk_handler;
+
+	/**
 	 * Set up the test.
 	 *
 	 * @since 0.4.0
 	 */
 	public function set_up() {
 		parent::set_up();
-		$this->post_list = new ArchivedPostStatus\Admin\PostList(
-			new ArchivedPostStatus\Admin\BulkActionHandler()
-		);
+		$this->bulk_handler = new ArchivedPostStatus\Admin\BulkActionHandler();
+		$this->post_list    = new ArchivedPostStatus\Admin\PostList( $this->bulk_handler );
 	}
 
 	/**
@@ -76,34 +86,86 @@ class PostListTest extends TestCase {
 	// are load-bearing strings that a typo would silently break.
 
 	/**
-	 * hooks() returns the bundle of post-list-table integration hooks:
-	 * `query_vars` (filter), `post_action_archive` + `post_action_unarchive`
-	 * (admin-action entry points), plus per-supported-post-type filters
-	 * `bulk_actions-edit-{type}`, `handle_bulk_actions-edit-{type}`,
-	 * `{type}_row_actions`.
+	 * hooks() returns the bundle of post-list-table integration hooks that
+	 * do NOT depend on the supported-post-types list: `query_vars` +
+	 * `wp_list_table_show_post_checkbox` (filters), `post_action_archive` +
+	 * `post_action_unarchive` (admin-action entry points), the two REAL
+	 * row-actions hooks core fires (`post_row_actions`, `page_row_actions`
+	 * — registered unconditionally, not per post type; see `row_actions()`'s
+	 * docblock), and the `wp_loaded` deferral that later registers the
+	 * per-post-type bulk-action hooks.
 	 *
-	 * The minimum-viable assertion: the SUT registers the three global
-	 * hooks plus one per-post-type bulk_actions entry. Stronger per-hook
-	 * contracts are covered in the handler-method tests
-	 * (PostListHandleActionTest).
+	 * Before the 0.4.0 CPT-timing fix, hooks() called
+	 * aps_get_supported_post_types() directly and built
+	 * `bulk_actions-edit-{type}` / `handle_bulk_actions-edit-{type}` /
+	 * `{type}_row_actions` per type here — evaluated on `plugins_loaded`,
+	 * before third-party custom post types exist. That's why this test no
+	 * longer needs stubSupportedPostTypesBoundary(): hooks() itself never
+	 * touches the supported-types boundary any more. The per-type bulk-
+	 * action coverage moved to
+	 * test_register_post_type_hooks_registers_bulk_action_hooks_per_supported_post_type()
+	 * below, which exercises the actual `wp_loaded` callback.
+	 *
+	 * The exact count pins that nothing extra sneaks into this list — the
+	 * per-type hooks in particular must NOT appear here.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::hooks
 	 */
 	public function test_hooks_registers_query_vars_filter_and_post_actions() {
-		// real aps_get_supported_post_types resolves through the
-		// filter chain, so hooks() iterates over the real supported list.
-		$this->stubSupportedPostTypesBoundary( array( 'post', 'page' ), array( 'post' ) );
-
 		$hooks      = $this->post_list->hooks();
 		$hook_names = array_map( static fn( $h ) => $h->hook, $hooks );
+
+		$this->assertCount( 7, $hooks );
 
 		$this->assertContains( 'query_vars', $hook_names );
 		$this->assertContains( 'wp_list_table_show_post_checkbox', $hook_names );
 		$this->assertContains( 'post_action_archive', $hook_names );
 		$this->assertContains( 'post_action_unarchive', $hook_names );
-		$this->assertContains( 'bulk_actions-edit-post', $hook_names );
-		$this->assertContains( 'handle_bulk_actions-edit-post', $hook_names );
 		$this->assertContains( 'post_row_actions', $hook_names );
+		$this->assertContains( 'page_row_actions', $hook_names );
+		$this->assertContains( 'wp_loaded', $hook_names );
+
+		// The per-post-type bulk-action hooks must NOT be built eagerly —
+		// they are only registered once register_post_type_hooks() runs
+		// (see the wp_loaded descriptor asserted above).
+		$this->assertNotContains( 'bulk_actions-edit-post', $hook_names );
+		$this->assertNotContains( 'handle_bulk_actions-edit-post', $hook_names );
+	}
+
+	/**
+	 * register_post_type_hooks() is the `wp_loaded` callback hooks()
+	 * defers to (see its docblock and PostList's class-level rationale).
+	 * Once custom post types are guaranteed to exist, it must register
+	 * `bulk_actions-edit-{type}` and `handle_bulk_actions-edit-{type}` for
+	 * EVERY supported post type — including a custom post type
+	 * (`book`) that would not have existed yet had this run eagerly on
+	 * `plugins_loaded`, which is exactly the 0.4.0 CPT-timing bug this
+	 * deferral fixes.
+	 *
+	 * Asserts the exact callback arrays PostList hands to add_filter():
+	 * `[ $this->post_list, 'bulk_actions' ]` and
+	 * `[ $this->bulk_handler, 'handle' ]` — not just that "some" filter was
+	 * added for each hook name.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::register_post_type_hooks
+	 */
+	public function test_register_post_type_hooks_registers_bulk_action_hooks_per_supported_post_type() {
+		$this->stubSupportedPostTypesBoundary(
+			array( 'post', 'page', 'book' ),
+			array( 'post', 'page', 'book' )
+		);
+
+		\WP_Mock::expectFilterAdded( 'bulk_actions-edit-post', array( $this->post_list, 'bulk_actions' ), 10, 1 );
+		\WP_Mock::expectFilterAdded( 'handle_bulk_actions-edit-post', array( $this->bulk_handler, 'handle' ), 10, 3 );
+		\WP_Mock::expectFilterAdded( 'bulk_actions-edit-page', array( $this->post_list, 'bulk_actions' ), 10, 1 );
+		\WP_Mock::expectFilterAdded( 'handle_bulk_actions-edit-page', array( $this->bulk_handler, 'handle' ), 10, 3 );
+		\WP_Mock::expectFilterAdded( 'bulk_actions-edit-book', array( $this->post_list, 'bulk_actions' ), 10, 1 );
+		\WP_Mock::expectFilterAdded( 'handle_bulk_actions-edit-book', array( $this->bulk_handler, 'handle' ), 10, 3 );
+
+		$this->post_list->register_post_type_hooks();
+
+		// WP_Mock verifies the expectFilterAdded() expectations during tearDown.
+		$this->addToAssertionCount( 1 );
 	}
 
 	/**

@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 use ArchivedPostStatus\Archive\ArchiveMeta;
 use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
+use ArchivedPostStatus\Hooks\HookLoader;
 use ArchivedPostStatus\Status\PostStatusValue;
 
 /**
@@ -79,6 +80,7 @@ final class ArchiveColumn implements HookableInterface {
 	}
 
 	/**
+	 * @since 0.4.0
 	 * @return array<int, HookDescriptor>
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
@@ -86,9 +88,46 @@ final class ArchiveColumn implements HookableInterface {
 	 * access is the WP convention for value-object construction in hook registration.
 	 */
 	public function hooks(): array {
-		$descriptors = array(
+		return array(
 			HookDescriptor::action( 'pre_get_posts', array( $this, 'handle_sort' ) ),
+			HookDescriptor::action( 'wp_loaded', array( $this, 'register_post_type_hooks' ) ),
 		);
+	}
+
+	/**
+	 * Register the per-post-type column hooks once custom post types exist.
+	 *
+	 * `hooks()` runs on `plugins_loaded`, before third-party custom post
+	 * types register — conventionally on `init` at the default priority
+	 * 10. Enumerating `aps_get_supported_post_types()` directly inside
+	 * `hooks()` would therefore permanently miss any custom post type on
+	 * every request. See `PostList::register_post_type_hooks()` for the
+	 * full rationale behind deferring to `wp_loaded` specifically (it
+	 * postdates every `init` priority, not just the conventional one) and
+	 * for going through `HookLoader::register()` rather than calling
+	 * add_action()/add_filter() directly — both apply here unchanged.
+	 *
+	 * @since 0.4.0
+	 * @return void
+	 */
+	public function register_post_type_hooks(): void {
+		( new HookLoader() )->register( $this->post_type_hooks() );
+	}
+
+	/**
+	 * Build the column hook descriptors for each supported post type.
+	 *
+	 * @since 0.4.0
+	 * @return array<int, HookDescriptor>
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
+	 * are named-constructor factories for the HookDescriptor value object; static
+	 * access is the WP convention for value-object construction in hook registration.
+	 * Same rationale as hooks() above — this is the same construction moved to a
+	 * second, deferred call site, not a new pattern.
+	 */
+	private function post_type_hooks(): array {
+		$descriptors = array();
 
 		foreach ( aps_get_supported_post_types() as $post_type ) {
 			$descriptors[] = HookDescriptor::filter(
