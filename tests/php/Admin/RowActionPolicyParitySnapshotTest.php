@@ -57,28 +57,49 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 	}
 
 	/**
+	 * Literal expected row-action key sets, one entry per
+	 * `{post_status}|{cap_set}` combination in the grid. Hand-derived from
+	 * the incoming `array('edit', 'inline hide-if-no-js', 'view')` fixture
+	 * against the branch contract documented on
+	 * `RowActionPolicy::for_post()`, then pinned as data — not recomputed
+	 * from that same branch logic — so a change to the policy's rules
+	 * cannot silently carry its own expectation along with it.
+	 *
+	 * `screen_base` is intentionally absent from the key: the policy
+	 * contract says the screen must not affect the output, so both screen
+	 * variants in the grid share the same expectation.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	private function expected_key_table(): array {
+		$archivable_pass_through = array( 'archive', 'edit', 'inline hide-if-no-js', 'view' );
+		$no_op_pass_through      = array( 'edit', 'inline hide-if-no-js', 'view' );
+
+		return array(
+			'publish|full_caps' => $archivable_pass_through,
+			'publish|view_only' => $no_op_pass_through,
+			'publish|no_caps'   => $no_op_pass_through,
+			'draft|full_caps'   => $archivable_pass_through,
+			'draft|view_only'   => $no_op_pass_through,
+			'draft|no_caps'     => $no_op_pass_through,
+			'pending|full_caps' => $archivable_pass_through,
+			'pending|view_only' => $no_op_pass_through,
+			'pending|no_caps'   => $no_op_pass_through,
+			'archive|full_caps' => array( 'unarchive', 'view' ),
+			'archive|view_only' => $no_op_pass_through,
+			'archive|no_caps'   => $no_op_pass_through,
+		);
+	}
+
+	/**
 	 * Provider for the 24-combination cross-product.
 	 *
 	 * Yields rows shaped:
 	 *   [ post_status, cap_set, screen_base, expected_action_keys ]
 	 *
 	 * `expected_action_keys` is the sorted list of row-action keys the
-	 * resulting array must contain. This is the parity snapshot —
-	 * derived once from the current `PostList::row_actions()` behavior
-	 * and locked here so the extraction has a fixed target.
-	 *
-	 * Current rules captured from `PostList::row_actions()`:
-	 *
-	 *   - Unsupported post type → return $actions unchanged.
-	 *   - Archivable status + can_archive → append 'archive' to $actions.
-	 *   - post_status == 'archive' + can_unarchive →
-	 *       drop 'edit' and 'inline hide-if-no-js';
-	 *       drop 'view' if not can_view;
-	 *       append 'unarchive'.
-	 *   - Otherwise → return $actions unchanged.
-	 *
-	 * The archivable list contains publish, draft, pending (and also future,
-	 * private — but we test only the three reachable from the grid).
+	 * resulting array must contain — the literal parity snapshot from
+	 * {@see expected_key_table()}.
 	 *
 	 * @return iterable<string, array{0:string,1:string,2:string,3:array<int,string>}>
 	 */
@@ -86,66 +107,18 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 		$statuses     = array( 'publish', 'draft', 'archive', 'pending' );
 		$cap_sets     = array( 'full_caps', 'view_only', 'no_caps' );
 		$screen_bases = array( 'edit', 'post' );
-
-		// Input row-actions array — the WP shape before our filter runs.
-		$incoming_keys = array( 'edit', 'inline hide-if-no-js', 'view' );
+		$table        = $this->expected_key_table();
 
 		foreach ( $statuses as $status ) {
 			foreach ( $cap_sets as $caps ) {
 				foreach ( $screen_bases as $screen ) {
-					$expected = $this->compute_expected_keys( $incoming_keys, $status, $caps );
+					$expected = $table[ "{$status}|{$caps}" ];
 
 					$key = sprintf( '%s|%s|%s', $status, $caps, $screen );
 					yield $key => array( $status, $caps, $screen, $expected );
 				}
 			}
 		}
-	}
-
-	/**
-	 * Compute the expected row-action key set for a given combination.
-	 *
-	 * Pure function — the snapshot oracle. Mirrors the rules in
-	 * `PostList::row_actions()` so the test can assert on a deterministic
-	 * shape rather than re-running the SUT to learn its own answer.
-	 *
-	 * @param array<int, string> $incoming_keys
-	 * @param string             $status
-	 * @param string             $caps
-	 * @return array<int, string>
-	 */
-	private function compute_expected_keys( array $incoming_keys, string $status, string $caps ): array {
-		$can_archive   = ( 'full_caps' === $caps );
-		$can_unarchive = ( 'full_caps' === $caps );
-		$can_view      = ( 'full_caps' === $caps || 'view_only' === $caps );
-
-		$archivable = array( 'publish', 'future', 'draft', 'pending', 'private' );
-
-		// Branch A: archivable status + can_archive → append 'archive'.
-		if ( in_array( $status, $archivable, true ) && $can_archive ) {
-			$keys   = $incoming_keys;
-			$keys[] = 'archive';
-			sort( $keys );
-			return array_values( $keys );
-		}
-
-		// Branch B: status === 'archive' + can_unarchive → strip + append.
-		if ( 'archive' === $status && $can_unarchive ) {
-			$keys = array_values(
-				array_diff( $incoming_keys, array( 'edit', 'inline hide-if-no-js' ) )
-			);
-			if ( ! $can_view ) {
-				$keys = array_values( array_diff( $keys, array( 'view' ) ) );
-			}
-			$keys[] = 'unarchive';
-			sort( $keys );
-			return array_values( $keys );
-		}
-
-		// Branch C: pass-through.
-		$keys = $incoming_keys;
-		sort( $keys );
-		return array_values( $keys );
 	}
 
 	/**

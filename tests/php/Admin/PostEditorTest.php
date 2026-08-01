@@ -194,6 +194,50 @@ class PostEditorTest extends TestCase {
 	}
 
 	/**
+	 * enqueue_scripts() bails before touching the editor-context or
+	 * capability boundary when the current admin hook isn't the post
+	 * editor — the block-editor bundle must not load on unrelated admin
+	 * screens.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditor::enqueue_scripts
+	 */
+	public function test_enqueue_scripts_does_nothing_on_unrelated_admin_hook() {
+		\WP_Mock::userFunction( 'get_current_screen' )->never();
+		\WP_Mock::userFunction( 'is_plugin_active' )->never();
+		\WP_Mock::userFunction( 'get_the_ID' )->never();
+		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->never();
+		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
+		\WP_Mock::userFunction( 'wp_localize_script' )->never();
+
+		$this->post_editor->enqueue_scripts( 'edit.php' );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * enqueue_scripts() bails when the classic editor is active — the
+	 * classic-editor submit-box button (post_submitbox_archive_button())
+	 * is the archive entry point there, not the block-editor bundle.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditor::enqueue_scripts
+	 */
+	public function test_enqueue_scripts_does_nothing_when_classic_editor_is_active() {
+		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( null );
+		\WP_Mock::userFunction( 'is_plugin_active' )
+			->with( 'classic-editor/classic-editor.php' )->andReturn( true );
+		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( true )->reply( true );
+
+		\WP_Mock::userFunction( 'get_the_ID' )->never();
+		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->never();
+		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
+		\WP_Mock::userFunction( 'wp_localize_script' )->never();
+
+		$this->post_editor->enqueue_scripts( 'post.php' );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
 	 * Denied-capability branch of enqueue_scripts(): `ArchivePostLink::build()`
 	 * no longer checks capability itself, so a user who cannot archive must
 	 * not receive a working, nonce-signed `archiveUrl` in the localized
