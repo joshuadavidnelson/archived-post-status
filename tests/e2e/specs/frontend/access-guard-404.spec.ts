@@ -4,6 +4,12 @@
  * A visitor who cannot view archived content gets a hard 404 on a singular
  * archived post — the response status, not merely different markup — while a
  * privileged user still gets the post.
+ *
+ * None of the tests below loop {@link POST_TYPES}: the administrator case
+ * passes on `read_private_posts` alone and the anonymous case has no current
+ * user, so neither ever reaches `ViewCapability`'s post-type-primitive
+ * ownership fallback — that fallback is exercised across post types by
+ * `roles/capability-matrix.spec.ts` instead.
  */
 
 /**
