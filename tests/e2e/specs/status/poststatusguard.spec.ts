@@ -6,6 +6,14 @@
  * the guard corrects the state on `save_post`. Its documented limit is equally
  * load-bearing: the bypass path gets state enforcement but no archive meta,
  * because meta is only written from the `aps_archived_post` action.
+ *
+ * Only the web-request bypass test below loops {@link POST_TYPES}:
+ * `enforce_archive_state()` gates its correction on
+ * `aps_is_supported_post_type( $post->post_type )`, and that gate is the
+ * only per-type behavior exercised in this file. Every other test fixes the
+ * post type — including ones whose setup archives the post and so also
+ * passes through that same gate — because their assertions don't depend on
+ * its outcome.
  */
 
 /**
@@ -20,19 +28,56 @@ import { ARCHIVED_STATUS_SLUG } from '../../config/roles';
 import {
 	archivePost,
 	deletePosts,
+	POST_TYPES,
 	postState,
 	rawStatusUpdate,
 	seedPost,
 	unarchivePost,
 	uniqueTitle,
 } from '../../config/seed';
+import type { PostTypeUnderTest } from '../../config/seed';
 import { wpCli } from '../../config/wp-cli';
 
+/**
+ * A post created during a test, tagged with the REST base `deletePosts()`
+ * needs to remove it again. The web-request bypass test below loops
+ * {@link POST_TYPES}, seeding more than one type into the same `created`
+ * array, so a single hardcoded base would silently fail to delete anything
+ * but `post`.
+ */
+interface CreatedPost {
+	id: number;
+	type: PostTypeUnderTest[ 'restBase' ];
+}
+
+/**
+ * Delete every tracked post, grouped by REST base.
+ *
+ * @param requestUtils Admin request utils.
+ * @param posts        Posts pushed onto the describe block's `created` array.
+ */
+async function deleteCreated(
+	requestUtils: Parameters< typeof deletePosts >[ 0 ],
+	posts: CreatedPost[]
+): Promise< void > {
+	await Promise.all(
+		POST_TYPES.map( ( { restBase } ) =>
+			deletePosts(
+				requestUtils,
+				posts
+					.filter( ( post ) => post.type === restBase )
+					.map( ( post ) => post.id ),
+				restBase
+			)
+		)
+	);
+}
+
 test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
-	const created: number[] = [];
+	const created: CreatedPost[] = [];
 
 	test.afterEach( async ( { requestUtils } ) => {
-		await deletePosts( requestUtils, created.splice( 0 ) );
+		await deleteCreated( requestUtils, created.splice( 0 ) );
 	} );
 
 	test( 'a bare wp_update_post() through WP-CLI gets comments and pings closed', async ( {
@@ -44,7 +89,7 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 			comment_status: 'open',
 			ping_status: 'open',
 		} );
-		created.push( post.id );
+		created.push( { id: post.id, type: 'posts' } );
 
 		// Deliberately not `wp post archive` — this is the raw status write the
 		// guard exists to catch.
@@ -66,27 +111,30 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 		} );
 	} );
 
-	test( 'a bare wp_update_post() through a web request gets the same treatment', async ( {
-		requestUtils,
-	} ) => {
-		const post = await seedPost( requestUtils, {
-			title: uniqueTitle( 'Guard web' ),
-			status: 'publish',
-			comment_status: 'open',
-			ping_status: 'open',
-		} );
-		created.push( post.id );
+	for ( const postType of POST_TYPES ) {
+		test( `${ postType.label }: a bare wp_update_post() through a web request gets the same treatment`, async ( {
+			requestUtils,
+		} ) => {
+			const post = await seedPost( requestUtils, {
+				title: uniqueTitle( `Guard web ${ postType.key }` ),
+				status: 'publish',
+				comment_status: 'open',
+				ping_status: 'open',
+				type: postType.restBase,
+			} );
+			created.push( { id: post.id, type: postType.restBase } );
 
-		const after = await rawStatusUpdate( requestUtils, post.id, {
-			post_status: ARCHIVED_STATUS_SLUG,
-			comment_status: 'open',
-			ping_status: 'open',
-		} );
+			const after = await rawStatusUpdate( requestUtils, post.id, {
+				post_status: ARCHIVED_STATUS_SLUG,
+				comment_status: 'open',
+				ping_status: 'open',
+			} );
 
-		expect( after.post_status ).toBe( ARCHIVED_STATUS_SLUG );
-		expect( after.comment_status ).toBe( 'closed' );
-		expect( after.ping_status ).toBe( 'closed' );
-	} );
+			expect( after.post_status ).toBe( ARCHIVED_STATUS_SLUG );
+			expect( after.comment_status ).toBe( 'closed' );
+			expect( after.ping_status ).toBe( 'closed' );
+		} );
+	}
 
 	test( 'the bypass path writes no archive meta', async ( {
 		requestUtils,
@@ -97,7 +145,7 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 			comment_status: 'open',
 			ping_status: 'open',
 		} );
-		created.push( post.id );
+		created.push( { id: post.id, type: 'posts' } );
 
 		const after = await rawStatusUpdate( requestUtils, post.id, {
 			post_status: ARCHIVED_STATUS_SLUG,
@@ -122,7 +170,7 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 			comment_status: 'open',
 			ping_status: 'open',
 		} );
-		created.push( post.id );
+		created.push( { id: post.id, type: 'posts' } );
 
 		// Control: the guard keys on the archived status, so an ordinary
 		// status change must not close discussion.
@@ -148,7 +196,7 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 			comment_status: 'open',
 			ping_status: 'open',
 		} );
-		created.push( post.id );
+		created.push( { id: post.id, type: 'posts' } );
 
 		// A pre-0.4.0 archive: status set directly, no archive meta written.
 		await rawStatusUpdate( requestUtils, post.id, {
@@ -175,7 +223,7 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 			comment_status: 'open',
 			ping_status: 'open',
 		} );
-		created.push( post.id );
+		created.push( { id: post.id, type: 'posts' } );
 
 		await rawStatusUpdate( requestUtils, post.id, {
 			post_status: ARCHIVED_STATUS_SLUG,
@@ -207,7 +255,7 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 			comment_status: 'open',
 			ping_status: 'open',
 		} );
-		created.push( post.id );
+		created.push( { id: post.id, type: 'posts' } );
 
 		await archivePost( requestUtils, post.id );
 
@@ -250,7 +298,7 @@ test.describe( 'status: PostStatusGuard corrects direct status writes', () => {
 			comment_status: 'open',
 			ping_status: 'open',
 		} );
-		created.push( post.id );
+		created.push( { id: post.id, type: 'posts' } );
 
 		// A real 0.4.0 archive: meta snapshot written, discussion closed.
 		await archivePost( requestUtils, post.id );
