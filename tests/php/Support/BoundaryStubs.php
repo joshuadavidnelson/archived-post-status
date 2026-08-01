@@ -14,13 +14,7 @@
  *     meta-key reads + `wp_update_post` + `delete_post_meta` that
  *     `aps_unarchive_post()` traverses.
  *
- * Tests opt-in with `use BoundaryStubs;` inside the test class. The two
- * previously duplicated copies of
- * `stubUnarchivePersistBoundary` had drifted on parameter ordering — the
- * consolidated signature uses BulkActionHandlerTest's ordering
- * (`$post_id, $wp_update_post_result, $previous_status_meta`) so the
- * majority of existing call sites need no edits. UnarchiveStatusFilterTest's
- * two call sites are updated to the new ordering.
+ * Tests opt-in with `use BoundaryStubs;` inside the test class.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus

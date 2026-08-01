@@ -564,8 +564,7 @@ class PublicApiTest extends TestCase {
 
 		// Spot-check the snapshot — these are the load-bearing values the
 		// listener captures *from the original post* before wp_update_post
-		// changed them. A regression where the listener reads them after
-		// the update would show 'archive' / 'closed' / 'closed' here instead.
+		// changed them.
 		$this->assertSame( 'publish', $by_key[ ArchiveMeta::META_PREVIOUS_STATUS ] );
 		$this->assertSame( 'open', $by_key[ ArchiveMeta::META_COMMENT_STATUS ] );
 		$this->assertSame( 'closed', $by_key[ ArchiveMeta::META_PING_STATUS ] );

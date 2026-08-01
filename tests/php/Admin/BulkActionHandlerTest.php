@@ -453,22 +453,13 @@ class BulkActionHandlerTest extends TestCase {
 
 	/**
 	 * Ownership default: the post's own author needs only the post type's
-	 * edit_posts primitive to archive it via the bulk action. Every other
-	 * capability assertion in this file pins 'edit_others_posts' because
-	 * post_author is left unset on the fixture posts (createMockPost() has
-	 * no post_author default) — that never equals the mock current-user id,
-	 * so the ownership comparison in
-	 * ArchiveCapability::default_capability() never resolves true. This
-	 * test sets post_author = get_current_user_id() and asserts the
-	 * *primitive* current_user_can() receives, not merely that the archive
-	 * succeeds — asserting only the outcome would still pass if the
-	 * ownership branch were deleted and every post resolved to
-	 * edit_others_posts.
+	 * edit_posts primitive to archive it via the bulk action. This test
+	 * sets post_author = get_current_user_id() and asserts the *primitive*
+	 * current_user_can() receives, not merely that the archive succeeds.
 	 *
-	 * Uses a 'book' post type (edit_books / edit_others_books, mirroring
-	 * ArchiveCapabilityTest::stubOwnershipBoundary()) so the assertion
-	 * cannot pass by coincidence with the two generic capability strings
-	 * every other test in this file pins.
+	 * Uses a 'book' post type (edit_books / edit_others_books) so the
+	 * primitive strings differ from the generic capability every other
+	 * test in this file pins.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 */

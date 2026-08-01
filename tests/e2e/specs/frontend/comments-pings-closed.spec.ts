@@ -5,13 +5,6 @@
  * `ping_status` to `closed` as part of the same `wp_update_post()` call that
  * moves the status, and the pre-archive values are snapshotted into archive meta
  * so unarchiving can restore them.
- *
- * None of the tests below loop {@link POST_TYPES}: `ArchiveOperation` and
- * `ArchiveMetaListener` key entirely on the post's status and the fixed
- * `comment_status` / `ping_status` fields passed to `wp_update_post()`,
- * resolved the same way for a `WP_Post` regardless of its type — see
- * `editor/archive-unarchive-roundtrip.spec.ts` for the same invariant on the
- * meta round trip.
  */
 
 /**

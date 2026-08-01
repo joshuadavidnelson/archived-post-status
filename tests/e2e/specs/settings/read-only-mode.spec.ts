@@ -8,13 +8,6 @@
  *
  * Both observable consequences of the setting are asserted: the editor guard and
  * the server-side removal of edit affordances on archived rows.
- *
- * None of the tests below loop {@link POST_TYPES}. `Store`, `HookAdapter`, and
- * the `aps_is_read_only` filter they wire carry no post-type parameter at all —
- * the setting is a single site-wide flag — and `PostEditorGuard`'s consumption
- * of it keys only on post status, never `$post->post_type`. The per-type sweep
- * of the row affordances this file also touches lives in
- * `post-list/row-actions.spec.ts` and `editor/read-only-guard.spec.ts`.
  */
 
 /**

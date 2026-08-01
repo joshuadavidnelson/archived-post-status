@@ -7,15 +7,10 @@
  * editor; and `action=unarchive` is always allowed through so the row-action
  * flow can complete.
  *
- * Only the post-save redirect test below loops {@link POST_TYPES}. The other
- * three pin `enforce_read_only()`'s wp_die and pass-through branches, and
- * `deny_editing_archived()`'s map_meta_cap deny — all three key off post
- * status only, never a post-type primitive, so every type produces an
- * identical result. The redirect target, though, is built by
+ * The post-save redirect target is built by
  * `PostListUrlBuilder::for_post_type( $post->post_type, true )` from the
  * post's actual type — `post` gets a bare `edit.php`, everything else gets
- * `post_type={type}` appended — so a regression that hardcoded the redirect
- * to `post`'s shape would only be visible on a non-`post` type.
+ * `post_type={type}` appended.
  */
 
 /**
@@ -46,10 +41,7 @@ import { pluginStrings } from '../../config/strings';
 
 /**
  * A post created during a test, tagged with the REST base `deletePosts()`
- * needs to remove it again. The post-save redirect test below loops
- * {@link POST_TYPES}, seeding more than one type into the same `created`
- * array, so a single hardcoded base would silently fail to delete anything
- * but `post`.
+ * needs to remove it again.
  */
 interface CreatedPost {
 	id: number;
@@ -131,13 +123,6 @@ test.describe( 'editor: read-only guard', () => {
 		);
 	} );
 
-	// PostEditorGuard::redirect_to_list() passes $post->post_type straight
-	// through to PostListUrlBuilder::for_post_type() — 'post' comes back as a
-	// bare edit.php, every other type gets post_type={type} appended (see the
-	// file header). Looping here, with an assertion that actually reads the
-	// query string, is what makes that distinction observable: a `post`-only
-	// run can't tell "used the real post type" from "hardcoded post", since
-	// both produce an identical URL for `post`.
 	for ( const postType of POST_TYPES ) {
 		test( `${ postType.label }: the post-save round trip lands on the list table`, async ( {
 			page,

@@ -22,8 +22,7 @@
  *
  * The helper accepts a `WP_Screen|null` argument that the policy does
  * not consult. The grid exercises both screen variants so the contract is
- * pinned: the screen MUST NOT change the policy output (regression guard
- * against any future drift in how the screen arg is consumed).
+ * pinned: the screen MUST NOT change the policy output.
  */
 
 use ArchivedPostStatus\Admin\BulkActionHandler;
@@ -62,8 +61,7 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 	 * the incoming `array('edit', 'inline hide-if-no-js', 'view')` fixture
 	 * against the branch contract documented on
 	 * `RowActionPolicy::for_post()`, then pinned as data — not recomputed
-	 * from that same branch logic — so a change to the policy's rules
-	 * cannot silently carry its own expectation along with it.
+	 * from that same branch logic.
 	 *
 	 * `screen_base` is intentionally absent from the key: the policy
 	 * contract says the screen must not affect the output, so both screen

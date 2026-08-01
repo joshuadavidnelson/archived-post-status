@@ -6,12 +6,6 @@
  *   `aps_title_label_before`, `aps_title_separator`).
  * - Archived posts do not leak into the blog listing for visitors who cannot
  *   view archived content.
- *
- * None of the tests below loop {@link POST_TYPES}: `ArchiveTitle::filter_title()`
- * matches on `post_status` alone, identically for every type, and the blog
- * listing below is core's own `post`-only home-page query — `page` and
- * `aps_book` content never appears there regardless of status — so there is
- * no per-type variant of either assertion to observe.
  */
 
 /**
