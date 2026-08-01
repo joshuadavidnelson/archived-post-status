@@ -272,6 +272,44 @@ class ArchiveCapabilityTest extends TestCase {
 	}
 
 	/**
+	 * Deactivated-CPT fallback: when a post's type has since been
+	 * unregistered, get_post_type_object() returns null and the default
+	 * capability resolves to the literal 'edit_posts' primitive for the
+	 * post's own author.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveCapability::can_archive
+	 */
+	public function test_can_archive_falls_back_to_edit_posts_when_post_type_is_unregistered() {
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 5,
+				'post_type'   => 'book',
+				'post_author' => 7,
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'book' )->andReturn( null );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 7 );
+
+		$received_capability = null;
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_posts', 5 );
+
+		$this->assertTrue( ArchiveCapability::can_archive( 5 ) );
+		$this->assertSame( 'edit_posts', $received_capability );
+	}
+
+	/**
 	 * Ownership default applies to unarchive through its own filter.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveCapability::can_unarchive
