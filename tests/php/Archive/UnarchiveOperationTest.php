@@ -109,12 +109,7 @@ class UnarchiveOperationTest extends TestCase {
 	/**
 	 * Key-to-value mapping pin: `dispatch_update()` must place comment_status
 	 * and ping_status under their own keys in the wp_update_post payload, not
-	 * transpose them. Every other fixture in this suite stubs both meta
-	 * values identically ('open'/'open' or 'closed'/'closed'), so an exact
-	 * ->with() gate built from those fixtures cannot distinguish correct code
-	 * from a same-shape key swap (comment_status <-> ping_status in the
-	 * array literal) — both produce the same four values, just under
-	 * swapped keys. This test uses asymmetric values so the mapping is
+	 * transpose them. This test uses asymmetric values so the mapping is
 	 * unambiguous.
 	 *
 	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::perform
@@ -435,9 +430,7 @@ class UnarchiveOperationTest extends TestCase {
 	 * returns null for the '0'-string case (`empty('0') === true` in PHP),
 	 * so the SUT then takes the legacy path: previous_status =
 	 * 'draft', new_status = 'draft', comment_status = 'closed', ping_status
-	 * = 'closed'. This branch was uncovered before — existing tests covered
-	 * either a populated `previous_status` ('publish') or a completely
-	 * absent meta key (empty string returned).
+	 * = 'closed'.
 	 *
 	 * @covers ArchivedPostStatus\Archive\UnarchiveOperation::perform
 	 */

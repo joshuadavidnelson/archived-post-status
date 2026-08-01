@@ -36,9 +36,7 @@ class ArchivePostContractTest extends TestCase {
 
 	/**
 	 * Counter-based assertion: aps_archive_post() must call get_post()
-	 * exactly once. A re-read between wp_update_post and the action would
-	 * push this counter to 2 — the explicit assertion below trips the
-	 * regression.
+	 * exactly once.
 	 *
 	 * @covers ::aps_archive_post
 	 */
@@ -88,7 +86,6 @@ class ArchivePostContractTest extends TestCase {
 
 		$this->assertNotFalse( $result, 'aps_archive_post must return the post object on success' );
 
-		// THE CONTRACT PIN. A re-read after wp_update_post would make this 2.
 		$this->assertSame(
 			1,
 			$get_post_calls,

@@ -6,14 +6,6 @@
  * the guard corrects the state on `save_post`. Its documented limit is equally
  * load-bearing: the bypass path gets state enforcement but no archive meta,
  * because meta is only written from the `aps_archived_post` action.
- *
- * Only the web-request bypass test below loops {@link POST_TYPES}:
- * `enforce_archive_state()` gates its correction on
- * `aps_is_supported_post_type( $post->post_type )`, and that gate is the
- * only per-type behavior exercised in this file. Every other test fixes the
- * post type — including ones whose setup archives the post and so also
- * passes through that same gate — because their assertions don't depend on
- * its outcome.
  */
 
 /**
@@ -40,10 +32,7 @@ import { wpCli } from '../../config/wp-cli';
 
 /**
  * A post created during a test, tagged with the REST base `deletePosts()`
- * needs to remove it again. The web-request bypass test below loops
- * {@link POST_TYPES}, seeding more than one type into the same `created`
- * array, so a single hardcoded base would silently fail to delete anything
- * but `post`.
+ * needs to remove it again.
  */
 interface CreatedPost {
 	id: number;

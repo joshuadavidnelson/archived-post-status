@@ -6,7 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Frontend\AccessGuard
  *
- * Covers the §3 #5 behaviors:
+ * Covers:
  *   - is_singular() === false short-circuits the guard
  *   - non-archive singular posts are left untouched
  *   - archived singular posts get a hard 404 when the viewer lacks capability

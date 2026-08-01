@@ -6,17 +6,12 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\PostEditorGuard
  *
- * Migration note (0.4.0 §1.1):
- *   The historical `PostEditor::load_post_screen()` method (previously
- *   covered by a `test_load_post_screen()` test that has since been
- *   removed) was replaced by `Admin\PostEditorGuard::enforce_read_only()`.
- *   Only the migrated scenario (the guard short-circuits cleanly when
- *   there is no `post` query arg) lives here; broader coverage of the
- *   guard's other branches is the job of §3 of the finalization plan.
+ * Migration note: the historical `PostEditor::load_post_screen()` method
+ * was replaced by `Admin\PostEditorGuard::enforce_read_only()`.
  */
 
 /**
- * PostEditorGuard test case (migration coverage only).
+ * PostEditorGuard test case.
  *
  * @since 0.4.0
  * @covers ArchivedPostStatus\Admin\PostEditorGuard

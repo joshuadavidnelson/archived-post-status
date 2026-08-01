@@ -7,16 +7,6 @@
  * Archive link in the submit box, and `Admin\EditorContext::is_classic_editor()`
  * (via the `aps_is_classic_editor` filter) keeps the block-editor bundle off the
  * classic screen.
- *
- * None of the four tests below loop {@link POST_TYPES}. Both editors render
- * the Archive control from `aps_current_user_can_archive()` alone, identical
- * for every type, and the link it builds — `ArchivePostLink::build()` — gates
- * on `aps_is_supported_post_type()`; `aps_book` is registered public and
- * unexcluded, so that gate resolves the same as `post`. `is_classic_editor()`
- * is likewise type-blind, reading WP core's own `$screen->is_block_editor()`
- * rather than anything this plugin computes. The capability primitive itself
- * differs per type and is exercised at the row action by
- * `roles/capability-matrix.spec.ts` and `post-list/row-actions.spec.ts`.
  */
 
 /**

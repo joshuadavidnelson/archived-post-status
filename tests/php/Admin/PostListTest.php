@@ -304,19 +304,13 @@ class PostListTest extends TestCase {
 
 	/**
 	 * Ownership default: the post's own author needs only the post type's
-	 * edit_posts primitive to have the checkbox restored. The test above
-	 * stubs get_current_user_id() to the anonymous id 0 against a 'post'
-	 * type object with no post_author set, so it never reaches the
-	 * ownership comparison in ArchiveCapability::default_capability().
-	 * This test sets post_author = get_current_user_id() and asserts the
-	 * *primitive* current_user_can() receives, not merely that the
-	 * checkbox is restored — asserting only the outcome would still pass
-	 * if the ownership branch were deleted and every post resolved to
-	 * edit_others_posts.
+	 * edit_posts primitive to have the checkbox restored. This test sets
+	 * post_author = get_current_user_id() and asserts the *primitive*
+	 * current_user_can() receives, not merely that the checkbox is
+	 * restored.
 	 *
-	 * Uses a 'book' post type (edit_books / edit_others_books, mirroring
-	 * ArchiveCapabilityTest::stubOwnershipBoundary()) so the assertion
-	 * cannot pass by coincidence with the generic edit_others_posts string
+	 * Uses a 'book' post type (edit_books / edit_others_books) so the
+	 * primitive strings differ from the generic edit_others_posts string
 	 * the test above pins.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::show_archived_row_checkbox
@@ -791,9 +785,7 @@ class PostListTest extends TestCase {
 	/**
 	 * Pin the normal locked-post case: wp_check_post_lock() returns the
 	 * editing user's id, get_userdata() resolves a real user, and the
-	 * wp_die() message names that user by their display_name. This is the
-	 * currently-working path — a regression here would silently drop the
-	 * user's name from the notice.
+	 * wp_die() message names that user by their display_name.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
 	 */
@@ -896,9 +888,7 @@ class PostListTest extends TestCase {
 	/**
 	 * Pre-nonce-validation regression: validation runs FIRST. With a post_id that get_post()
 	 * cannot resolve, the SUT must return without ever calling
-	 * check_admin_referer(). This is the canary that asserts the new
-	 * ordering — a regression that moved the nonce check back to the top
-	 * would call check_admin_referer here.
+	 * check_admin_referer().
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
 	 */
@@ -976,16 +966,12 @@ class PostListTest extends TestCase {
 	//
 	// No test above reaches the success branch at the end of
 	// handle_post_action(): every scenario exercises a rejection or a
-	// wp_die() path. Without this, the redirect target, the query args the
-	// admin notice keys off, and the post id handed back are all unpinned.
-	// Both actions are covered — not just one — because
+	// wp_die() path. Both actions are covered — not just one — because
 	// ArchiveAction::query_arg() differs between them ('archived' vs
-	// 'unarchived'); a regression that hardcoded one literal for both
-	// actions would still pass a single-action test. Each test asserts the
-	// *exact* array passed to add_query_arg() (the action's query arg + the
-	// post id under 'ids') and the exact base URL it's applied to
-	// (BulkActionHandler::get_redirect_url()'s result) — asserting only
-	// that a redirect happened would miss precisely these regressions.
+	// 'unarchived'). Each test asserts the *exact* array passed to
+	// add_query_arg() (the action's query arg + the post id under 'ids')
+	// and the exact base URL it's applied to
+	// (BulkActionHandler::get_redirect_url()'s result).
 	//
 	// Uses the same throw-on-redirect technique as
 	// PostEditorGuardTest::test_enforce_read_only_redirects_after_save_to_list_table()

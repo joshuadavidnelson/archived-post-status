@@ -493,17 +493,11 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
-	 * Redirect-contract regression pin: both
+	 * Redirect-contract pin: both
 	 * {@see ArchivedPostStatus\Admin\BulkActionHandler::get_redirect_url} and
 	 * {@see ArchivedPostStatus\Admin\PostEditorGuard::redirect_to_list} send
-	 * the user to a URL whose admin screen has base `edit`. If those
-	 * redirect destinations ever change AND the allowed-base list isn't
-	 * updated to match, this test catches the regression because `edit`
-	 * MUST stay in ALLOWED_SCREEN_BASES — otherwise the post-action /
-	 * bulk-action / post-editor-guard notices stop appearing.
-	 *
-	 * The contract is documented on Notices::ALLOWED_SCREEN_BASES; this
-	 * test makes the contract executable.
+	 * the user to a URL whose admin screen has base `edit`, so `edit` must
+	 * stay in ALLOWED_SCREEN_BASES.
 	 *
 	 * @covers ArchivedPostStatus\Admin\Notices::should_show_notices
 	 */
@@ -631,10 +625,8 @@ class NoticesTest extends TestCase {
 	 * set, the SUT consults `get_post_type()` (the WP-core helper) for
 	 * the loop's current post.
 	 *
-	 * This branch was previously uncovered: existing tests either set
-	 * the global or `$_GET['post_type']`. The fallback fires on edit-screen
-	 * loads where the global is initialised late (or not at all in mocked
-	 * contexts).
+	 * The fallback fires on edit-screen loads where the global is
+	 * initialised late (or not at all in mocked contexts).
 	 *
 	 * @covers ArchivedPostStatus\Admin\Notices::display_notices
 	 */
