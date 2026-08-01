@@ -25,6 +25,8 @@ import type { RequestUtils } from '@wordpress/e2e-test-utils-playwright';
 export const FIXTURE_TOGGLES = {
 	/** `aps_default_archive|unarchive_capability` -> `manage_options`. */
 	capFilter: 'aps_test_cap_filter_enabled',
+	/** `aps_default_read_capability` -> `manage_options`. Independent of `capFilter`. */
+	readCapFilter: 'aps_test_read_cap_filter_enabled',
 	/** `aps_archivable_statuses` -> `['publish']`. */
 	restrictStatuses: 'aps_test_restrict_statuses_enabled',
 	/** Capture the `aps_archived_post` / `aps_unarchived_post` args. */
@@ -47,6 +49,7 @@ export type FixtureToggle =
  */
 const TOGGLE_OFF: Record< FixtureToggle, boolean | number > = {
 	[ FIXTURE_TOGGLES.capFilter ]: false,
+	[ FIXTURE_TOGGLES.readCapFilter ]: false,
 	[ FIXTURE_TOGGLES.restrictStatuses ]: false,
 	[ FIXTURE_TOGGLES.hooks ]: false,
 	[ FIXTURE_TOGGLES.titleFilters ]: false,
