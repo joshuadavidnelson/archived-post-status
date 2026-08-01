@@ -106,6 +106,62 @@ class ArchiveTitleTest extends TestCase {
 	}
 
 	/**
+	 * filter_title() passes the label and the separator through esc_html()
+	 * and builds the title from esc_html()'s return value, not the raw
+	 * inputs. The mock is pinned per argument and returns a distinguishable
+	 * marker instead of a passthrough, so a change that calls esc_html() but
+	 * discards its result — escaping computed and thrown away — produces a
+	 * title without the markers and fails this assertion.
+	 *
+	 * @covers ArchivedPostStatus\Frontend\ArchiveTitle::filter_title
+	 */
+	public function test_adds_label_prefix_escapes_label_and_separator() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )
+			->with( 123 )
+			->andReturn( $post );
+
+		\WP_Mock::userFunction( 'is_admin' )
+			->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_title_label' )
+			->with( 'Archived', 123, 'Test Post' )
+			->reply( 'Archived' );
+
+		\WP_Mock::onFilter( 'aps_title_label_before' )
+			->with( true, 123 )
+			->reply( true );
+
+		\WP_Mock::onFilter( 'aps_title_separator' )
+			->with( ': ', 123 )
+			->reply( ': ' );
+
+		// Each expectation is pinned to one of the two real inputs, so
+		// together they also pin the call count to exactly two: an
+		// unexpected argument (or a third call) is unmatched and fails.
+		\WP_Mock::userFunction( 'esc_html' )
+			->once()
+			->with( 'Archived' )
+			->andReturnUsing( static fn( $value ) => "[[{$value}]]" );
+
+		\WP_Mock::userFunction( 'esc_html' )
+			->once()
+			->with( ': ' )
+			->andReturnUsing( static fn( $value ) => "[[{$value}]]" );
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert - the marked (escaped) values must flow into the output,
+		// not the raw label/separator.
+		$this->assertEquals( '[[Archived]][[: ]]Test Post', $result );
+	}
+
+	/**
 	 * Test leaves non-archived posts unchanged
 	 *
 	 * @covers ArchivedPostStatus\Frontend\ArchiveTitle::filter_title

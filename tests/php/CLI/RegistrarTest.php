@@ -67,18 +67,23 @@ namespace {
 		/**
 		 * cli() registers `wp post archive` and `wp post unarchive` with
 		 * WP_CLI::add_command(). These are the only two public CLI surfaces
-		 * the plugin exposes.
+		 * the plugin exposes, and each name must bind to its own method —
+		 * `post archive` to archive(), `post unarchive` to unarchive() —
+		 * not the other way around.
 		 *
 		 * @covers ArchivedPostStatus\CLI\Registrar::cli
 		 */
 		public function test_cli_registers_archive_and_unarchive_commands() {
 			$this->cli->cli();
 
-			$names = array_column( \WP_CLI::$commands, 0 );
+			$names     = array_column( \WP_CLI::$commands, 0 );
+			$callbacks = array_column( \WP_CLI::$commands, 1, 0 );
 
 			$this->assertContains( 'post archive', $names );
 			$this->assertContains( 'post unarchive', $names );
 			$this->assertCount( 2, \WP_CLI::$commands );
+			$this->assertSame( array( $this->cli, 'archive' ), $callbacks['post archive'] );
+			$this->assertSame( array( $this->cli, 'unarchive' ), $callbacks['post unarchive'] );
 		}
 
 		/**
