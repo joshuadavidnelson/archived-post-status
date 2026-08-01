@@ -6,6 +6,12 @@
  * and ping status into post meta; `Archive\UnarchiveOperation` reads that
  * snapshot back. A post therefore comes out of the archive in the state it went
  * in — not in a hardcoded default.
+ *
+ * None of the tests below loop {@link POST_TYPES}. This spec's `archivePost()`
+ * helper drives `Archive\ArchiveOperation`, and the round trip it and
+ * `UnarchiveOperation` share with `ArchiveMetaListener` and `ArchiveMeta` keys
+ * entirely on `previous_status` / `comment_status` / `ping_status`, resolved
+ * the same way for a `WP_Post` regardless of its type.
  */
 
 /**
