@@ -9,20 +9,18 @@
  *
  * `PostList::row_actions()` delegates to the standalone static
  * `Admin\RowActionPolicy` helper. A parity snapshot over
- * `(post_status x cap_set x screen_base)` locks the policy output:
- * both entry points MUST reproduce it byte-for-byte, so any drift in
- * either is a deliberate, test-updating change.
+ * `(post_status x cap_set)` locks the policy output: both entry points
+ * MUST reproduce it byte-for-byte, so any drift in either is a
+ * deliberate, test-updating change.
  *
  * Cross-product surface:
  *   - post_status:   publish, draft, archive, pending           (4)
  *   - cap_set:       full_caps, view_only, no_caps              (3)
- *   - screen_base:   edit, post                                 (2)
  *
- *   = 24 combinations.
+ *   = 12 combinations.
  *
- * The helper accepts a `WP_Screen|null` argument that the policy does
- * not consult. The grid exercises both screen variants so the contract is
- * pinned: the screen MUST NOT change the policy output.
+ * The helper accepts a `WP_Screen|null` argument that `for_post()` never
+ * consults, so a screen dimension is not part of this grid.
  */
 
 use ArchivedPostStatus\Admin\BulkActionHandler;
@@ -31,7 +29,7 @@ use ArchivedPostStatus\Admin\RowActionPolicy;
 
 /**
  * Parity snapshot covering the row-action policy across the
- * `(post_status x cap_set x screen_base)` cross-product.
+ * `(post_status x cap_set)` cross-product.
  *
  * @since 0.4.0
  * @covers ArchivedPostStatus\Admin\PostList::row_actions
@@ -63,10 +61,6 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 	 * `RowActionPolicy::for_post()`, then pinned as data — not recomputed
 	 * from that same branch logic.
 	 *
-	 * `screen_base` is intentionally absent from the key: the policy
-	 * contract says the screen must not affect the output, so both screen
-	 * variants in the grid share the same expectation.
-	 *
 	 * @return array<string, array<int, string>>
 	 */
 	private function expected_key_table(): array {
@@ -90,31 +84,28 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 	}
 
 	/**
-	 * Provider for the 24-combination cross-product.
+	 * Provider for the 12-combination cross-product.
 	 *
 	 * Yields rows shaped:
-	 *   [ post_status, cap_set, screen_base, expected_action_keys ]
+	 *   [ post_status, cap_set, expected_action_keys ]
 	 *
 	 * `expected_action_keys` is the sorted list of row-action keys the
 	 * resulting array must contain — the literal parity snapshot from
 	 * {@see expected_key_table()}.
 	 *
-	 * @return iterable<string, array{0:string,1:string,2:string,3:array<int,string>}>
+	 * @return iterable<string, array{0:string,1:string,2:array<int,string>}>
 	 */
 	public function row_action_grid_provider(): iterable {
-		$statuses     = array( 'publish', 'draft', 'archive', 'pending' );
-		$cap_sets     = array( 'full_caps', 'view_only', 'no_caps' );
-		$screen_bases = array( 'edit', 'post' );
-		$table        = $this->expected_key_table();
+		$statuses = array( 'publish', 'draft', 'archive', 'pending' );
+		$cap_sets = array( 'full_caps', 'view_only', 'no_caps' );
+		$table    = $this->expected_key_table();
 
 		foreach ( $statuses as $status ) {
 			foreach ( $cap_sets as $caps ) {
-				foreach ( $screen_bases as $screen ) {
-					$expected = $table[ "{$status}|{$caps}" ];
+				$expected = $table[ "{$status}|{$caps}" ];
 
-					$key = sprintf( '%s|%s|%s', $status, $caps, $screen );
-					yield $key => array( $status, $caps, $screen, $expected );
-				}
+				$key = sprintf( '%s|%s', $status, $caps );
+				yield $key => array( $status, $caps, $expected );
 			}
 		}
 	}
@@ -197,13 +188,11 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 	 *
 	 * @param string             $status       Post status to put on the WP_Post.
 	 * @param string             $caps         Capability set: full_caps|view_only|no_caps.
-	 * @param string             $screen_base  Screen base under test (informational).
 	 * @param array<int, string> $expected     Sorted list of expected action keys.
 	 */
 	public function test_postlist_row_actions_matches_parity_snapshot(
 		string $status,
 		string $caps,
-		string $screen_base,
 		array $expected
 	): void {
 		$post_id = 7;
@@ -232,10 +221,9 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 			$expected,
 			$actual_keys,
 			sprintf(
-				'Row-action keys must match parity snapshot for status=%s caps=%s screen=%s. Got [%s], expected [%s].',
+				'Row-action keys must match parity snapshot for status=%s caps=%s. Got [%s], expected [%s].',
 				$status,
 				$caps,
-				$screen_base,
 				implode( ',', $actual_keys ),
 				implode( ',', $expected )
 			)
@@ -255,13 +243,11 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 	 *
 	 * @param string             $status
 	 * @param string             $caps
-	 * @param string             $screen_base
 	 * @param array<int, string> $expected
 	 */
 	public function test_row_action_policy_for_post_matches_parity_snapshot(
 		string $status,
 		string $caps,
-		string $screen_base,
 		array $expected
 	): void {
 		$post_id = 7;
@@ -281,11 +267,6 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 			'view'                 => '<a>View</a>',
 		);
 
-		// RowActionPolicy::for_post() returns the FULL row-action array
-		// after applying the archive/unarchive policy — same return shape
-		// as PostList::row_actions(). Screen arg is null in this assertion;
-		// the policy contract says screen MUST NOT alter the output for
-		// the current  scope.
 		$screen = null;
 		$result = RowActionPolicy::for_post( $post, $incoming, $screen );
 
@@ -296,10 +277,9 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 			$expected,
 			$actual_keys,
 			sprintf(
-				'RowActionPolicy::for_post() must match parity snapshot for status=%s caps=%s screen=%s.',
+				'RowActionPolicy::for_post() must match parity snapshot for status=%s caps=%s.',
 				$status,
-				$caps,
-				$screen_base
+				$caps
 			)
 		);
 	}

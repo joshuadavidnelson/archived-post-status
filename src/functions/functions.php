@@ -242,8 +242,7 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
  *   the canonical "pre-archive snapshot" passed to listeners (notably
  *   {@see \ArchivedPostStatus\Archive\ArchiveMetaListener::save_meta()}),
  *   which rely on it to record `comment_status` / `ping_status` *before*
- *   the archive flow overwrites them with 'closed'. Verified by
- *   `tests/php/Archive/ArchivePostContractTest.php`.
+ *   the archive flow overwrites them with 'closed'.
  *
  * @see https://developer.wordpress.org/reference/functions/wp_trash_post/
  *

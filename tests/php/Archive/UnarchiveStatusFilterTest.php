@@ -7,18 +7,13 @@
  * @package ArchivedPostStatus
  * @covers ::aps_unarchive_post_set_previous_status
  *
- * Two layers of coverage:
- *
- *   1. PURE-UNIT tests (#1-4): call the function directly. Pins the
- *      3-argument contract: "always returns arg 3 (previous_status),
- *      never inspects arg 1 (new_status) or arg 2 (post_id), and does
- *      no validation." Modeled on tests/php/Archive/ArchiveMetaTest.php's
- *      static-method style.
- *
- *   2. UNHOOK-TO-OVERRIDE tests (#9-10): exercise the full bulk-unarchive
- *      pipeline via BulkActionHandler::handle so the documented
- *      WP-core extensibility patterns — competing higher-priority filter,
- *      `remove_filter` to disable — are pinned end-to-end.
+ * UNHOOK-TO-OVERRIDE coverage: exercises the full bulk-unarchive pipeline
+ * via BulkActionHandler::handle so the documented WP-core extensibility
+ * patterns — competing higher-priority filter, `remove_filter` to disable
+ * — are pinned end-to-end. The pure-unit arg-3-verbatim contract is pinned
+ * at the class level by
+ * `tests/php/Archive/UnarchiveOperationTest.php::test_set_previous_status_returns_third_arg_verbatim`
+ * and `::test_set_previous_status_returns_empty_string_when_previous_status_is_empty`.
  *
  * WP_Mock note on filter dispatch:
  *   WP_Mock's mock `add_filter` does NOT actually wire callbacks for its
@@ -41,7 +36,7 @@ use ArchivedPostStatus\Tests\Support\BoundaryStubs;
 use WP_Mock\InvokedFilterValue;
 
 /**
- * Pure-unit + unhook-to-override coverage for the bulk-undo filter callback.
+ * Unhook-to-override coverage for the bulk-undo filter callback.
  *
  * @since 0.4.0
  * @covers ::aps_unarchive_post_set_previous_status
@@ -71,64 +66,6 @@ class UnarchiveStatusFilterTest extends TestCase {
 		$_GET  = [];
 		$_POST = [];
 		parent::tear_down();
-	}
-
-	/**
-	 * The canonical contract: callback returns the third argument verbatim,
-	 * ignoring args 1 and 2.
-	 *
-	 * @covers ::aps_unarchive_post_set_previous_status
-	 */
-	public function test_returns_previous_status_argument_verbatim() {
-		$this->assertSame(
-			'publish',
-			aps_unarchive_post_set_previous_status( 'draft', 99, 'publish' )
-		);
-	}
-
-	/**
-	 * Even when new_status and previous_status are the same value, the
-	 * callback returns arg 3 — locks "always arg 3, never arg 1" so a
-	 * future refactor doesn't accidentally start returning $new_status.
-	 *
-	 * @covers ::aps_unarchive_post_set_previous_status
-	 */
-	public function test_returns_previous_status_when_new_status_is_identical() {
-		$this->assertSame(
-			'publish',
-			aps_unarchive_post_set_previous_status( 'publish', 99, 'publish' )
-		);
-	}
-
-	/**
-	 * Empty previous_status flows through unchanged. The `?: 'draft'`
-	 * fallback lives at the aps_unarchive_post() call site (functions.php
-	 * line 406), NOT inside this callback. Documenting that boundary
-	 * here prevents anyone from "fixing" the callback by adding a
-	 * fallback that would then double up with the upstream one.
-	 *
-	 * @covers ::aps_unarchive_post_set_previous_status
-	 */
-	public function test_returns_empty_string_when_previous_status_is_empty() {
-		$this->assertSame(
-			'',
-			aps_unarchive_post_set_previous_status( 'draft', 99, '' )
-		);
-	}
-
-	/**
-	 * post_id = 0 still produces a verbatim arg-3 return: no id validation,
-	 * no get_post lookup, no side effects. This matches the
-	 * wp_untrash_post_set_previous_status() shape the callback was
-	 * modeled on.
-	 *
-	 * @covers ::aps_unarchive_post_set_previous_status
-	 */
-	public function test_returns_previous_status_when_post_id_is_zero() {
-		$this->assertSame(
-			'pending',
-			aps_unarchive_post_set_previous_status( 'draft', 0, 'pending' )
-		);
 	}
 
 	/**

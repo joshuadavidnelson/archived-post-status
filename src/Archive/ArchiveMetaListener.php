@@ -54,8 +54,7 @@ final class ArchiveMetaListener implements HookableInterface {
 	 *   {@see aps_archive_post()} captured before calling `wp_update_post`.
 	 *   This listener does NOT re-read the post (a re-read would defeat the
 	 *   purpose: the comment_status/ping_status fields would be 'closed' by
-	 *   then, not the user's pre-archive choice). The contract is pinned by
-	 *   `tests/php/Archive/ArchivePostContractTest.php`.
+	 *   then, not the user's pre-archive choice).
 	 *
 	 * @since 0.4.0
 	 * @param int      $post_id         The post ID.

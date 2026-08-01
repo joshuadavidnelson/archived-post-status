@@ -25,9 +25,8 @@ if ( ! defined( 'WEEK_IN_SECONDS' ) ) {
 	define( 'WEEK_IN_SECONDS', 604800 );
 }
 
-// WP function polyfills and fixtures.
+// WP function polyfills.
 require_once __DIR__ . '/Support/WpPolyfills.php';
-require_once __DIR__ . '/Support/Fixtures.php';
 
 // Mock WordPress classes that might be needed in tests
 if ( ! class_exists( 'WP_Post' ) ) {
