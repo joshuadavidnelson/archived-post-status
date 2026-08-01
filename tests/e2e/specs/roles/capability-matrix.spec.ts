@@ -25,10 +25,15 @@
  * capability-filter boundary tests) stay on a single post type — see the
  * comment at each for why.
  *
- * The last describe re-runs the archive axis with `aps_default_archive_capability`
- * and `aps_default_unarchive_capability` filtered to `manage_options`, which is
- * the boundary-move scenario: the filter must actually move the boundary, not just be
- * consulted.
+ * The next-to-last describe re-runs the archive axis with
+ * `aps_default_archive_capability` and `aps_default_unarchive_capability`
+ * filtered to `manage_options`, which is the boundary-move scenario: the
+ * filter must actually move the boundary, not just be consulted. The last
+ * describe repeats that scenario for `aps_default_read_capability` alone:
+ * `RowActionPolicy::for_post()` strips the `view` row action when a user can
+ * unarchive a post but not view it, a combination stock roles never produce
+ * (every stock role holding `edit_others_posts` also holds
+ * `read_private_posts`).
  */
 
 /**
@@ -144,8 +149,6 @@ function expectedFor(
  * it clears this coarse, type-blind gate for `page` too — then `edit.php`'s
  * own `current_user_can( $post_type_object->cap->edit_posts )` check, which
  * IS type-aware, stops it a moment later with its own distinct copy.
- * Confirmed against the running site rather than assumed; see the sibling
- * combinations (subscriber, every type) for the generic message instead.
  *
  * @param role     Role under test.
  * @param postType Post type under test.
@@ -165,8 +168,7 @@ function deniedScreenMessage(
  * Explain why a screen-dependent "author acting on another author's content"
  * test is skipped for `page` — the author cannot reach that type's list
  * screen at all, so there is no "reaches the list, denied per-row" scenario
- * left to assert; see `deniedScreenMessage()` for the screen-level denial
- * this collapses into instead.
+ * left to assert.
  *
  * @param postType Post type under test.
  */
@@ -658,6 +660,123 @@ test.describe( 'roles: aps_default_*_capability moves the boundary', () => {
 			);
 			await expect(
 				rowActionLocator( page, archived.id, 'unarchive' )
+			).toHaveCount( 1 );
+		} );
+	} );
+} );
+
+test.describe( 'roles: aps_default_read_capability moves the boundary', () => {
+	const created: number[] = [];
+
+	test.beforeEach( async ( { requestUtils } ) => {
+		await setFixtures( requestUtils, {
+			[ FIXTURE_TOGGLES.readCapFilter ]: true,
+		} );
+	} );
+
+	test.afterEach( async ( { requestUtils } ) => {
+		await deletePosts( requestUtils, created.splice( 0 ) );
+		await resetFixtures( requestUtils, [ FIXTURE_TOGGLES.readCapFilter ] );
+	} );
+
+	test.describe( 'as the editor', () => {
+		test.use( { storageState: storageStatePath( 'editor' ) } );
+
+		test( 'loses front-end view access to an archived post', async ( {
+			page,
+			requestUtils,
+		} ) => {
+			const title = uniqueTitle( 'Filtered read cap editor view' );
+			// Authored by the admin (default seed author): the editor's own
+			// ownership fallback in ViewCapability must not rescue this case.
+			const post = await seedPost( requestUtils, {
+				title,
+				status: 'publish',
+			} );
+			created.push( post.id );
+			const archived = await archivePost( requestUtils, post.id );
+
+			const response = await page.goto( archived.link );
+
+			expect( response?.status() ).toBe( 404 );
+			await expect( page.getByText( title ) ).toHaveCount( 0 );
+		} );
+
+		// RowActionPolicy::for_post() strips the `view` row action from an
+		// unarchive-eligible row when the viewer cannot view archived
+		// content.
+		test( 'loses the View row action but keeps Unarchive', async ( {
+			page,
+			requestUtils,
+		} ) => {
+			const post = await seedPost( requestUtils, {
+				title: uniqueTitle( 'Filtered read cap editor row action' ),
+				status: 'publish',
+			} );
+			created.push( post.id );
+			await archivePost( requestUtils, post.id );
+
+			await page.goto(
+				`/wp-admin/edit.php?${ postListQuery( {
+					postStatus: ARCHIVED_STATUS_SLUG,
+				} ) }`
+			);
+
+			await expect( rowLocator( page, post.id ) ).toBeVisible();
+			await expect(
+				rowActionLocator( page, post.id, 'unarchive' )
+			).toHaveCount( 1 );
+			await expect(
+				rowActionLocator( page, post.id, 'view' )
+			).toHaveCount( 0 );
+		} );
+	} );
+
+	test.describe( 'as the administrator', () => {
+		// Control for both editor cases above: manage_options is the
+		// administrator's native capability regardless of the filter, so the
+		// boundary move must not cost the administrator any access.
+		test( 'keeps front-end view access to an archived post', async ( {
+			page,
+			requestUtils,
+		} ) => {
+			const title = uniqueTitle( 'Filtered read cap admin view' );
+			const post = await seedPost( requestUtils, {
+				title,
+				status: 'publish',
+			} );
+			created.push( post.id );
+			const archived = await archivePost( requestUtils, post.id );
+
+			const response = await page.goto( archived.link );
+
+			expect( response?.status() ).toBe( 200 );
+			await expect( page.locator( POST_TITLE ) ).toContainText( title );
+		} );
+
+		test( 'keeps the View row action alongside Unarchive', async ( {
+			page,
+			requestUtils,
+		} ) => {
+			const post = await seedPost( requestUtils, {
+				title: uniqueTitle( 'Filtered read cap admin row action' ),
+				status: 'publish',
+			} );
+			created.push( post.id );
+			await archivePost( requestUtils, post.id );
+
+			await page.goto(
+				`/wp-admin/edit.php?${ postListQuery( {
+					postStatus: ARCHIVED_STATUS_SLUG,
+				} ) }`
+			);
+
+			await expect( rowLocator( page, post.id ) ).toBeVisible();
+			await expect(
+				rowActionLocator( page, post.id, 'unarchive' )
+			).toHaveCount( 1 );
+			await expect(
+				rowActionLocator( page, post.id, 'view' )
 			).toHaveCount( 1 );
 		} );
 	} );

@@ -393,6 +393,32 @@ assert_eq '{"success":false,"deferred":false}' "${WP_OUT}" 'term counting is res
 assert_status publish "${DEFER_FAILURE_POST}" 'vetoed post keeps its status'
 
 # ---------------------------------------------------------------------------
+# 7. Unsupported post type is rejected before any other validation
+#
+# `attachment` is public but excluded from `aps_get_supported_post_types()`
+# by default (SupportedPostTypes::all()'s `aps_excluded_post_types` filter),
+# so it is the cheapest post type that is real yet unsupported — no CPT
+# registration needed.
+# ---------------------------------------------------------------------------
+
+section '7. unsupported post type gate'
+
+UNSUPPORTED_POST="$( "${WP_ENV}" run "${CONTAINER}" -- wp post create \
+	--post_type=attachment --post_status=inherit \
+	--post_title='CLI unsupported post type' --porcelain 2>/dev/null )"
+echo "${UNSUPPORTED_POST}" >>"${CREATED_IDS_FILE}"
+
+run_wp post archive "${UNSUPPORTED_POST}"
+assert_exit_nonzero 'archive refuses an unsupported post type'
+assert_contains "${WP_ERR}" 'is not a supported post type' 'refusal names the post-type check'
+assert_status inherit "${UNSUPPORTED_POST}" 'refused post keeps its status'
+
+run_wp post unarchive "${UNSUPPORTED_POST}"
+assert_exit_nonzero 'unarchive refuses an unsupported post type'
+assert_contains "${WP_ERR}" 'is not a supported post type' 'refusal names the post-type check'
+assert_status inherit "${UNSUPPORTED_POST}" 'refused post keeps its status'
+
+# ---------------------------------------------------------------------------
 
 section "Result: ${PASSED} passed, ${FAILED} failed."
 
