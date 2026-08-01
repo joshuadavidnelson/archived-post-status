@@ -43,9 +43,8 @@ class PostEditorTest extends TestCase {
 	/**
 	 * hooks() registers the two admin actions the PostEditor needs:
 	 * `admin_enqueue_scripts` (for the block-editor JS bundle) and
-	 * `post_submitbox_start` (for the classic-editor archive button).
-	 * Pinning the hook names is the strongest contract — a typo silently
-	 * drops the integration.
+	 * `post_submitbox_start` (for the classic-editor archive button), each
+	 * pinned in full: hook name, callback, priority, and accepted args.
 	 *
 	 * Replaces the prior smoke `test_hooks_returns_hookable_descriptors`
 	 *  which only asserted the array was non-empty.
@@ -56,13 +55,18 @@ class PostEditorTest extends TestCase {
 		$hooks = $this->post_editor->hooks();
 
 		$this->assertCount( 2, $hooks );
-		$hook_names = array_map( static fn( $h ) => $h->hook, $hooks );
-		$this->assertContains( 'admin_enqueue_scripts', $hook_names );
-		$this->assertContains( 'post_submitbox_start', $hook_names );
 
-		foreach ( $hooks as $hook ) {
-			$this->assertSame( 'action', $hook->type, 'PostEditor hooks must be actions' );
-		}
+		$this->assertSame( 'action', $hooks[0]->type );
+		$this->assertSame( 'admin_enqueue_scripts', $hooks[0]->hook );
+		$this->assertSame( array( $this->post_editor, 'enqueue_scripts' ), $hooks[0]->callback );
+		$this->assertSame( 10, $hooks[0]->priority );
+		$this->assertSame( 1, $hooks[0]->accepted_args );
+
+		$this->assertSame( 'action', $hooks[1]->type );
+		$this->assertSame( 'post_submitbox_start', $hooks[1]->hook );
+		$this->assertSame( array( $this->post_editor, 'post_submitbox_archive_button' ), $hooks[1]->callback );
+		$this->assertSame( 10, $hooks[1]->priority );
+		$this->assertSame( 1, $hooks[1]->accepted_args );
 	}
 
 	/**

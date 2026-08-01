@@ -44,7 +44,8 @@ class PostStatusGuardTest extends TestCase {
 
 	/**
 	 * Test hooks registration returns the entry (save_post) and exit
-	 * (transition_post_status) action descriptors.
+	 * (transition_post_status) action descriptors, each pinned in full:
+	 * hook name, callback, priority, and accepted args.
 	 *
 	 * @covers ArchivedPostStatus\Status\PostStatusGuard::hooks
 	 */
@@ -56,11 +57,16 @@ class PostStatusGuardTest extends TestCase {
 		$this->assertIsArray( $hooks );
 		$this->assertCount( 2, $hooks );
 		$this->assertInstanceOf( ArchivedPostStatus\Hooks\HookDescriptor::class, $hooks[0] );
-		$this->assertSame( 'save_post', $hooks[0]->hook );
 		$this->assertSame( 'action', $hooks[0]->type );
+		$this->assertSame( 'save_post', $hooks[0]->hook );
+		$this->assertSame( array( $this->guard, 'enforce_archive_state' ), $hooks[0]->callback );
+		$this->assertSame( 10, $hooks[0]->priority );
+		$this->assertSame( 2, $hooks[0]->accepted_args );
 		$this->assertInstanceOf( ArchivedPostStatus\Hooks\HookDescriptor::class, $hooks[1] );
-		$this->assertSame( 'transition_post_status', $hooks[1]->hook );
 		$this->assertSame( 'action', $hooks[1]->type );
+		$this->assertSame( 'transition_post_status', $hooks[1]->hook );
+		$this->assertSame( array( $this->guard, 'restore_state_on_exit' ), $hooks[1]->callback );
+		$this->assertSame( 10, $hooks[1]->priority );
 		$this->assertSame( 3, $hooks[1]->accepted_args );
 	}
 

@@ -46,7 +46,9 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
-	 * hooks() returns a single descriptor binding `admin_notices` as an action.
+	 * hooks() returns a single descriptor binding `admin_notices` as an
+	 * action, pinned in full: hook name, callback, priority, and accepted
+	 * args.
 	 *
 	 * Merged from AdminNoticesTest::test_register_hooks — that version checked
 	 * hook name and type, whereas the previous test_hooks_returns_hookable_descriptors
@@ -60,8 +62,11 @@ class NoticesTest extends TestCase {
 		$this->assertIsArray( $hooks );
 		$this->assertCount( 1, $hooks );
 		$this->assertInstanceOf( ArchivedPostStatus\Hooks\HookDescriptor::class, $hooks[0] );
-		$this->assertSame( 'admin_notices', $hooks[0]->hook );
 		$this->assertSame( 'action', $hooks[0]->type );
+		$this->assertSame( 'admin_notices', $hooks[0]->hook );
+		$this->assertSame( array( $this->notices, 'display_notices' ), $hooks[0]->callback );
+		$this->assertSame( 10, $hooks[0]->priority );
+		$this->assertSame( 1, $hooks[0]->accepted_args );
 	}
 
 	/**

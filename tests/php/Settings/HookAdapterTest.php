@@ -71,7 +71,8 @@ class HookAdapterTest extends TestCase {
 
 	/**
 	 * The first descriptor is the aps_is_read_only filter bridge at the
-	 * documented priority. This is the public API contract — moving
+	 * documented priority, with the default single accepted arg
+	 * (the incoming `$default`). This is the public API contract — moving
 	 * priority away from 20 silently breaks override semantics.
 	 *
 	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
@@ -85,13 +86,16 @@ class HookAdapterTest extends TestCase {
 		$this->assertSame( 'aps_is_read_only', $filter->hook );
 		$this->assertSame( HookAdapter::PRIORITY, $filter->priority );
 		$this->assertSame( array( $this->adapter, 'is_read_only' ), $filter->callback );
+		$this->assertSame( 1, $filter->accepted_args );
 	}
 
 	/**
 	 * Cache invalidation: HookAdapter registers three option-write
-	 * actions on Store::flush_cache so that external code that writes
-	 * the option directly (bypassing Store::update()) still produces
-	 * correct reads on the next get() call.
+	 * actions on Store::flush_cache, each at the default priority with
+	 * zero accepted args (flush_cache() takes no parameters), so that
+	 * external code that writes the option directly (bypassing
+	 * Store::update()) still produces correct reads on the next get()
+	 * call.
 	 *
 	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
 	 * @covers ArchivedPostStatus\Settings\Store::flush_cache
@@ -110,6 +114,8 @@ class HookAdapterTest extends TestCase {
 		foreach ( $cache_actions as $descriptor ) {
 			$this->assertTrue( $descriptor->is_action() );
 			$this->assertSame( array( Store::class, 'flush_cache' ), $descriptor->callback );
+			$this->assertSame( 10, $descriptor->priority );
+			$this->assertSame( 0, $descriptor->accepted_args );
 			$actual_hooks[] = $descriptor->hook;
 		}
 

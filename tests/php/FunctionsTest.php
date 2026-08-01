@@ -121,8 +121,9 @@ class FunctionsTest extends TestCase {
 	/**
 	 * `aps_current_user_can_view()` is exposed and routes through
 	 * {@see \ArchivedPostStatus\Archive\ViewCapability::granted()} —
-	 * verified by stubbing `current_user_can` and asserting its return flows
-	 * back through the facade.
+	 * verified by asserting both `current_user_can`'s return value and the
+	 * `$post_id` argument flow through the facade to the filter and
+	 * `current_user_can()`.
 	 *
 	 * @covers ::aps_current_user_can_view
 	 */
@@ -130,9 +131,23 @@ class FunctionsTest extends TestCase {
 		$this->assertTrue( function_exists( 'aps_current_user_can_view' ) );
 		$this->assertTrue( is_callable( 'aps_current_user_can_view' ) );
 
-		\WP_Mock::userFunction( 'current_user_can' )->andReturn( true );
+		$received_post_id = null;
 
-		$this->assertTrue( aps_current_user_can_view() );
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_post_id ) {
+					$received_post_id = $post_id;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_read_capability', 'read_private_posts', 42 );
+
+		$this->assertTrue( aps_current_user_can_view( 42 ) );
+		$this->assertSame( 42, $received_post_id );
 	}
 
 	/**
@@ -157,8 +172,9 @@ class FunctionsTest extends TestCase {
 	/**
 	 * `aps_current_user_can_archive()` is exposed and routes through
 	 * {@see \ArchivedPostStatus\Archive\ArchiveCapability::can_archive()} —
-	 * verified by stubbing `current_user_can` and asserting its return flows
-	 * back through the facade.
+	 * verified by asserting both `current_user_can`'s return value and the
+	 * `$post_id` argument flow through the facade to the filter and
+	 * `current_user_can()`.
 	 *
 	 * @covers ::aps_current_user_can_archive
 	 */
@@ -166,16 +182,33 @@ class FunctionsTest extends TestCase {
 		$this->assertTrue( function_exists( 'aps_current_user_can_archive' ) );
 		$this->assertTrue( is_callable( 'aps_current_user_can_archive' ) );
 
-		\WP_Mock::userFunction( 'current_user_can' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( null );
 
-		$this->assertTrue( aps_current_user_can_archive() );
+		$received_post_id = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_post_id ) {
+					$received_post_id = $post_id;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 42 );
+
+		$this->assertTrue( aps_current_user_can_archive( 42 ) );
+		$this->assertSame( 42, $received_post_id );
 	}
 
 	/**
 	 * `aps_current_user_can_unarchive()` is exposed and routes through
 	 * {@see \ArchivedPostStatus\Archive\ArchiveCapability::can_unarchive()} —
-	 * verified by stubbing `current_user_can` and asserting its return flows
-	 * back through the facade.
+	 * verified by asserting both `current_user_can`'s return value and the
+	 * `$post_id` argument flow through the facade to the filter and
+	 * `current_user_can()`.
 	 *
 	 * @covers ::aps_current_user_can_unarchive
 	 */
@@ -183,9 +216,25 @@ class FunctionsTest extends TestCase {
 		$this->assertTrue( function_exists( 'aps_current_user_can_unarchive' ) );
 		$this->assertTrue( is_callable( 'aps_current_user_can_unarchive' ) );
 
-		\WP_Mock::userFunction( 'current_user_can' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( null );
 
-		$this->assertFalse( aps_current_user_can_unarchive() );
+		$received_post_id = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_post_id ) {
+					$received_post_id = $post_id;
+					return false;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_unarchive_capability', 'edit_others_posts', 42 );
+
+		$this->assertFalse( aps_current_user_can_unarchive( 42 ) );
+		$this->assertSame( 42, $received_post_id );
 	}
 
 	/**

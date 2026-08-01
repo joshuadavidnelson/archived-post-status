@@ -107,27 +107,65 @@ class PostListTest extends TestCase {
 	 * below, which exercises the actual `wp_loaded` callback.
 	 *
 	 * The exact count pins that nothing extra sneaks into this list — the
-	 * per-type hooks in particular must NOT appear here.
+	 * per-type hooks in particular must NOT appear here. Each descriptor is
+	 * pinned in full: hook name, type, callback, priority, and accepted
+	 * args — `wp_list_table_show_post_checkbox`, `post_row_actions`, and
+	 * `page_row_actions` take 2 accepted args (they receive `$actions` and
+	 * the post/WP_Post_Type object); the rest default to 1.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::hooks
 	 */
 	public function test_hooks_registers_query_vars_filter_and_post_actions() {
-		$hooks      = $this->post_list->hooks();
-		$hook_names = array_map( static fn( $h ) => $h->hook, $hooks );
+		$hooks = $this->post_list->hooks();
 
 		$this->assertCount( 7, $hooks );
 
-		$this->assertContains( 'query_vars', $hook_names );
-		$this->assertContains( 'wp_list_table_show_post_checkbox', $hook_names );
-		$this->assertContains( 'post_action_archive', $hook_names );
-		$this->assertContains( 'post_action_unarchive', $hook_names );
-		$this->assertContains( 'post_row_actions', $hook_names );
-		$this->assertContains( 'page_row_actions', $hook_names );
-		$this->assertContains( 'wp_loaded', $hook_names );
+		$this->assertSame( 'filter', $hooks[0]->type );
+		$this->assertSame( 'query_vars', $hooks[0]->hook );
+		$this->assertSame( array( $this->post_list, 'query_vars' ), $hooks[0]->callback );
+		$this->assertSame( 10, $hooks[0]->priority );
+		$this->assertSame( 1, $hooks[0]->accepted_args );
+
+		$this->assertSame( 'filter', $hooks[1]->type );
+		$this->assertSame( 'wp_list_table_show_post_checkbox', $hooks[1]->hook );
+		$this->assertSame( array( $this->post_list, 'show_archived_row_checkbox' ), $hooks[1]->callback );
+		$this->assertSame( 10, $hooks[1]->priority );
+		$this->assertSame( 2, $hooks[1]->accepted_args );
+
+		$this->assertSame( 'action', $hooks[2]->type );
+		$this->assertSame( 'post_action_archive', $hooks[2]->hook );
+		$this->assertSame( array( $this->post_list, 'post_action_archive' ), $hooks[2]->callback );
+		$this->assertSame( 10, $hooks[2]->priority );
+		$this->assertSame( 1, $hooks[2]->accepted_args );
+
+		$this->assertSame( 'action', $hooks[3]->type );
+		$this->assertSame( 'post_action_unarchive', $hooks[3]->hook );
+		$this->assertSame( array( $this->post_list, 'post_action_unarchive' ), $hooks[3]->callback );
+		$this->assertSame( 10, $hooks[3]->priority );
+		$this->assertSame( 1, $hooks[3]->accepted_args );
+
+		$this->assertSame( 'filter', $hooks[4]->type );
+		$this->assertSame( 'post_row_actions', $hooks[4]->hook );
+		$this->assertSame( array( $this->post_list, 'row_actions' ), $hooks[4]->callback );
+		$this->assertSame( 10, $hooks[4]->priority );
+		$this->assertSame( 2, $hooks[4]->accepted_args );
+
+		$this->assertSame( 'filter', $hooks[5]->type );
+		$this->assertSame( 'page_row_actions', $hooks[5]->hook );
+		$this->assertSame( array( $this->post_list, 'row_actions' ), $hooks[5]->callback );
+		$this->assertSame( 10, $hooks[5]->priority );
+		$this->assertSame( 2, $hooks[5]->accepted_args );
+
+		$this->assertSame( 'action', $hooks[6]->type );
+		$this->assertSame( 'wp_loaded', $hooks[6]->hook );
+		$this->assertSame( array( $this->post_list, 'register_post_type_hooks' ), $hooks[6]->callback );
+		$this->assertSame( 10, $hooks[6]->priority );
+		$this->assertSame( 1, $hooks[6]->accepted_args );
 
 		// The per-post-type bulk-action hooks must NOT be built eagerly —
 		// they are only registered once register_post_type_hooks() runs
 		// (see the wp_loaded descriptor asserted above).
+		$hook_names = array_map( static fn( $h ) => $h->hook, $hooks );
 		$this->assertNotContains( 'bulk_actions-edit-post', $hook_names );
 		$this->assertNotContains( 'handle_bulk_actions-edit-post', $hook_names );
 	}

@@ -45,9 +45,10 @@ class ArchiveTitleTest extends TestCase {
 
 	/**
 	 * ArchiveTitle::hooks() returns a single descriptor binding `the_title`
-	 * as a filter at priority 10 with two accepted arguments. The priority
-	 * is load-bearing — moving it earlier would clash with WordPress core
-	 * filters that prefix `Private:` and `Protected:` to the title.
+	 * as a filter to filter_title(), at priority 10 with two accepted
+	 * arguments. The priority is load-bearing — moving it earlier would
+	 * clash with WordPress core filters that prefix `Private:` and
+	 * `Protected:` to the title.
 	 *
 	 * @covers ArchivedPostStatus\Frontend\ArchiveTitle::hooks
 	 */
@@ -59,6 +60,7 @@ class ArchiveTitleTest extends TestCase {
 		$this->assertCount( 1, $hooks );
 		$this->assertEquals( 'the_title', $hooks[0]->hook );
 		$this->assertEquals( 'filter', $hooks[0]->type );
+		$this->assertSame( array( $this->feature, 'filter_title' ), $hooks[0]->callback );
 		$this->assertEquals( 10, $hooks[0]->priority );
 		$this->assertEquals( 2, $hooks[0]->accepted_args );
 	}

@@ -221,7 +221,8 @@ class PostEditorGuardTest extends TestCase {
 
 	/**
 	 * hooks() registers the editor-access action and the map_meta_cap
-	 * editing deny.
+	 * editing deny, each pinned in full: hook name, callback, priority,
+	 * and accepted args.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::hooks
 	 */
@@ -229,10 +230,15 @@ class PostEditorGuardTest extends TestCase {
 		$hooks = $this->guard->hooks();
 
 		$this->assertCount( 2, $hooks );
-		$this->assertSame( 'load-post.php', $hooks[0]->hook );
 		$this->assertSame( 'action', $hooks[0]->type );
-		$this->assertSame( 'map_meta_cap', $hooks[1]->hook );
+		$this->assertSame( 'load-post.php', $hooks[0]->hook );
+		$this->assertSame( array( $this->guard, 'enforce_read_only' ), $hooks[0]->callback );
+		$this->assertSame( 10, $hooks[0]->priority );
+		$this->assertSame( 1, $hooks[0]->accepted_args );
 		$this->assertSame( 'filter', $hooks[1]->type );
+		$this->assertSame( 'map_meta_cap', $hooks[1]->hook );
+		$this->assertSame( array( $this->guard, 'deny_editing_archived' ), $hooks[1]->callback );
+		$this->assertSame( 10, $hooks[1]->priority );
 		$this->assertSame( 4, $hooks[1]->accepted_args );
 	}
 
