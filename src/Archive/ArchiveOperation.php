@@ -23,8 +23,6 @@ use ArchivedPostStatus\Status\PostStatusValue;
  *   corrupt the meta snapshot — the previous-status restore on unarchive
  *   would then mirror the post-archive state, not the pre-archive state.
  *
- *   Verified by `tests/php/Archive/ArchivePostContractTest.php`.
- *
  * @since 0.4.0
  */
 final class ArchiveOperation {
@@ -114,10 +112,9 @@ final class ArchiveOperation {
 		 *
 		 * INVARIANT (C3): the `$post` argument MUST be the same object captured at
 		 * the top of `perform()` — never the result of a re-read after
-		 * `wp_update_post`. This is the contract pinned by
-		 * `tests/php/Archive/ArchivePostContractTest.php`; introducing a re-read
-		 * between the update and this action will break listeners that rely on
-		 * pre-archive `comment_status` / `ping_status`.
+		 * `wp_update_post`. Introducing a re-read between the update and this
+		 * action will break listeners that rely on pre-archive
+		 * `comment_status` / `ping_status`.
 		 *
 		 * @since 0.4.0
 		 * @param int      $post_id         Post ID.

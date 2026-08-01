@@ -5,11 +5,6 @@
  * @since 0.4.0
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Archive\ArchiveOperation
- *
- * Mirrors `tests/php/Archive/ArchivePostContractTest.php`
- * (the C3 contract pin) plus the early-return tests previously implicit in
- * the facade's behaviour. This test file is the canonical pin for the
- * lifted mechanics.
  */
 
 use ArchivedPostStatus\Archive\ArchiveOperation;
@@ -153,8 +148,7 @@ class ArchiveOperationTest extends TestCase {
 	/**
 	 * C3 invariant: the SUT must call `get_post()` exactly once — a re-read
 	 * between the update and the `aps_archived_post` action would defeat
-	 * the pre-archive snapshot contract. Mirrors the assertion in
-	 * `ArchivePostContractTest::test_aps_archive_post_calls_get_post_exactly_once`.
+	 * the pre-archive snapshot contract.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveOperation::perform
 	 */

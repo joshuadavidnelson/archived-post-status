@@ -3,9 +3,7 @@
  * WP runtime polyfills loaded at PHPUnit bootstrap.
  *
  * The polyfill concern (provide global functions that the SUT calls but
- * PHPUnit never declares) lives in one place here. Test-controllable fixtures (e.g. {@see make_get_post_stub()})
- * moved to {@see Support/Fixtures.php} so a test can override the default
- * stub without redefining the function.
+ * PHPUnit never declares) lives in one place here.
  *
  * Every function here exists for one reason only: the unit-test runtime
  * does not load wp-includes, so functions the production code uses
