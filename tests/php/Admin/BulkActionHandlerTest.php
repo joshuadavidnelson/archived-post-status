@@ -253,6 +253,51 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	/**
+	 * A post deleted between bulk-select and dispatch (get_post_status()
+	 * returns false) gets counted as 'not_found' and skipped. The redirect
+	 * surfaces `not_found=N`, distinct from the `wrong_status` bucket.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
+	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_not_found
+	 * @covers ArchivedPostStatus\Admin\BulkActionResult::not_found_count
+	 */
+	public function test_bulk_archive_records_not_found_when_post_status_lookup_returns_false() {
+
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 9 )
+			->andReturn( true );
+
+		$post = $this->createMockPost( array( 'ID' => 9 ) );
+		\WP_Mock::userFunction( 'get_post' )->with( 9 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )->with( 9 )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post_status' )
+			->with( 9 )
+			->andReturn( false ); // post deleted between bulk-select and dispatch
+
+		$captured = array();
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing(
+				function ( $key, $value, $url ) use ( &$captured ) {
+					$captured[ $key ] = $value;
+					return $url;
+				}
+			);
+
+		// The persist call must never run for a post that no longer exists.
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+
+		$this->handler->handle( 'http://example.com/wp-admin/edit.php', 'archive', array( 9 ) );
+
+		$this->assertSame( 1, $captured['not_found'] ?? null, 'not_found bucket should be 1' );
+		$this->assertSame( 0, $captured['archived'] ?? null, 'archived counter should be 0' );
+		$this->assertArrayNotHasKey( 'wrong_status', $captured, 'not_found must not also bucket as wrong_status' );
+	}
+
+	/**
 	 * The bulk-undo path: when WordPress posts the bulk action via the
 	 * "Undo" admin notice, `$_GET['doaction']` is 'undo'. The handler must
 	 * register `aps_unarchive_post_set_previous_status` on the
