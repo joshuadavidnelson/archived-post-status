@@ -173,4 +173,57 @@ class ViewCapabilityTest extends TestCase {
 
 		$this->assertFalse( ViewCapability::granted() );
 	}
+
+	/**
+	 * Ownership fallback edge case: an anonymous visitor (user id 0) never
+	 * owns an authorless post (post_author 0) — the `! $user_id` guard
+	 * short-circuits before the author comparison would otherwise treat
+	 * "no current user" and "no post author" as a match.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ViewCapability::granted
+	 */
+	public function test_granted_treats_anonymous_visitor_as_non_owner_of_authorless_post() {
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 5,
+				'post_type'   => 'book',
+				'post_author' => 0,
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'get_post_type_object' )->never();
+
+		\WP_Mock::userFunction( 'current_user_can' )->andReturn( false );
+
+		$this->assertFalse( ViewCapability::granted( 5 ) );
+	}
+
+	/**
+	 * Deactivated-CPT fallback: when a post's type has since been
+	 * unregistered, get_post_type_object() returns null and the ownership
+	 * fallback grants access via the literal 'edit_posts' primitive.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ViewCapability::granted
+	 */
+	public function test_granted_falls_back_to_edit_posts_when_post_type_is_unregistered() {
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 5,
+				'post_type'   => 'book',
+				'post_author' => 7,
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'book' )->andReturn( null );
+
+		\WP_Mock::userFunction( 'current_user_can' )->andReturnUsing(
+			static function ( $capability ) {
+				return 'edit_posts' === $capability; // read_private_posts denied, literal fallback granted.
+			}
+		);
+
+		$this->assertTrue( ViewCapability::granted( 5 ) );
+	}
 }
