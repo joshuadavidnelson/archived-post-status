@@ -10,7 +10,11 @@
  * composition root:
  *
  *   1. Asserts the hookable count is stable.
- *   2. Asserts the serialised list of (FQCN, hook descriptors) is stable.
+ *   2. Asserts the FQCN order is stable, plus the fixed-shape hook
+ *      descriptor tuples for `PostStatus` (which has no class-specific
+ *      `hooks()` test of its own) and `ArchiveMetaListener` (which does,
+ *      but that test never pins priority — this is the only place
+ *      `ArchiveMetaListener`'s priority is locked).
  *
  * Any deliberate change to the wiring list (a new hookable, a reorder)
  * must update this snapshot in the same change — an unexpected diff here
@@ -87,10 +91,19 @@ class PluginHookablesParityTest extends TestCase {
 	}
 
 	/**
-	 * The serialised hook descriptor list (per hookable: FQCN + (type, hook,
-	 * priority, accepted_args) tuples) is the locked snapshot; a deliberate
-	 * wiring change replaces it in the same change, and an unexpected diff
-	 * means the composition surface moved without a decision.
+	 * Pins two things about `Plugin::hookables()` under the canonical
+	 * (admin + archive-meta-enabled) composition: the FQCN order of the
+	 * returned hookables, and the fixed-shape hook descriptor tuples for
+	 * `PostStatus` and `ArchiveMetaListener`. `PostStatus` has no
+	 * class-specific `hooks()` test of its own, so this is its only
+	 * coverage. `ArchiveMetaListener` does have one
+	 * (`ArchiveMetaListenerTest`, which pins hook names, `is_action()`,
+	 * and `accepted_args`), but that test never pins priority — this is
+	 * the only place `ArchiveMetaListener`'s priority is locked. Every
+	 * other hookable's full descriptor list is pinned by its own
+	 * `*Test.php` (e.g. `PostStatusGuardTest`, `AccessGuardTest`,
+	 * `HookAdapterTest`); this test does not re-derive or re-assert those
+	 * here.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -99,70 +112,24 @@ class PluginHookablesParityTest extends TestCase {
 
 		$snapshot = array_map( array( $this, 'descriptor_snapshot' ), $hookables );
 
-		$expected = array(
-			array(
-				'class' => ArchivedPostStatus\Status\PostStatus::class,
-				'hooks' => array(
-					array( 'type' => 'action', 'hook' => 'init', 'priority' => 10, 'accepted_args' => 1 ),
-					array( 'type' => 'filter', 'hook' => 'display_post_states', 'priority' => 10, 'accepted_args' => 2 ),
-				),
-			),
-			array(
-				'class' => ArchivedPostStatus\Status\PostStatusGuard::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Status\PostStatusGuard::class ),
-			),
-			array(
-				'class' => ArchivedPostStatus\Frontend\ArchiveTitle::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Frontend\ArchiveTitle::class ),
-			),
-			array(
-				'class' => ArchivedPostStatus\Frontend\AccessGuard::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Frontend\AccessGuard::class ),
-			),
-			array(
-				'class' => ArchivedPostStatus\Admin\PostEditor::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Admin\PostEditor::class ),
-			),
-			array(
-				'class' => ArchivedPostStatus\Admin\PostEditorGuard::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Admin\PostEditorGuard::class ),
-			),
-			array(
-				'class' => ArchivedPostStatus\Admin\Notices::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Admin\Notices::class ),
-			),
-			array(
-				'class' => ArchivedPostStatus\Settings\HookAdapter::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Settings\HookAdapter::class ),
-			),
-			array(
-				'class' => ArchivedPostStatus\Archive\ArchiveMetaListener::class,
-				'hooks' => array(
-					array( 'type' => 'action', 'hook' => 'aps_archived_post', 'priority' => 10, 'accepted_args' => 3 ),
-					array( 'type' => 'action', 'hook' => 'aps_unarchived_post', 'priority' => 10, 'accepted_args' => 3 ),
-				),
-			),
-			array(
-				'class' => ArchivedPostStatus\Admin\PostList::class,
-				'hooks' => $this->hooks_for( $hookables, ArchivedPostStatus\Admin\PostList::class ),
-			),
-		);
-
-		// The Admin\ArchiveColumn and Admin\PluginScreen hookables also land
-		// in the list under is_admin = true, but for the snapshot we assert
-		// the FQCN order + the two well-known fixed descriptors above
-		// (PostStatus, ArchiveMetaListener), and let `hooks_for()` resolve
-		// the rest by class. A class going missing or having its descriptor
-		// tuple change will trip the `hooks_for()` lookup or the resulting
-		// tuple mismatch.
-
 		// Pin the FQCN order — composition-root sequencing matters for hook
 		// registration order with WP_Mock, and order changes are also a
 		// regression signal.
-		$expected_fqcn_order = array_map( static fn( $row ) => $row['class'], $expected );
-		// ArchiveColumn and PluginScreen live at the end of the admin block.
-		$expected_fqcn_order[] = ArchivedPostStatus\Admin\ArchiveColumn::class;
-		$expected_fqcn_order[] = ArchivedPostStatus\Admin\PluginScreen::class;
+		$expected_fqcn_order = array(
+			ArchivedPostStatus\Status\PostStatus::class,
+			ArchivedPostStatus\Status\PostStatusGuard::class,
+			ArchivedPostStatus\Frontend\ArchiveTitle::class,
+			ArchivedPostStatus\Frontend\AccessGuard::class,
+			ArchivedPostStatus\Admin\PostEditor::class,
+			ArchivedPostStatus\Admin\PostEditorGuard::class,
+			ArchivedPostStatus\Admin\Notices::class,
+			ArchivedPostStatus\Settings\HookAdapter::class,
+			ArchivedPostStatus\Archive\ArchiveMetaListener::class,
+			ArchivedPostStatus\Admin\PostList::class,
+			// ArchiveColumn and PluginScreen live at the end of the admin block.
+			ArchivedPostStatus\Admin\ArchiveColumn::class,
+			ArchivedPostStatus\Admin\PluginScreen::class,
+		);
 
 		$actual_fqcn_order = array_map( static fn( $row ) => $row['class'], $snapshot );
 
@@ -198,23 +165,5 @@ class PluginHookablesParityTest extends TestCase {
 			$snapshot,
 			'ArchiveMetaListener must register the locked 3-arg public hook signatures.'
 		);
-	}
-
-	/**
-	 * Resolve the descriptor list for a given hookable class within the
-	 * supplied hookables array. Mirrors how `descriptor_snapshot()` would
-	 * have produced it.
-	 *
-	 * @param ArchivedPostStatus\Contracts\HookableInterface[] $hookables
-	 * @param string                                           $class
-	 * @return array<int, array{type: string, hook: string, priority: int, accepted_args: int}>
-	 */
-	private function hooks_for( array $hookables, string $class ): array {
-		foreach ( $hookables as $hookable ) {
-			if ( $hookable instanceof $class ) {
-				return $this->descriptor_snapshot( $hookable )['hooks'];
-			}
-		}
-		return array();
 	}
 }
