@@ -84,6 +84,33 @@ class ArchivedPostLinkTest extends TestCase {
 	}
 
 	/**
+	 * Edge case: when get_post_type_object() cannot resolve the post's type
+	 * to a registered object (a stale or deregistered post type), the null
+	 * check on its own short-circuits the disjunct — neither
+	 * aps_is_supported_post_type() nor is_post_type_viewable() is reached.
+	 *
+	 * @covers ArchivedPostStatus\Frontend\ArchivedPostLink::build
+	 */
+	public function test_build_returns_false_when_post_type_object_is_null() {
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 42,
+				'post_status' => 'archive',
+				'post_type'   => 'deregistered_type',
+			)
+		);
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'is_post_status_viewable' )->with( 'archive' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'deregistered_type' )->andReturn( null );
+
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->never();
+		\WP_Mock::userFunction( 'is_post_type_viewable' )->never();
+
+		$this->assertFalse( ArchivedPostLink::build( $post ) );
+	}
+
+	/**
 	 * Edge case: when the post type itself is publicly viewable (eg public
 	 * post-type registration), the SUT returns false — the archive preview
 	 * URL is only needed for *private* post types.

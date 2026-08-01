@@ -44,6 +44,24 @@ class AccessGuardTest extends TestCase {
 	}
 
 	/**
+	 * hooks() returns a single template_redirect action descriptor bound to
+	 * enforce_access() at the default priority and argument count.
+	 *
+	 * @covers ArchivedPostStatus\Frontend\AccessGuard::hooks
+	 */
+	public function test_hooks_returns_template_redirect_action_descriptor() {
+		$hooks = $this->guard->hooks();
+
+		$this->assertCount( 1, $hooks );
+		$this->assertInstanceOf( ArchivedPostStatus\Hooks\HookDescriptor::class, $hooks[0] );
+		$this->assertTrue( $hooks[0]->is_action() );
+		$this->assertSame( 'template_redirect', $hooks[0]->hook );
+		$this->assertSame( array( $this->guard, 'enforce_access' ), $hooks[0]->callback );
+		$this->assertSame( 10, $hooks[0]->priority );
+		$this->assertSame( 1, $hooks[0]->accepted_args );
+	}
+
+	/**
 	 * On non-singular views (archive pages, home, search) the guard must
 	 * return immediately — it never touches get_queried_object() or the
 	 * 404 stack.
