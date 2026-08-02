@@ -293,4 +293,34 @@ class UninstallTest extends TestCase {
 
 		$this->assertSame( 0, $wpdb->query_calls, 'wpdb::query must not be called when sites cap is hit' );
 	}
+
+	/**
+	 * One site under the cap — 4999 sites must still iterate rather than
+	 * no-op. Pairs with the 5000 cap-skip test above to pin both sides of
+	 * the `$count < 5000` boundary.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_multisite_uninstall_iterates_at_4999_sites_boundary() {
+		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+			define( 'WP_UNINSTALL_PLUGIN', true );
+		}
+
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_current_network_id' )->andReturn( 1 );
+		\WP_Mock::userFunction( 'get_blog_count' )->with( 1 )->andReturn( 4999 );
+
+		\WP_Mock::userFunction( 'get_sites' )
+			->once()
+			->with( array( 'number' => 4999 ) )
+			->andReturn( array() );
+
+		global $wpdb;
+		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();
+
+		include self::UNINSTALL_FILE;
+
+		$this->assertSame( 0, $wpdb->query_calls );
+	}
 }

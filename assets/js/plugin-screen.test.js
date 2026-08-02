@@ -72,6 +72,33 @@ describe( 'plugin-screen: deactivation warning', () => {
 		expect( globals.confirm ).not.toHaveBeenCalled();
 	} );
 
+	test( 'binds only to the matching row when multiple plugin rows are present', () => {
+		document.body.innerHTML = `
+			<table><tbody>
+				<tr data-slug="some-other-plugin">
+					<td class="deactivate"><a href="/wp-admin/plugins.php?action=deactivate&plugin=other">Deactivate</a></td>
+				</tr>
+				<tr data-slug="archived-post-status">
+					<td class="deactivate"><a href="/wp-admin/plugins.php?action=deactivate&plugin=aps">Deactivate</a></td>
+				</tr>
+			</tbody></table>
+		`;
+		const otherLink = document.querySelector(
+			'tr[data-slug="some-other-plugin"] .deactivate a'
+		);
+		const ownLink = document.querySelector(
+			'tr[data-slug="archived-post-status"] .deactivate a'
+		);
+
+		apsBindDeactivationWarning( document, globals );
+
+		click( otherLink );
+		expect( globals.confirm ).not.toHaveBeenCalled();
+
+		click( ownLink );
+		expect( globals.confirm ).toHaveBeenCalledTimes( 1 );
+	} );
+
 	test( 'dismissing the confirm blocks deactivation', () => {
 		const link = renderPluginRow();
 		globals.confirm.mockReturnValue( false );

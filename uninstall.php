@@ -34,8 +34,7 @@ function aps_uninstall_site() {
 	// PHP request without our PSR-4 loader registered), so calling
 	// Store::delete() would fatal on a missing class. The string literal is
 	// duplicated here as a deliberate, narrow bypass — any change to
-	// Store::OPTION_KEY must be mirrored on this line. Pinned by
-	// `tests/php/UninstallTest.php::test_uninstall_deletes_aps_settings_option`.
+	// Store::OPTION_KEY must be mirrored on this line.
 	delete_option( 'aps_settings' );
 
 	// Delete all archive metadata post meta written by ArchiveMeta in 0.4.0

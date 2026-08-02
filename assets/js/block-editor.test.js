@@ -54,8 +54,9 @@ describe( 'block-editor: archive button', () => {
 		expect( anchor.props.href ).toBe(
 			globals.archivedPostStatus.archiveUrl
 		);
-		expect( anchor.props.className ).toContain( 'editor-post-archive' );
-		expect( anchor.props.className ).toContain( 'is-destructive' );
+		expect( anchor.props.className ).toBe(
+			'components-button editor-post-archive is-destructive is-primary'
+		);
 		expect( anchor.children[ 0 ] ).toBe( 'Archive' );
 	} );
 
@@ -70,6 +71,10 @@ describe( 'block-editor: archive button', () => {
 			'Are you sure you want to archive this post?'
 		);
 		expect( event.preventDefault ).toHaveBeenCalled();
+		expect( globals.wp.i18n.__ ).toHaveBeenCalledWith(
+			'Are you sure you want to archive this post?',
+			'archived-post-status'
+		);
 	} );
 
 	test( 'accepting the confirm lets the navigation proceed', () => {
