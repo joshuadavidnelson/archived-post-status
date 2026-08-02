@@ -29,8 +29,6 @@ export const FIXTURE_TOGGLES = {
 	readCapFilter: 'aps_test_read_cap_filter_enabled',
 	/** `aps_archivable_statuses` -> `['publish']`. */
 	restrictStatuses: 'aps_test_restrict_statuses_enabled',
-	/** Capture the `aps_archived_post` / `aps_unarchived_post` args. */
-	hooks: 'aps_test_hooks_enabled',
 	/** `aps_title_label` / `_before` / `aps_title_separator` overrides. */
 	titleFilters: 'aps_test_title_filters_enabled',
 	/** Force the classic editor and trip `aps_is_classic_editor`. */
@@ -51,7 +49,6 @@ const TOGGLE_OFF: Record< FixtureToggle, boolean | number > = {
 	[ FIXTURE_TOGGLES.capFilter ]: false,
 	[ FIXTURE_TOGGLES.readCapFilter ]: false,
 	[ FIXTURE_TOGGLES.restrictStatuses ]: false,
-	[ FIXTURE_TOGGLES.hooks ]: false,
 	[ FIXTURE_TOGGLES.titleFilters ]: false,
 	[ FIXTURE_TOGGLES.classicEditor ]: false,
 	[ FIXTURE_TOGGLES.deniedPostId ]: 0,
