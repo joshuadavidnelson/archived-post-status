@@ -269,10 +269,12 @@ namespace {
 
 			\WP_Mock::userFunction( 'wp_defer_term_counting' )
 				->once()
-				->with( true );
+				->with( true )
+				->ordered();
 			\WP_Mock::userFunction( 'wp_defer_term_counting' )
 				->once()
-				->with( false );
+				->with( false )
+				->ordered();
 
 			$result = $this->cmd->call_execute( 42, array( 'defer-term-counting' => true ) );
 

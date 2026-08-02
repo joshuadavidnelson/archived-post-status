@@ -315,5 +315,28 @@ namespace {
 			$this->assertEmpty( $GLOBALS['aps_test_progress_bar_calls'] );
 			$this->assertSame( 0, $runner->captured_code );
 		}
+
+		/**
+		 * The shipped `count_limit` default (20, set on the constructor
+		 * parameter — no test double overrides it here) must trip the
+		 * progress-bar branch once a batch exceeds it.
+		 *
+		 * @covers ArchivedPostStatus\CLI\CommandRunner::run
+		 */
+		public function test_run_uses_progress_bar_above_the_shipped_default_count_limit() {
+			$script = array();
+			for ( $i = 1; $i <= 21; $i++ ) {
+				$script[] = new CliResult( true, "archived {$i}" );
+			}
+			$cmd = $this->scripted( $script );
+
+			$runner = new CapturingCommandRunner();
+			$runner->run( $cmd, range( 1, 21 ), array() );
+
+			$this->assertEmpty( \WP_CLI::$successes, 'progress-bar branch must not call WP_CLI::success' );
+			$this->assertCount( 1, $GLOBALS['aps_test_progress_bar_calls'] );
+			$this->assertSame( 21, $GLOBALS['aps_test_progress_bar_calls'][0][1] );
+			$this->assertSame( 0, $runner->captured_code );
+		}
 	}
 }

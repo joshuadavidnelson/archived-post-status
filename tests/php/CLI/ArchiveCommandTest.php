@@ -49,6 +49,24 @@ namespace {
 		}
 
 		/**
+		 * An unsupported post type is rejected before the already-archived
+		 * check runs, even when the post's status is 'archive'.
+		 *
+		 * @covers ArchivedPostStatus\CLI\ArchiveCommand::validate
+		 */
+		public function test_unsupported_post_type_is_rejected_before_already_archived_check() {
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'unsupported' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'unsupported' )->andReturn( false );
+			\WP_Mock::userFunction( 'get_post_status' )->with( 42 )->andReturn( 'archive' );
+			\WP_Mock::userFunction( 'aps_archive_post' )->never();
+
+			$result = $this->cmd->run( 42, array() );
+
+			$this->assertFalse( $result->is_success );
+			$this->assertStringContainsString( 'not a supported post type', $result->message );
+		}
+
+		/**
 		 * Archiving a post whose status is already 'archive' short-circuits
 		 * before any wp_update_post() call. Validation order also pins that
 		 * this fires before the capability check.
@@ -190,6 +208,28 @@ namespace {
 			$this->assertFalse( $result->is_success );
 			$this->assertStringContainsString( 'capability', $result->message );
 			$this->assertStringContainsString( '42', $result->message );
+		}
+
+		/**
+		 * A user lacking the archive capability is rejected before the
+		 * archivable-status check runs, even when the post's status is not
+		 * archivable.
+		 *
+		 * @covers ArchivedPostStatus\CLI\ArchiveCommand::validate
+		 * @covers ArchivedPostStatus\CLI\Command::capability_check
+		 */
+		public function test_capability_check_is_rejected_before_archivable_status_check() {
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'post' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
+			\WP_Mock::userFunction( 'get_post_status' )->with( 42 )->andReturn( 'trash' );
+			\WP_Mock::userFunction( 'is_user_logged_in' )->andReturn( true );
+			\WP_Mock::userFunction( 'aps_current_user_can_archive' )->with( 42 )->andReturn( false );
+			\WP_Mock::userFunction( 'aps_archive_post' )->never();
+
+			$result = $this->cmd->run( 42, array() );
+
+			$this->assertFalse( $result->is_success );
+			$this->assertStringContainsString( 'capability', $result->message );
 		}
 
 		/**

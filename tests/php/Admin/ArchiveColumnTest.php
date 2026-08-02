@@ -378,6 +378,50 @@ class ArchiveColumnTest extends TestCase {
 	}
 
 	/**
+	 * When the archiving user's account has since been deleted,
+	 * get_userdata() returns false and the cell falls back to the
+	 * localised "Unknown" attribution instead of a fatal or blank name.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::render_cell
+	 */
+	public function test_render_cell_renders_unknown_attribution_when_user_is_deleted() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( '7' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( 'open' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( 'closed' );
+
+		\WP_Mock::userFunction( 'get_option' )->andReturnUsing(
+			function ( $key ) {
+				return 'date_format' === $key ? 'F j, Y' : 'g:i a';
+			}
+		);
+		\WP_Mock::userFunction( 'wp_date' )
+			->andReturn( 'November 14, 2023 at 10:13 pm' );
+
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 7 )
+			->andReturn( false );
+
+		ob_start();
+		$this->column->render_cell( 'aps_archived', 42 );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'Archived by Unknown', $output );
+		$this->assertStringContainsString( 'November 14, 2023 at 10:13 pm', $output );
+	}
+
+	/**
 	 * System-context archives (archive_date > 0, archive_user === 0)
 	 * happen on anonymous WP-CLI / cron / server-side aps_archive_post()
 	 * calls where get_current_user_id() returns 0. The cell should still
@@ -545,6 +589,24 @@ class ArchiveColumnTest extends TestCase {
 		$query = \Mockery::mock( 'WP_Query' );
 		$query->shouldReceive( 'is_main_query' )->andReturn( true );
 		$query->shouldReceive( 'get' )->with( 'orderby' )->andReturn( 'date' );
+		$query->shouldReceive( 'set' )->never();
+
+		$this->column->handle_sort( $query );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Outside the admin (`is_admin()` false), handle_sort() returns without
+	 * consulting the query at all.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
+	 */
+	public function test_handle_sort_does_not_rewrite_outside_admin() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->never();
 		$query->shouldReceive( 'set' )->never();
 
 		$this->column->handle_sort( $query );
