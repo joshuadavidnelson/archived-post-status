@@ -42,20 +42,6 @@ function plugins_url( $path = '', $plugin = '' ) {
 }
 
 /**
- * Mock register_activation_hook() function.
- */
-function register_activation_hook( $file, $callback ) {
-	// Do nothing.
-}
-
-/**
- * Mock register_deactivation_hook() function.
- */
-function register_deactivation_hook( $file, $callback ) {
-	// Do nothing.
-}
-
-/**
  * Mock wp_cache_get() function.
  *
  * @since 0.4.0

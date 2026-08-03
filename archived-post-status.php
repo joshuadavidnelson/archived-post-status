@@ -3,9 +3,13 @@
  * The plugin bootstrap file.
  *
  * This file is read by WordPress to generate the plugin information in the plugin
- * admin area. This file also includes all of the dependencies used by the plugin,
- * registers the activation and deactivation functions, and defines a function
- * that starts the plugin.
+ * admin area. It defines the plugin's constants, registers the autoloader, and
+ * starts the plugin on plugins_loaded.
+ *
+ * There are no activation or deactivation hooks: the plugin registers a post
+ * *status*, never a post type or a rewrite rule, so there is nothing to set up
+ * on activation or tear down on deactivation. Data removal lives in
+ * uninstall.php, which is where WordPress expects it.
  *
  * @link    https://github.com/joshuadavidnelson/archived-post-status
  * @since   0.4.0
@@ -38,33 +42,6 @@ define( 'ARCHIVED_POST_STATUS_PLUGIN', plugin_basename( __FILE__ ) );
 define( 'ARCHIVED_POST_STATUS_DIR', __DIR__ );
 define( 'ARCHIVED_POST_STATUS_URL', plugins_url( '/', __FILE__ ) );
 define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN ) . '/languages' );
-
-/**
- * The code that runs during plugin activation.
- *
- * No-op today: the plugin registers a post *status* (register_post_status()),
- * not a post type or any rewrite rules, so there is nothing here that needs
- * flushing. Kept as the registered activation hook so a future feature that
- * DOES need first-activation setup has a single place to add it.
- *
- * @since 0.4.0
- * @return void
- */
-function aps_activate() {}
-
-/**
- * The code that runs during plugin deactivation.
- *
- * No-op today, for the same reason as {@see aps_activate()} — no rewrite
- * rules are ever registered. Kept as the registered deactivation hook for
- * the same future-extension reason.
- *
- * @since 0.4.0
- * @return void
- */
-function aps_deactivate() {}
-register_activation_hook( __FILE__, 'aps_activate' );
-register_deactivation_hook( __FILE__, 'aps_deactivate' );
 
 /**
  * Initialize the class loader and run the plugin.
