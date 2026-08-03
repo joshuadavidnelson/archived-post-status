@@ -65,6 +65,52 @@ async function deleteCreated(
 }
 
 /**
+ * Delete every tracked test user, ignoring ids already gone.
+ *
+ * Used from `afterEach` as a safety net for the deleted-user attribution
+ * test below: that test deletes its own throwaway user as part of the
+ * scenario it is proving, so this is a no-op on the happy path and only
+ * matters if the test fails before reaching that step.
+ *
+ * @param requestUtils Admin request utils.
+ * @param userIds      User ids pushed onto the describe block's `createdUsers` array.
+ */
+async function deleteCreatedUsers(
+	requestUtils: Parameters< typeof deletePosts >[ 0 ],
+	userIds: number[]
+): Promise< void > {
+	await Promise.all(
+		userIds.map( async ( id ) => {
+			try {
+				await requestUtils.rest( {
+					method: 'DELETE',
+					path: `/wp/v2/users/${ id }`,
+					params: { force: true, reassign: 1 },
+				} );
+			} catch {
+				// Already deleted — teardown stays best-effort.
+			}
+		} )
+	);
+}
+
+let usernameCounter = 0;
+
+/**
+ * Build a WP-CLI-safe username that is unique across specs, runs and workers.
+ *
+ * Mirrors {@link uniqueTitle}'s uniqueness strategy, but restricted to the
+ * character set `wp user create` accepts without quoting trouble.
+ *
+ * @param prefix Human-readable prefix.
+ */
+function uniqueUsername( prefix: string ): string {
+	usernameCounter += 1;
+
+	return `${ prefix }_${ Date.now().toString( 36 ) }_${ usernameCounter }`;
+}
+
+/**
  * Column key registered by `ArchiveColumn::COLUMN_KEY`.
  */
 const COLUMN_KEY = 'aps_archived';
@@ -88,6 +134,7 @@ const ARCHIVED_VIEW = postListQuery( { postStatus: ARCHIVED_STATUS_SLUG } );
 
 test.describe( 'post list: archived column', () => {
 	const created: CreatedPost[] = [];
+	const createdUsers: number[] = [];
 	let strings: Awaited< ReturnType< typeof pluginStrings > >;
 
 	test.beforeAll( async ( { requestUtils } ) => {
@@ -96,6 +143,7 @@ test.describe( 'post list: archived column', () => {
 
 	test.afterEach( async ( { requestUtils } ) => {
 		await deleteCreated( requestUtils, created.splice( 0 ) );
+		await deleteCreatedUsers( requestUtils, createdUsers.splice( 0 ) );
 	} );
 
 	// The three tests below loop every {@link POST_TYPES} entry:
@@ -235,6 +283,73 @@ test.describe( 'post list: archived column', () => {
 			strings.attribution_template.replace(
 				'%1$s',
 				strings.system_attribution
+			)
+		);
+		await expect( cell.locator( '.aps-archive-datetime' ) ).not.toBeEmpty();
+	} );
+
+	// Deliberately NOT parameterized over POST_TYPES, for the same reason as
+	// the "system" test above: this pins resolve_archive_agent_name()'s
+	// OTHER fallback branch — archive_user > 0 but get_userdata() fails
+	// because that account was deleted after archiving — which has no
+	// post-type branch either.
+	test( 'a post archived by a user whose account was later deleted is attributed to "Unknown"', async ( {
+		admin,
+		page,
+		requestUtils,
+	} ) => {
+		const post = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Column deleted user' ),
+			status: 'publish',
+		} );
+		created.push( { id: post.id, type: 'posts' } );
+
+		// A throwaway administrator: edit_others_posts covers the archive
+		// capability check regardless of post ownership, so the only thing
+		// under test is the attribution fallback, not a capability nuance.
+		const username = uniqueUsername( 'aps_e2e_doomed' );
+		const doomed = await requestUtils.createUser( {
+			username,
+			email: `${ username }@example.com`,
+			password: 'aps-e2e-doomed-password',
+			roles: [ 'administrator' ],
+		} );
+		createdUsers.push( doomed.id );
+
+		// --user gives the CLI request a real current-user context, so
+		// ArchiveMeta records THIS user's id rather than 0 (contrast the
+		// anonymous "system" test above, which omits --user entirely).
+		const cli = await wpCli( [
+			`--user=${ doomed.id }`,
+			'post',
+			'archive',
+			String( post.id ),
+		] );
+		expect( cli.exitCode ).toBe( 0 );
+
+		const archived = await postState( requestUtils, post.id );
+		expect( archived.post_status ).toBe( ARCHIVED_STATUS_SLUG );
+		expect( archived.meta.archive_user ).toBe( doomed.id );
+
+		// The archiving user's account no longer exists — get_userdata()
+		// must now fail where the "system" test's archive_user === 0 never
+		// even reaches it.
+		await requestUtils.rest( {
+			method: 'DELETE',
+			path: `/wp/v2/users/${ doomed.id }`,
+			params: { force: true, reassign: 1 },
+		} );
+
+		await admin.visitAdminPage( 'edit.php', ARCHIVED_VIEW );
+
+		const cell = rowLocator( page, post.id ).locator(
+			`td.column-${ COLUMN_KEY }`
+		);
+
+		await expect( cell ).toContainText(
+			strings.attribution_template.replace(
+				'%1$s',
+				strings.unknown_attribution
 			)
 		);
 		await expect( cell.locator( '.aps-archive-datetime' ) ).not.toBeEmpty();
