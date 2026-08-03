@@ -17,13 +17,12 @@ use ArchivedPostStatus\Status\PostStatusValue;
  *
  * Hybrid architecture pattern:
  *   - This class is STATIC; it has no state and no collaborators worth
- *     swapping. Pure functions of (post, screen, current user) only.
+ *     swapping. Pure functions of (post, actions, current user) only.
  *   - It calls into the other static helpers ({@see ViewCapability},
  *     {@see ArchiveCapability} via the `ArchiveAction::capability_function()`
  *     dispatch, {@see ArchivableStatuses}, {@see PostStatusValue}).
  *   - `PostList` does NOT pass it through its constructor — `PostList`
- *     calls `RowActionPolicy::for_post( $post, $actions, $screen )` at the
- *     use site.
+ *     calls `RowActionPolicy::for_post( $post, $actions )` at the use site.
  *
  * @since 0.4.0
  */
@@ -54,12 +53,7 @@ final class RowActionPolicy {
 	}
 
 	/**
-	 * Compute the row-actions array for a given post + screen + caller-supplied baseline.
-	 *
-	 * The screen argument is accepted for forward compatibility — the
-	 * current implementation does not consult it. A later change may
-	 * introduce screen-conditional row-action surfaces (e.g. hiding archive
-	 * on the legacy `post-new.php` screen) without rewiring callers.
+	 * Compute the row-actions array for a given post + caller-supplied baseline.
 	 *
 	 * Branch contract:
 	 *
@@ -75,21 +69,13 @@ final class RowActionPolicy {
 	 *
 	 * @param \WP_Post              $post    Post object whose row is being rendered.
 	 * @param array<string, string> $actions Incoming row-actions array from the WP filter.
-	 * @param \WP_Screen|object|null $screen Current admin screen (forward-compat; unused today).
-	 *                                       Accepts any object so callers (and tests) can pass
-	 *                                       a `WP_Screen` or a screen-shaped stdClass without
-	 *                                       a runtime type error; the implementation does not
-	 *                                       consult `$screen` today.
 	 * @return array<string, string>
-	 *
-	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- `$screen` is part of
-	 * the documented contract; accepted today for forward compatibility.
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchivableStatuses::includes()}
 	 * and {@see PostStatusValue::resolved_slug()} are the canonical
 	 * vocabulary lookups.
 	 */
-	public static function for_post( \WP_Post $post, array $actions, ?object $screen = null ): array {
+	public static function for_post( \WP_Post $post, array $actions ): array {
 		if ( ! aps_is_supported_post_type( $post->post_type ) ) {
 			return $actions;
 		}

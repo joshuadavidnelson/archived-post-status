@@ -90,6 +90,10 @@ final class ArchiveCapability {
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to check against; 0 for screen-level checks.
 	 * @return string
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostTypeCapabilityPrimitive::resolve()}
+	 * is the shared post-type-primitive lookup used identically here and in
+	 * ViewCapability / PostEditorGuard.
 	 */
 	private static function default_capability( int $post_id ): string {
 		if ( $post_id <= 0 ) {
@@ -101,16 +105,12 @@ final class ArchiveCapability {
 			return 'edit_others_posts';
 		}
 
-		// A post row can outlive its post type's registration (e.g. a
-		// deactivated CPT plugin) — fall back to the core primitives. The
-		// `??` also tolerates type objects without a full cap map.
-		$type_object = get_post_type_object( $post->post_type );
-		$user_id     = get_current_user_id();
+		$user_id = get_current_user_id();
 
 		if ( $user_id && (int) $post->post_author === $user_id ) {
-			return $type_object ? ( $type_object->cap->edit_posts ?? 'edit_posts' ) : 'edit_posts';
+			return PostTypeCapabilityPrimitive::resolve( $post->post_type, 'edit_posts' );
 		}
 
-		return $type_object ? ( $type_object->cap->edit_others_posts ?? 'edit_others_posts' ) : 'edit_others_posts';
+		return PostTypeCapabilityPrimitive::resolve( $post->post_type, 'edit_others_posts' );
 	}
 }

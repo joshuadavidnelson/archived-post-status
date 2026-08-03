@@ -15,11 +15,15 @@ use WP_CLI\Utils;
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
- * The only class outside CLI.php that touches WP_CLI::*.
+ * Touches WP_CLI::success()/::warning() to report per-post outcomes.
+ * {@see \ArchivedPostStatus\CLI\Registrar} is the other class that touches
+ * WP_CLI::* — it calls WP_CLI::add_command() to register the commands this
+ * runner executes.
  *
- * Owns: the iteration over post ids, progress-bar branching above the
- * count limit, per-post emit() of success/warning, exit-code aggregation,
- * and the terminating exit() call (wrapped in terminate() so tests can
+ * Owns: the iteration over post ids, the batch-wide term-counting deferral
+ * and post-cache priming, progress-bar branching above the count limit,
+ * per-post emit() of success/warning, exit-code aggregation, and the
+ * terminating exit() call (wrapped in terminate() so tests can
  * subclass-and-override it).
  *
  * @since 0.4.0
@@ -45,6 +49,22 @@ class CommandRunner {
 	 * exits non-zero if ANY item failed — independent of ordering and of
 	 * which output branch ran.
 	 *
+	 * `--defer-term-counting` brackets the WHOLE loop, not each item: term
+	 * recounting is deferred once before the batch and flushed once after,
+	 * so a multi-post `wp post archive 1 2 3 --defer-term-counting` pays for
+	 * one recount instead of one per post. Previously this bracket lived
+	 * inside {@see Command::execute()}, wrapping a single perform() call —
+	 * called once per loop iteration here, that delivered none of the
+	 * advertised batching benefit. The try/finally guarantees term counting
+	 * is re-enabled even if an item throws, mirroring the invariant
+	 * {@see Command::execute()} used to document for its own (now removed)
+	 * per-item bracket.
+	 *
+	 * Post ids are also primed into the post cache once, before the loop,
+	 * via `_prime_post_caches()` — a single query for the whole batch
+	 * instead of the one-uncached-`get_post()`-per-id that each command's
+	 * validation/capability/perform() chain would otherwise trigger.
+	 *
 	 * @param Command                $command    The command to run against each id.
 	 * @param array<int, string|int> $args       Post IDs passed positionally.
 	 * @param array<string, mixed>   $assoc_args Associative CLI flags.
@@ -52,24 +72,40 @@ class CommandRunner {
 	 */
 	public function run( Command $command, array $args, array $assoc_args ): void {
 		$status   = 0;
-		$counting = ( count( $args ) > $this->count_limit );
+		$post_ids = array_map( 'intval', $args );
+		$counting = ( count( $post_ids ) > $this->count_limit );
 		$progress = $counting
-			? Utils\make_progress_bar( $command->progress_label(), count( $args ) )
+			? Utils\make_progress_bar( $command->progress_label(), count( $post_ids ) )
 			: null;
 
-		foreach ( $args as $obj_id ) {
-			$result = $command->run( (int) $obj_id, $assoc_args );
+		if ( $post_ids ) {
+			_prime_post_caches( $post_ids );
+		}
 
-			if ( $counting ) {
-				// The progress bar suppresses per-post output above the
-				// limit, but never the exit code: a failure anywhere in
-				// the batch still has to reach the caller.
-				$status = max( $status, $result->is_success ? 0 : 1 );
-				$progress->tick();
-				continue;
+		$deferred_counts = (bool) Utils\get_flag_value( $assoc_args, 'defer-term-counting' );
+		if ( $deferred_counts ) {
+			wp_defer_term_counting( true );
+		}
+
+		try {
+			foreach ( $post_ids as $post_id ) {
+				$result = $command->run( $post_id, $assoc_args );
+
+				if ( $counting ) {
+					// The progress bar suppresses per-post output above the
+					// limit, but never the exit code: a failure anywhere in
+					// the batch still has to reach the caller.
+					$status = max( $status, $result->is_success ? 0 : 1 );
+					$progress->tick();
+					continue;
+				}
+
+				$status = max( $status, $this->emit( $result ) );
 			}
-
-			$status = max( $status, $this->emit( $result ) );
+		} finally {
+			if ( $deferred_counts ) {
+				wp_defer_term_counting( false );
+			}
 		}
 
 		if ( $counting ) {

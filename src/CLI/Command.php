@@ -9,7 +9,6 @@
 namespace ArchivedPostStatus\CLI;
 
 use ArchivedPostStatus\Archive\ArchiveAction;
-use WP_CLI\Utils;
 
 // Exit if accessed directly, prevent direct access to this file.
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
@@ -19,9 +18,11 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  *
  * Each concrete subclass declares which ArchiveAction it performs and any
  * command-specific validation. The base owns the shared primitives
- * (capability gate, post-type gate, defer-term-counting + perform()), and
- * the run()/execute() invariants are `final` so subclasses cannot break
- * the template's contract.
+ * (capability gate, post-type gate, perform()), and the run()/execute()
+ * invariants are `final` so subclasses cannot break the template's
+ * contract. `--defer-term-counting` is handled one level up, in
+ * {@see CommandRunner::run()}, which brackets the whole batch rather than
+ * one perform() call at a time.
  *
  * @since 0.4.0
  */
@@ -67,44 +68,30 @@ abstract class Command {
 			return $validation_error;
 		}
 
-		return $this->execute( $post_id, $assoc_args );
+		return $this->execute( $post_id );
 	}
 
 	/**
-	 * Execute the action via the enum, wrapping with wp_defer_term_counting()
-	 * when the flag is set. Returns a success or error CliResult shaped from
-	 * the enum's past-tense verb.
+	 * Execute the action via the enum. Returns a success or error CliResult
+	 * shaped from the enum's past-tense verb.
 	 *
-	 * Invariant: when --defer-term-counting was set, term counting MUST be
-	 * re-enabled on every exit path — including perform() returning false and
-	 * perform() throwing. A try/finally guards both paths; leaving term
-	 * counting deferred across a batch could leak the global state into
-	 * unrelated WordPress operations after the CLI run.
+	 * `--defer-term-counting` is no longer this method's concern — it used
+	 * to wrap wp_defer_term_counting() around this one perform() call, which
+	 * meant a multi-post batch deferred and re-enabled term counting once
+	 * per post instead of once per batch. {@see CommandRunner::run()} now
+	 * brackets the whole loop instead.
 	 *
-	 * @param int                  $post_id    The post ID to process.
-	 * @param array<string, mixed> $assoc_args Associative CLI flags.
+	 * @param int $post_id The post ID to process.
 	 * @return CliResult
 	 */
-	final protected function execute( int $post_id, array $assoc_args ): CliResult {
-		$action          = $this->action();
-		$deferred_counts = (bool) Utils\get_flag_value( $assoc_args, 'defer-term-counting' );
-
-		if ( $deferred_counts ) {
-			wp_defer_term_counting( true );
+	final protected function execute( int $post_id ): CliResult {
+		$action = $this->action();
+		$result = $action->perform( $post_id );
+		if ( ! $result ) {
+			return new CliResult( false, "Failed to {$action->value} post {$post_id}." );
 		}
 
-		try {
-			$result = $action->perform( $post_id );
-			if ( ! $result ) {
-				return new CliResult( false, "Failed to {$action->value} post {$post_id}." );
-			}
-
-			return new CliResult( true, "{$action->past_tense()} post {$post_id}." );
-		} finally {
-			if ( $deferred_counts ) {
-				wp_defer_term_counting( false );
-			}
-		}
+		return new CliResult( true, "{$action->past_tense()} post {$post_id}." );
 	}
 
 	/**

@@ -87,9 +87,15 @@ class PluginTest extends TestCase {
 
 	/**
 	 * The unconditional spine of the plugin: regardless of admin context
-	 * or WP-CLI, these eight hookables are always wired. If one disappears
+	 * or WP-CLI, these six hookables are always wired. If one disappears
 	 * silently, an important hook stops registering and no other test
 	 * catches it.
+	 *
+	 * `PostEditor` and `Notices` are deliberately NOT asserted here — every
+	 * hook they register only fires on an actual wp-admin page load, so
+	 * they live in the `is_admin()`-gated admin-only set instead; see
+	 * {@see test_hookables_includes_admin_only_set_when_is_admin_is_true()}
+	 * and {@see test_hookables_omits_admin_only_set_when_is_admin_is_false()}.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -103,9 +109,7 @@ class PluginTest extends TestCase {
 		$this->assertContains( ArchivedPostStatus\Status\PostStatusGuard::class, $names );
 		$this->assertContains( ArchivedPostStatus\Frontend\ArchiveTitle::class, $names );
 		$this->assertContains( ArchivedPostStatus\Frontend\AccessGuard::class, $names );
-		$this->assertContains( ArchivedPostStatus\Admin\PostEditor::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PostEditorGuard::class, $names );
-		$this->assertContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertContains( ArchivedPostStatus\Settings\HookAdapter::class, $names );
 	}
 
@@ -121,11 +125,14 @@ class PluginTest extends TestCase {
 	 * satisfy this assertion would weaken encapsulation. Same pattern as
 	 * the other private-property pins in this file.
 	 *
+	 * `is_admin()` must be true here — `Notices` only appears in the
+	 * admin-only set (see {@see \ArchivedPostStatus\Plugin::hookables()}).
+	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
 	public function test_hookables_constructs_notices_with_notice_builder_dependency() {
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
 
 		$hookables = $this->invoke_hookables();
 
@@ -184,10 +191,13 @@ class PluginTest extends TestCase {
 	}
 
 	/**
-	 * The admin-only set — PostList (post list table), ArchiveColumn (the
-	 * archive metadata column), and PluginScreen (the deactivation warning)
-	 * — only matter on admin page loads. Gating them via is_admin() avoids
-	 * hooking front-end queries.
+	 * The admin-only set — PostEditor (editor assets + classic-editor
+	 * button), Notices (admin_notices), PostList (post list table),
+	 * ArchiveColumn (the archive metadata column), and PluginScreen (the
+	 * deactivation warning) — only matter on admin page loads. Gating them
+	 * via is_admin() avoids hooking front-end/CLI requests with admin-only
+	 * hooks (admin_enqueue_scripts, post_submitbox_start, admin_notices,
+	 * etc.) that would never fire there anyway.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -197,6 +207,8 @@ class PluginTest extends TestCase {
 
 		$names = $this->class_names( $this->invoke_hookables() );
 
+		$this->assertContains( ArchivedPostStatus\Admin\PostEditor::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
@@ -243,10 +255,10 @@ class PluginTest extends TestCase {
 
 	/**
 	 * Mirror: under a non-admin request (front-end page view, REST API
-	 * call, etc.), neither PostList nor ArchiveColumn should appear.
-	 * Their hooks fire on `admin_*` events which would never reach this
-	 * code path, but composing them anyway burns autoloader cycles and
-	 * makes the dependency graph less honest.
+	 * call, etc.), none of PostEditor, Notices, PostList, ArchiveColumn, or
+	 * PluginScreen should appear. Every hook they register only fires on an
+	 * actual wp-admin page load, so composing them anyway burns autoloader
+	 * cycles and makes the dependency graph less honest.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -256,6 +268,8 @@ class PluginTest extends TestCase {
 
 		$names = $this->class_names( $this->invoke_hookables() );
 
+		$this->assertNotContains( ArchivedPostStatus\Admin\PostEditor::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );

@@ -6,9 +6,8 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Status\PostStatusValue
  *
- * centralises the bare-string vocabulary items
- * `'archive'` (slug) and `'Archived'` (label) that the procedural layer
- * scattered across the codebase. Cases are pinned here so Step 3B's
+ * centralises the bare-string slug literal `'archive'` that the procedural
+ * layer scattered across the codebase. Cases are pinned here so Step 3B's
  * literal-replacement work can lean on a stable enum surface.
  */
 
@@ -32,19 +31,6 @@ class PostStatusValueTest extends TestCase {
 	}
 
 	/**
-	 * The Label case carries the canonical English source string used by the
-	 * `aps_archived_label_string` filter's `__()` call. Translation tooling
-	 * extracts the literal `'Archived'` from the codebase; the enum exposes
-	 * the same string so Step 3B can replace literal usages without changing
-	 * the gettext source set.
-	 *
-	 * @covers ArchivedPostStatus\Status\PostStatusValue
-	 */
-	public function test_label_case_value_is_archived() {
-		$this->assertSame( 'Archived', PostStatusValue::Label->value );
-	}
-
-	/**
 	 * String-backed enums round-trip through `tryFrom()` — site code that
 	 * receives an arbitrary string from a query var, filter callback, etc.
 	 * can normalise it into the enum surface without an explicit
@@ -54,23 +40,21 @@ class PostStatusValueTest extends TestCase {
 	 */
 	public function test_try_from_round_trips_the_slug_string() {
 		$this->assertSame( PostStatusValue::Slug, PostStatusValue::tryFrom( 'archive' ) );
-		$this->assertSame( PostStatusValue::Label, PostStatusValue::tryFrom( 'Archived' ) );
 		$this->assertNull( PostStatusValue::tryFrom( 'not-a-case' ) );
 	}
 
 	/**
-	 * Belt-and-suspenders: the enum currently exposes exactly two cases. A
+	 * Belt-and-suspenders: the enum currently exposes exactly one case. A
 	 * future case addition is a deliberate API change — this test forces the
 	 * change to be made consciously rather than slipping in unnoticed.
 	 *
 	 * @covers ArchivedPostStatus\Status\PostStatusValue
 	 */
-	public function test_enum_has_two_cases_only() {
+	public function test_enum_has_one_case_only() {
 		$cases = PostStatusValue::cases();
 
-		$this->assertCount( 2, $cases );
+		$this->assertCount( 1, $cases );
 		$this->assertSame( PostStatusValue::Slug, $cases[0] );
-		$this->assertSame( PostStatusValue::Label, $cases[1] );
 	}
 
 	/**

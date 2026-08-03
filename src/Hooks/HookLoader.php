@@ -11,8 +11,22 @@ use ArchivedPostStatus\Contracts\HookableInterface;
  * Reads HookDescriptor arrays from HookableInterface implementors
  * and registers them with WordPress.
  *
- * This is the only class in the codebase that calls add_action() or add_filter().
- * All hook registration flows through this central orchestrator.
+ * The central orchestrator for the plugin's standing hooks: every
+ * HookableInterface implementor declares its hooks() array once, and this
+ * class is what turns those descriptors into add_action()/add_filter()
+ * calls — see {@see run()} and {@see register()}.
+ *
+ * A handful of classes still call add_action()/add_filter() directly, for
+ * hooks that are conditional or short-lived rather than standing
+ * registrations: {@see \ArchivedPostStatus\Admin\ArchiveColumn::handle_sort()}'s
+ * sort filters (added only while the archived-column sort query is active),
+ * {@see \ArchivedPostStatus\Admin\BulkActionHandler::bulk_unarchive()} and
+ * {@see \ArchivedPostStatus\CLI\Registrar::unarchive()}'s undo/status-override
+ * filters (bracketed add/remove around a single dispatch), and
+ * {@see \ArchivedPostStatus\Status\PostStatusGuard::enforce_archive_state()}'s
+ * recursion guard (removing and re-adding itself around its own
+ * wp_update_post() call). Those are deliberate exceptions to the pattern
+ * this class exists to centralize, not gaps in it.
  *
  * @since 0.4.0
  */

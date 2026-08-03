@@ -18,9 +18,6 @@
  *   - cap_set:       full_caps, view_only, no_caps              (3)
  *
  *   = 12 combinations.
- *
- * The helper accepts a `WP_Screen|null` argument that `for_post()` never
- * consults, so a screen dimension is not part of this grid.
  */
 
 use ArchivedPostStatus\Admin\BulkActionHandler;
@@ -267,8 +264,7 @@ class RowActionPolicyParitySnapshotTest extends TestCase {
 			'view'                 => '<a>View</a>',
 		);
 
-		$screen = null;
-		$result = RowActionPolicy::for_post( $post, $incoming, $screen );
+		$result = RowActionPolicy::for_post( $post, $incoming );
 
 		$actual_keys = array_keys( $result );
 		sort( $actual_keys );

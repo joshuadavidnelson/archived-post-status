@@ -74,6 +74,16 @@ final class Plugin {
 	 * This is the authoritative list of everything the plugin registers
 	 * with WordPress. To add a new feature, add a new line here.
 	 *
+	 * `PostEditor` and `Notices` live in the `is_admin()` branch alongside
+	 * `PostList` / `ArchiveColumn` / `PluginScreen`: every hook each of them
+	 * registers — `admin_enqueue_scripts`, `post_submitbox_start` (PostEditor),
+	 * `admin_notices` (Notices) — only ever fires on an actual wp-admin page
+	 * load, never on the front end or in a WP-CLI request, so instantiating
+	 * and hooking them on every request was pure overhead outside admin.
+	 * `PostEditorGuard` stays unconditional: its `map_meta_cap` filter runs
+	 * on every capability check anywhere (front end, REST, CLI), not just
+	 * inside wp-admin.
+	 *
 	 * @return Contracts\HookableInterface[]
 	 */
 	private function hookables(): array {
@@ -82,9 +92,7 @@ final class Plugin {
 			new PostStatusGuard(),
 			new Frontend\ArchiveTitle(),
 			new Frontend\AccessGuard(),
-			new Admin\PostEditor(),
 			new Admin\PostEditorGuard(),
-			new Admin\Notices( new Admin\NoticeBuilder() ),
 			new Settings\HookAdapter(),
 		);
 
@@ -93,6 +101,8 @@ final class Plugin {
 		}
 
 		if ( is_admin() ) {
+			$hookables[] = new Admin\PostEditor();
+			$hookables[] = new Admin\Notices( new Admin\NoticeBuilder() );
 			$hookables[] = new Admin\PostList( new Admin\BulkActionHandler() );
 			$hookables[] = new Admin\ArchiveColumn();
 			$hookables[] = new Admin\PluginScreen();

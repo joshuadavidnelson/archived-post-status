@@ -5,6 +5,7 @@ namespace ArchivedPostStatus\Admin;
 // Exit if accessed directly, prevent direct access to this file.
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
+use ArchivedPostStatus\Archive\PostTypeCapabilityPrimitive;
 use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 use ArchivedPostStatus\Status\PostStatusValue;
@@ -76,7 +77,11 @@ final class PostEditorGuard implements HookableInterface {
 	 * @return array<int, string>
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * is the canonical filterable slug accessor; {@see PostTypeCapabilityPrimitive::resolve()}
+	 * is the shared post-type-primitive lookup used identically in
+	 * ArchiveCapability / ViewCapability, resolving 'edit_post' here (e.g.
+	 * edit_book for a `capability_type => 'book'` type with
+	 * `map_meta_cap => false`) instead of a private copy of the same lookup.
 	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- $user_id is fixed by the
 	 * map_meta_cap filter signature; the deny applies to every user identically.
 	 */
@@ -93,35 +98,13 @@ final class PostEditorGuard implements HookableInterface {
 			return $caps;
 		}
 
-		if ( 'edit_post' !== $cap && self::edit_post_primitive( $post->post_type ) !== $cap ) {
+		if ( 'edit_post' !== $cap && PostTypeCapabilityPrimitive::resolve( $post->post_type, 'edit_post' ) !== $cap ) {
 			return $caps;
 		}
 
 		$caps[] = 'do_not_allow';
 
 		return $caps;
-	}
-
-	/**
-	 * Resolve a post type's own edit_post primitive (e.g. edit_book for a
-	 * `capability_type => 'book'` type with `map_meta_cap => false`).
-	 *
-	 * Falls back to the literal 'edit_post' when the type is unregistered or
-	 * its cap map is incomplete, rather than fataling on a null-property
-	 * access — a post row can outlive its post type's registration (e.g. a
-	 * deactivated CPT plugin).
-	 *
-	 * @since 0.4.0
-	 * @param string $post_type Post type slug.
-	 * @return string
-	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- WP core lookup; matches the
-	 * established pattern in {@see \ArchivedPostStatus\Archive\ArchiveCapability::default_capability()}.
-	 */
-	private static function edit_post_primitive( string $post_type ): string {
-		$post_type_object = get_post_type_object( $post_type );
-
-		return $post_type_object ? ( $post_type_object->cap->edit_post ?? 'edit_post' ) : 'edit_post';
 	}
 
 	/**

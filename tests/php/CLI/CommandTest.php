@@ -55,8 +55,8 @@ namespace {
 				return $this->ensure_not_locked( $post_id );
 			}
 
-			public function call_execute( int $post_id, array $assoc_args ): CliResult {
-				return $this->execute( $post_id, $assoc_args );
+			public function call_execute( int $post_id ): CliResult {
+				return $this->execute( $post_id );
 			}
 		}
 		// phpcs:enable
@@ -214,7 +214,7 @@ namespace {
 				->with( 42 )
 				->andReturn( new \WP_Post( array( 'ID' => 42 ) ) );
 
-			$result = $this->cmd->call_execute( 42, array() );
+			$result = $this->cmd->call_execute( 42 );
 
 			$this->assertTrue( $result->is_success );
 			$this->assertStringContainsString( 'archived', $result->message );
@@ -231,7 +231,7 @@ namespace {
 		public function test_execute_returns_error_when_perform_returns_false() {
 			\WP_Mock::userFunction( 'aps_archive_post' )->with( 42 )->andReturn( false );
 
-			$result = $this->cmd->call_execute( 42, array() );
+			$result = $this->cmd->call_execute( 42 );
 
 			$this->assertFalse( $result->is_success );
 			$this->assertStringContainsString( 'Failed to archive', $result->message );
@@ -289,116 +289,9 @@ namespace {
 			$this->assertSame( 'validation said no for 42', $result->message );
 		}
 
-		/**
-		 * The --defer-term-counting flag toggles wp_defer_term_counting()
-		 * on (before perform()) and back off (after success). Captures both
-		 * calls to pin the contract.
-		 *
-		 * @covers ArchivedPostStatus\CLI\Command::execute
-		 */
-		public function test_execute_toggles_defer_term_counting_when_flag_set() {
-			\WP_Mock::userFunction( 'aps_archive_post' )
-				->once()
-				->with( 42 )
-				->andReturn( new \WP_Post( array( 'ID' => 42 ) ) );
-
-			\WP_Mock::userFunction( 'wp_defer_term_counting' )
-				->once()
-				->with( true )
-				->ordered();
-			\WP_Mock::userFunction( 'wp_defer_term_counting' )
-				->once()
-				->with( false )
-				->ordered();
-
-			$result = $this->cmd->call_execute( 42, array( 'defer-term-counting' => true ) );
-
-			$this->assertTrue( $result->is_success );
-		}
-
-		/**
-		 * Failure-path contract: when perform() returns false (e.g. the post
-		 * couldn't be archived), the --defer-term-counting flag must still
-		 * re-enable term counting before returning. Pre-Phase-2 the early
-		 * return on `false` left the global deferred, leaking state into
-		 * unrelated WordPress operations downstream.
-		 *
-		 * @covers ArchivedPostStatus\CLI\Command::execute
-		 */
-		public function test_defer_term_counting_is_reenabled_when_perform_returns_false() {
-			\WP_Mock::userFunction( 'aps_archive_post' )
-				->once()
-				->with( 42 )
-				->andReturn( false );
-
-			\WP_Mock::userFunction( 'wp_defer_term_counting' )
-				->once()
-				->with( true );
-			\WP_Mock::userFunction( 'wp_defer_term_counting' )
-				->once()
-				->with( false );
-
-			$result = $this->cmd->call_execute( 42, array( 'defer-term-counting' => true ) );
-
-			$this->assertFalse( $result->is_success );
-			$this->assertStringContainsString( 'Failed to archive', $result->message );
-		}
-
-		/**
-		 * Failure-path contract: when perform() throws, the try/finally must
-		 * still re-enable term counting. The exception then propagates so
-		 * the CLI runner can surface the error.
-		 *
-		 * @covers ArchivedPostStatus\CLI\Command::execute
-		 */
-		public function test_defer_term_counting_is_reenabled_when_perform_throws() {
-			\WP_Mock::userFunction( 'aps_archive_post' )
-				->once()
-				->with( 42 )
-				->andReturnUsing(
-					static function () {
-						throw new \RuntimeException( 'simulated failure inside perform()' );
-					}
-				);
-
-			\WP_Mock::userFunction( 'wp_defer_term_counting' )
-				->once()
-				->with( true );
-			\WP_Mock::userFunction( 'wp_defer_term_counting' )
-				->once()
-				->with( false );
-
-			$caught = null;
-			try {
-				$this->cmd->call_execute( 42, array( 'defer-term-counting' => true ) );
-			} catch ( \RuntimeException $e ) {
-				$caught = $e;
-			}
-
-			$this->assertNotNull( $caught, 'Exception thrown from perform() must propagate' );
-			$this->assertSame( 'simulated failure inside perform()', $caught->getMessage() );
-			// WP_Mock verifies that wp_defer_term_counting(false) fired on
-			// the way out of the finally block.
-		}
-
-		/**
-		 * When the --defer-term-counting flag is NOT set, neither toggle
-		 * fires. Guards against accidentally calling wp_defer_term_counting
-		 * unconditionally in the try/finally refactor.
-		 *
-		 * @covers ArchivedPostStatus\CLI\Command::execute
-		 */
-		public function test_execute_does_not_toggle_defer_term_counting_when_flag_absent() {
-			\WP_Mock::userFunction( 'aps_archive_post' )
-				->once()
-				->with( 42 )
-				->andReturn( new \WP_Post( array( 'ID' => 42 ) ) );
-
-			\WP_Mock::userFunction( 'wp_defer_term_counting' )->never();
-
-			$result = $this->cmd->call_execute( 42, array() );
-
-			$this->assertTrue( $result->is_success );
-		}
+		// The --defer-term-counting toggle used to be tested here, against
+		// Command::execute(). It now brackets the whole batch one level up —
+		// see CommandRunnerTest's defer-term-counting coverage — since
+		// execute() no longer reads the flag at all.
 	}
 }

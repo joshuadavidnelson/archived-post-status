@@ -244,8 +244,7 @@ final class PostList implements HookableInterface {
 	 *
 	 * The policy branches live in the pure-static
 	 * {@see RowActionPolicy::for_post()} helper; this filter callback is a
-	 * thin WP-adapter that forwards the current screen for forward
-	 * compatibility.
+	 * thin WP-adapter that forwards to it.
 	 *
 	 * @since 0.4.0
 	 * @param array<string, string> $actions Current post row actions (action key => HTML link).
@@ -257,8 +256,7 @@ final class PostList implements HookableInterface {
 	 * is the documented public surface, not a service-locator pull.
 	 */
 	public function row_actions( array $actions, \WP_Post $post ): array {
-		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		return RowActionPolicy::for_post( $post, $actions, $screen );
+		return RowActionPolicy::for_post( $post, $actions );
 	}
 
 	/**
