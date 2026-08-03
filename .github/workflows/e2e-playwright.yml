@@ -40,8 +40,8 @@ jobs:
         # Top of the PHP range the unit-test matrix already covers.
         - wp: "latest"
           php: "8.4"
-        # readme.txt "Tested up to: 6.9" - the last 6.x major.
-        - wp: "6.9"
+        # readme.txt "Tested up to: 7.0.2" - pins the declared tested-up-to version.
+        - wp: "7.0.2"
           php: "8.3"
         # Development WordPress, for early warning on upstream core changes.
         # "master", not "trunk": the WordPress/WordPress mirror has no `trunk`

@@ -4,9 +4,9 @@ Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
-Tested up to:      6.9.1
+Tested up to:      7.0.2
 Stable tag:        0.4.0
-License:           GPL-2.0
+License:           GPL-2.0+
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
 Use an "Archive" status to unpublish content without having to trash it.
@@ -91,17 +91,19 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - **"Archived" admin column** - when you filter the posts list by Archived, a sortable column shows who archived each post and when.
 - **Archive metadata** - archiving now records the previous post status, the previous comment and ping status, the archive date, and the user who archived it. Unarchiving restores all of it. (Posts archived before 0.4.0 have no metadata and still restore to Draft.)
 - **WP-CLI commands** - `wp post archive <id>...` and `wp post unarchive <id>...`, each accepting one or more IDs. `wp post archive` takes `--force` to skip the eligible-status check, `wp post unarchive` takes `--status=<status>` to restore to a specific status, and both take `--defer-term-counting` for large batches.
-- **`aps_archive_post()` and `aps_unarchive_post()`** - real API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with `aps_pre_archive_post` / `aps_pre_unarchive_post` short-circuit filters and `aps_archived_post` / `aps_unarchived_post` actions.
+- **`aps_archive_post()` and `aps_unarchive_post()`** - real API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with `aps_pre_archive_post` / `aps_pre_unarchive_post` short-circuit filters and `aps_archived_post` / `aps_unarchived_post` actions. `aps_get_archive_post_link()` and `aps_get_unarchive_post_link()` return the URLs that trigger them; `aps_get_archived_post_link()`, modeled on core's `get_preview_post_link()`, returns the link to view an archived post.
 - **Front-end protection** - a visitor who isn't allowed to see archived content now gets a 404 when they request a single archived post. The check runs consistently for every visitor rather than varying with WordPress's private-post rules; a post's own author can always view their own archived content.
-- **Per-action, ownership-aware capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, filterable through `aps_default_archive_capability`, `aps_default_unarchive_capability`, and `aps_default_edit_capability`. Authors can archive, unarchive, and view their own content (via the post type's `edit_posts` capability); acting on other authors' content requires `edit_others_posts`. Viewing others' archived content is unchanged - `aps_default_read_capability`, default `read_private_posts`.
+- **Per-action, ownership-aware capabilities** - `aps_current_user_can_view()`, `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, filterable through `aps_default_read_capability`, `aps_default_archive_capability`, `aps_default_unarchive_capability`, and `aps_default_edit_capability`. Authors can archive, unarchive, and view their own content (via the post type's `edit_posts` capability); acting on other authors' content requires `edit_others_posts`. Viewing others' archived content defaults to `read_private_posts`.
 - **Settings groundwork** - settings are now stored in a single `aps_settings` option, which currently holds one value, `is_read_only`. There is no settings screen yet; the admin UI is planned for a future release and all behavior stays filter-driven in 0.4.0.
-- More filters throughout: `aps_supported_post_types`, `aps_archivable_statuses`, `aps_is_classic_editor`, `aps_enable_archive_meta`, `aps_status_arg_dashicon`, `aps_status_arg_protected`, `aps_unarchive_post_status`, `aps_unarchive_post_comment_status`, `aps_unarchive_post_ping_status`, `aps_archived_post_link`, `aps_get_archive_post_link`, and `aps_get_unarchive_post_link`. See the [documentation site](https://docs.archivedpoststat.us/) for the full reference.
+- More filters throughout: `aps_supported_post_types`, `aps_archivable_statuses`, `aps_is_classic_editor`, `aps_enable_archive_meta`, `aps_enable_notices` (suppresses the post-action admin notices when set to `false`), `aps_is_read_only`, `aps_status_arg_public`, `aps_status_arg_private`, `aps_status_arg_protected`, `aps_status_arg_exclude_from_search`, `aps_status_arg_show_in_admin_all_list`, `aps_status_arg_show_in_admin_status_list`, `aps_archive_post_comment_status` and `aps_archive_post_ping_status` (archive-side mirrors of the two below), `aps_unarchive_post_status`, `aps_unarchive_post_comment_status`, `aps_unarchive_post_ping_status`, `aps_archived_post_link`, `aps_get_archive_post_link`, and `aps_get_unarchive_post_link`. See the [documentation site](https://docs.archivedpoststat.us/) for the full reference.
 
 **Changed**
 
 - The plugin was rebuilt from a single procedural file into small, focused, namespaced classes under `src/`, loaded by a lightweight autoloader. Composer is a development tool only - no extra dependencies ship to your site.
 - Archived posts are now kept out of the default "All" view on the posts list, the same way Trash is. Use the "Archived" filter link to see them.
+- Archiving is now restricted to `public` post types. 0.3.x allowed archiving any post type that wasn't explicitly excluded via `aps_excluded_post_types`, including non-public ones; 0.4.0 starts from the public post types and subtracts the excluded set (`aps_get_supported_post_types()` returns the resulting list). If you need to archive a non-public custom post type, add it back with the `aps_supported_post_types` filter.
 - Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
+- Tested up to WordPress 7.0.2.
 
 **Removed**
 
@@ -143,8 +145,6 @@ This only applies if you changed the status slug with the `aps_post_status_slug`
 The status slug is still `archive`, exactly as in 0.3.x. Nothing to do here unless your site adds an `aps_post_status_slug` filter to rename it - if you have never used that filter, skip this section and update normally.
 
 What changed is where the filter is honored. 0.3.x applied it only when registering the status and then saved the literal `archive` to the database regardless, so a site that renamed the slug ends up with rows the plugin no longer matches once 0.4.0 honors the custom name everywhere. If that is your site: back up your database first, then run `UPDATE wp_posts SET post_status = 'your-custom-slug' WHERE post_status = 'archive';` - substituting your own slug for "your-custom-slug" and your own table prefix for `wp_`. Do not run that query if you are not filtering the slug; it would rename your archived posts to a status the plugin does not recognize.
-
-Replace `archived` with whatever slug your filter returns, and replace the `wp_` prefix with your site's actual table prefix if it differs.
 
 = 0.3.12 - Feb 16, 2026 =
 
@@ -257,11 +257,7 @@ Props [fjarrett](https://github.com/fjarrett)
 
 = 0.4.0 =
 
-The archived status slug is unchanged (`archive`) and most sites can update normally. IMPORTANT only if your site adds an `aps_post_status_slug` filter to rename the slug: 0.4.0 honors that filter everywhere, so posts archived under 0.3.x need a one-off migration. Back up your database, then run `UPDATE wp_posts SET post_status = 'your-custom-slug' WHERE post_status = 'archive';` - substituting your slug and table prefix. Do not run it if you are not filtering the slug.
-
-0.3.x saved the literal "archive" to the database no matter what your filter returned, so posts archived before this update will no longer be recognized as archived.
-
-Everything else is new features: archive from the block and classic editors, bulk archive and unarchive with skip notices and an Undo link, inline row actions, an "Archived" admin column, saved archive metadata, WP-CLI commands, and a rebuilt, tested codebase. See the changelog for the full list.
+Major rewrite: PHP 8.1+ is now required, eleven 0.3.x global functions were removed, and archived posts no longer appear in the default "All" list. See the changelog for the full list of changes, including the migration note for sites using the `aps_post_status_slug` filter.
 
 = 0.3.12 - Feb 16, 2026 =
 
