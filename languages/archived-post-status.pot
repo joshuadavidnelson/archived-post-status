@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-28T02:43:10+00:00\n"
+"POT-Creation-Date: 2026-08-03T19:35:10+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: archived-post-status\n"
@@ -39,26 +39,19 @@ msgstr ""
 msgid "https://joshuadnelson.com"
 msgstr ""
 
-#. translators: header label for the Archived list-table column; also used as the cell value for legacy posts with no recorded archive date.
-#. translators: The label used for the status.
-#: src/Admin/ArchiveColumn.php:39
-#: src/Status/ArchiveLabel.php:32
-msgid "Archived"
-msgstr ""
-
 #. translators: attribution shown when a post was archived with no user context (anonymous WP-CLI, cron).
-#: src/Admin/ArchiveColumn.php:52
+#: src/Admin/ArchiveColumn.php:61
 msgctxt "archive agent"
 msgid "system"
 msgstr ""
 
 #. translators: attribution shown when the archiving user's account no longer exists.
-#: src/Admin/ArchiveColumn.php:65
+#: src/Admin/ArchiveColumn.php:74
 msgid "Unknown"
 msgstr ""
 
 #. translators: %1$s: user display name
-#: src/Admin/ArchiveColumn.php:78
+#: src/Admin/ArchiveColumn.php:87
 #, php-format
 msgid "Archived by %1$s"
 msgstr ""
@@ -117,57 +110,90 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: label for the "Archive" row action link.
-#: src/Admin/PostEditor.php:52
-#: src/Admin/PostList.php:139
-#: src/Admin/RowActionPolicy.php:41
+#: src/Admin/PostEditor.php:62
+#: src/Admin/PostList.php:221
+#: src/Admin/RowActionPolicy.php:40
 #: assets/js/block-editor.js:51
 msgid "Archive"
 msgstr ""
 
 #. translators: wp_die() message shown when a direct edit attempt on an archived post is blocked.
-#: src/Admin/PostEditorGuard.php:94
+#: src/Admin/PostEditorGuard.php:120
 msgid "You can't edit this item because it has been Archived. Please change the post status and try again."
 msgstr ""
 
-#: src/Admin/PostEditorGuard.php:136
+#: src/Admin/PostEditorGuard.php:164
 msgid "WordPress &rsaquo; Error"
 msgstr ""
 
 #. translators: label for the "Unarchive" row action link.
-#: src/Admin/PostList.php:145
-#: src/Admin/RowActionPolicy.php:53
+#: src/Admin/PostList.php:227
+#: src/Admin/RowActionPolicy.php:52
 msgid "Unarchive"
 msgstr ""
 
-#: src/Admin/PostList.php:235
+#: src/Admin/PostList.php:332
 msgid "Invalid post type."
 msgstr ""
 
 #. translators: fallback name shown when the post-lock holder's account no longer exists.
-#: src/Admin/PostList.php:242
+#: src/Admin/PostList.php:339
 msgid "Another user"
 msgstr ""
 
-#. translators: %s: User's display name.
-#: src/Admin/PostList.php:246
+#: src/Admin/RowActionPolicy.php:92
+msgid "Archive this post"
+msgstr ""
+
+#: src/Admin/RowActionPolicy.php:116
+msgid "Unarchive this post"
+msgstr ""
+
+#. translators: %s: display name of the user currently editing the post.
+#: src/Archive/ArchiveAction.php:68
 #, php-format
 msgid "You cannot archive this item. %s is currently editing."
 msgstr ""
 
-#: src/Admin/PostList.php:253
+#. translators: %s: display name of the user currently editing the post.
+#: src/Archive/ArchiveAction.php:71
+#, php-format
+msgid "You cannot unarchive this item. %s is currently editing."
+msgstr ""
+
+#: src/Archive/ArchiveAction.php:83
 msgid "Error in archiving this item."
 msgstr ""
 
-#: src/Admin/RowActionPolicy.php:106
-msgid "Archive this post"
+#: src/Archive/ArchiveAction.php:84
+msgid "Error in unarchiving this item."
 msgstr ""
 
-#: src/Admin/RowActionPolicy.php:130
-msgid "Unarchive this post"
+#: src/Archive/ArchiveAction.php:97
+msgid "You do not have permission to archive this item."
+msgstr ""
+
+#: src/Archive/ArchiveAction.php:98
+msgid "You do not have permission to unarchive this item."
+msgstr ""
+
+#. translators: progress message for the WP-CLI archive command.
+#: src/CLI/ArchiveCommand.php:51
+msgid "Archiving"
+msgstr ""
+
+#. translators: progress message for the WP-CLI unarchive command.
+#: src/CLI/UnarchiveCommand.php:42
+msgid "Unarchiving"
+msgstr ""
+
+#. translators: The label used for the status.
+#: src/Status/ArchiveLabel.php:40
+msgid "Archived"
 msgstr ""
 
 #. translators: %s: post count
-#: src/Status/PostStatus.php:172
+#: src/Status/PostStatus.php:173
 #, php-format
 msgid "Archived <span class=\"count\">(%s)</span>"
 msgid_plural "Archived <span class=\"count\">(%s)</span>"
@@ -178,7 +204,12 @@ msgstr[1] ""
 msgid "Are you sure you want to archive this post?"
 msgstr ""
 
+#. translators: warning shown on Network Admin's Plugins screen, where no single site can answer for the whole network.
+#: assets/js/plugin-screen.js:42
+msgid "Warning! Deactivating Archived Post Status could impact content visibility. Any site on this network with archived content will no longer be able to access it."
+msgstr ""
+
 #. translators: warning about deactivating the plugin with archived content.
-#: assets/js/plugin-screen.js:25
+#: assets/js/plugin-screen.js:49
 msgid "Warning! Deactivating this plugin will remove the 'archive' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin."
 msgstr ""
