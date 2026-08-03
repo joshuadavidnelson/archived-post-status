@@ -9,8 +9,5 @@
 	"testsEnvironment": false,
 	"plugins": [
 		"."
-	],
-	"mappings": {
-		"wp-content/mu-plugins": "./tests/e2e/fixtures"
-	}
+	]
 }
