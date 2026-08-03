@@ -34,7 +34,7 @@
 	</rule>
 
 	<!-- Rules: VIP Coding Standards -->
-	<config name="minimum_supported_wp_version" value="5.9"/>
+	<config name="minimum_supported_wp_version" value="6.4"/>
 	<rule ref="WordPress-VIP-Go">
 		<!-- Exclude overly strict prefix rules that don't recognize aps_ as valid -->
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
