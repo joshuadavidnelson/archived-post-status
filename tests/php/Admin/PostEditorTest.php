@@ -268,9 +268,13 @@ class PostEditorTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PostEditor::enqueue_scripts
 	 */
 	public function test_enqueue_scripts_does_nothing_when_classic_editor_is_active() {
+		// No screen, so EditorContext falls back to core's own question.
+		$post     = \Mockery::mock( 'WP_Post' );
+		$post->ID = 99;
 		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( null );
-		\WP_Mock::userFunction( 'is_plugin_active' )
-			->with( 'classic-editor/classic-editor.php' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'use_block_editor_for_post' )
+			->with( $post )->andReturn( false );
 		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( true )->reply( true );
 
 		\WP_Mock::userFunction( 'get_the_ID' )->never();

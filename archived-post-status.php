@@ -20,7 +20,7 @@
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
  * Version:     0.4.0
  * Plugin URI:  https://archivedpoststat.us/
- * Requires at least: 6.4
+ * Requires at least: 5.9
  * Tested up to: 7.0
  * Requires PHP: 8.1
  * Author:      Joshua David Nelson
