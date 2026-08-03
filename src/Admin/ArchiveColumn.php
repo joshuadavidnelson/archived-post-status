@@ -10,6 +10,7 @@ use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 use ArchivedPostStatus\Hooks\HookLoader;
 use ArchivedPostStatus\Status\PostStatusValue;
+use ArchivedPostStatus\Status\ArchiveLabel;
 
 /**
  * Adds an "Archived" column to the post list table.
@@ -32,12 +33,19 @@ final class ArchiveColumn implements HookableInterface {
 	 * Label of the Archived column header. Exposed so callers (and tests)
 	 * have a single source of truth instead of duplicating the copy.
 	 *
+	 * Returns the label unescaped — see {@see ArchiveLabel::value()}.
+	 * Callers must escape for their own output context; see add_column()
+	 * and render_archive_cell() below.
+	 *
 	 * @since 0.4.0
 	 * @return string
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchiveLabel::value()}
+	 * is the canonical filterable label accessor; every "Archived" label
+	 * consumer routes through it rather than duplicating the copy.
 	 */
 	public static function column_label(): string {
-		/* translators: header label for the Archived list-table column; also used as the cell value for legacy posts with no recorded archive date. */
-		return __( 'Archived', 'archived-post-status' );
+		return ArchiveLabel::value();
 	}
 
 	/**
@@ -175,7 +183,10 @@ final class ArchiveColumn implements HookableInterface {
 		// rows, and the archive date is the one that matters in this view.
 		unset( $columns['date'] );
 
-		$columns[ self::COLUMN_KEY ] = self::column_label();
+		// esc_html() here — not in column_label() — because this is the
+		// actual output site: core's WP_List_Table::print_column_headers()
+		// echoes each header value as raw HTML with no escaping of its own.
+		$columns[ self::COLUMN_KEY ] = esc_html( self::column_label() );
 
 		return $columns;
 	}
@@ -311,11 +322,48 @@ final class ArchiveColumn implements HookableInterface {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * Apply meta query ordering when sorting by the Archived column.
+	 * Alias for the wp_postmeta row LEFT JOINed in filter_sort_join().
+	 * Prefixed and specific enough that it cannot collide with a join core
+	 * or another plugin has already added under its own alias.
 	 *
-	 * Only acts on admin list table queries that are explicitly ordering
-	 * by our column key. Uses meta_value_num since archive_date is a Unix
-	 * timestamp integer.
+	 * @since 0.4.0
+	 */
+	private const SORT_JOIN_ALIAS = 'aps_archive_sort';
+
+	/**
+	 * The query handle_sort() opted into meta-aware sorting for. Set right
+	 * before the posts_join / posts_orderby filters are added below and
+	 * checked by identity inside them, so those filters are a guaranteed
+	 * no-op for every other query on the page — see handle_sort() for the
+	 * full rationale.
+	 *
+	 * @since 0.4.0
+	 * @var \WP_Query|null
+	 */
+	private ?\WP_Query $sort_query = null;
+
+	/**
+	 * Apply meta-aware ordering when sorting by the Archived column.
+	 *
+	 * Only acts on admin list-table queries that are explicitly ordering
+	 * by our column key.
+	 *
+	 * A naive `$query->set( 'meta_key', ... )` here hands ordering off to
+	 * WP_Query's meta_query machinery, which builds a JOIN + WHERE that
+	 * only matches posts that HAVE a postmeta row for that key — silently
+	 * dropping every post that doesn't. That population is not
+	 * hypothetical: posts archived under pre-0.4.0 releases wrote no
+	 * archive postmeta at all (see ArchiveMeta::for_post()'s legacy
+	 * branch), and Plugin::has_pre_040_content() exists specifically
+	 * because that population is expected to be there after an upgrade.
+	 * Clicking the Archived column header would make that content vanish
+	 * from the list with no error and no explanation.
+	 *
+	 * Instead this LEFT JOINs the meta table and orders with COALESCE so
+	 * meta-less rows sort to one end rather than disappearing — see
+	 * filter_sort_join() / filter_sort_orderby() for the JOIN/ORDER BY
+	 * themselves and exactly how they are scoped to this one query so they
+	 * cannot leak onto any other query on the page.
 	 *
 	 * @param \WP_Query $query The current query object.
 	 */
@@ -328,7 +376,74 @@ final class ArchiveColumn implements HookableInterface {
 			return;
 		}
 
-		$query->set( 'meta_key', ArchiveMeta::META_ARCHIVE_DATE );
-		$query->set( 'orderby', 'meta_value_num' );
+		$this->sort_query = $query;
+
+		add_filter( 'posts_join', array( $this, 'filter_sort_join' ), 10, 2 );
+		add_filter( 'posts_orderby', array( $this, 'filter_sort_orderby' ), 10, 2 );
+	}
+
+	/**
+	 * LEFT JOIN wp_postmeta on the archive-date key.
+	 *
+	 * A LEFT JOIN — instead of the INNER-JOIN-like WHERE that
+	 * `$query->set( 'meta_key', ... )` would have produced — keeps every
+	 * post in the result set regardless of whether it has an archive-date
+	 * row; filter_sort_orderby() then sorts the meta-less rows instead of
+	 * excluding them.
+	 *
+	 * Scoped to the one query handle_sort() opted in: this filter runs for
+	 * every WP_Query on the page once registered, but it only ever
+	 * modifies $join when $query is identical to $this->sort_query — the
+	 * exact object handle_sort() was called with. Any other query gets
+	 * $join back untouched, so this cannot leak onto e.g. a later
+	 * secondary query on the same admin page load.
+	 *
+	 * @param string    $join  The current JOIN clause.
+	 * @param \WP_Query $query The query being filtered.
+	 * @return string
+	 */
+	public function filter_sort_join( string $join, \WP_Query $query ): string {
+		if ( $query !== $this->sort_query ) {
+			return $join;
+		}
+
+		global $wpdb;
+
+		return $join
+			. ' LEFT JOIN ' . $wpdb->postmeta . ' AS ' . self::SORT_JOIN_ALIAS
+			. ' ON ( ' . self::SORT_JOIN_ALIAS . '.post_id = ' . $wpdb->posts . '.ID AND '
+			. self::SORT_JOIN_ALIAS . '.meta_key = '
+			. $wpdb->prepare( '%s )', ArchiveMeta::META_ARCHIVE_DATE );
+	}
+
+	/**
+	 * Order by the LEFT JOINed archive-date value.
+	 *
+	 * `COALESCE( ..., 0 )` gives meta-less rows a value to sort by instead
+	 * of the NULL a plain LEFT JOIN would leave them with, so they land at
+	 * one end of the list instead of being excluded. `+ 0` numeric-casts
+	 * the stored value the way `meta_value_num` did, since archive_date is
+	 * a Unix timestamp integer (see ArchiveMeta::META_ARCHIVE_DATE).
+	 * Direction comes from the query's own `order` var rather than a
+	 * hardcoded ASC/DESC, so the column header's normal toggle-on-click
+	 * behavior keeps working.
+	 *
+	 * Scoped identically to filter_sort_join() — see its docblock.
+	 *
+	 * @param string    $orderby The current ORDER BY clause.
+	 * @param \WP_Query $query   The query being filtered.
+	 * @return string
+	 */
+	public function filter_sort_orderby( string $orderby, \WP_Query $query ): string {
+		if ( $query !== $this->sort_query ) {
+			return $orderby;
+		}
+
+		$order = strtoupper( (string) $query->get( 'order' ) );
+		if ( 'ASC' !== $order && 'DESC' !== $order ) {
+			$order = 'DESC';
+		}
+
+		return 'COALESCE( ' . self::SORT_JOIN_ALIAS . '.meta_value + 0, 0 ) ' . $order;
 	}
 }
