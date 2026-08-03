@@ -21,6 +21,22 @@ use ArchivedPostStatus\Status\PostStatusValue;
  * filter (default: 'read_private_posts'), making it overridable without
  * touching this class.
  *
+ * No REST API equivalent is registered here, and none is needed. WordPress
+ * core's own REST permission check already enforces the same policy for
+ * free: {@see Status\PostStatus::status_args()} registers the archived
+ * status with `private => ! is_admin()` (true for a REST request), which
+ * makes `WP_REST_Posts_Controller::check_read_permission()` fall through to
+ * `current_user_can( 'read_post', $post->ID )` for anyone but the post's own
+ * author — and core's `map_meta_cap()` `read_post` case requires
+ * `read_private_posts` whenever the resolved status object has
+ * `private = true`, the same capability `aps_current_user_can_view()`
+ * consults by default. The public-status escape hatch below is likewise
+ * covered without any REST-side hook: `check_read_permission()` reads
+ * `$post_status_obj->public` directly, the exact flag this class stands
+ * down on. See `tests/php/Frontend/RestReadParityTest.php`, which pins the
+ * `status_args()` output this parity depends on, and cites the exact core
+ * functions and file paths this claim was verified against.
+ *
  * @since 0.4.0
  */
 final class AccessGuard implements HookableInterface {
