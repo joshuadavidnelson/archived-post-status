@@ -30,7 +30,6 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - Archiving is now restricted to `public` post types. 0.3.x allowed archiving any post type that wasn't explicitly excluded via `aps_excluded_post_types`, including non-public ones; 0.4.0 starts from the public post types and subtracts the excluded set (`aps_get_supported_post_types()` returns the resulting list). If you need to archive a non-public custom post type, add it back with the `aps_supported_post_types` filter.
 - Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
 - Tested up to WordPress 7.0.
-- The minimum supported WordPress version is now 6.4 (was 5.9). Admin notices are rendered with core's `wp_admin_notice()`, added in 6.4. Sites below 6.4 are a small and shrinking share of installs.
 
 ### Removed
 
