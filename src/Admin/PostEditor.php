@@ -37,11 +37,21 @@ final class PostEditor implements HookableInterface {
 	/**
 	 * Add the archive button to the classic editor submit box.
 	 *
+	 * Gates on post type before capability — mirrors the order
+	 * {@see \ArchivedPostStatus\Admin\RowActionPolicy::for_post()} and
+	 * {@see \ArchivedPostStatus\Admin\ArchivePostLink::build()} already use —
+	 * so the button never renders for a post type the plugin does not
+	 * support, regardless of what the capability check would return.
+	 *
 	 * @since 0.4.0
 	 */
 	public function post_submitbox_archive_button(): void {
 		$post_id = get_the_ID();
-		$cap     = ArchiveAction::Archive->capability_function();
+		if ( ! aps_is_supported_post_type( get_post_type( $post_id ) ) ) {
+			return;
+		}
+
+		$cap = ArchiveAction::Archive->capability_function();
 		if ( ! $cap( $post_id ) ) {
 			return;
 		}
@@ -57,7 +67,11 @@ final class PostEditor implements HookableInterface {
 	 * Enqueue block editor script on post editor screens.
 	 *
 	 * Skipped on the classic editor — the archive button is rendered via
-	 * post_submitbox_start instead.
+	 * post_submitbox_start instead. Also skipped for post types the plugin
+	 * does not support — assets/js/block-editor.js's own docblock already
+	 * documents "enqueues this for supported post types" as the contract;
+	 * this gate is what actually enforces it, mirroring
+	 * post_submitbox_archive_button()'s classic-editor gate.
 	 *
 	 * @since 0.4.0
 	 * @param string $hook The current admin page hook.
@@ -72,6 +86,11 @@ final class PostEditor implements HookableInterface {
 		}
 
 		if ( EditorContext::is_classic_editor() ) {
+			return;
+		}
+
+		$post_id = get_the_ID();
+		if ( ! aps_is_supported_post_type( get_post_type( $post_id ) ) ) {
 			return;
 		}
 
@@ -92,7 +111,6 @@ final class PostEditor implements HookableInterface {
 			plugin_dir_path( dirname( __DIR__ ) ) . '/languages/'
 		);
 
-		$post_id     = get_the_ID();
 		$cap         = ArchiveAction::Archive->capability_function();
 		$can_archive = $cap( $post_id );
 

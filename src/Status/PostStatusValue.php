@@ -49,10 +49,18 @@ enum PostStatusValue: string {
 	 * applied the filter only at registration — this fixes that leak so
 	 * the configured slug is honoured at every internal site.
 	 *
+	 * Falls back to `self::Slug->value` when the filter returns an
+	 * empty/falsy value — matching 0.3.12's `aps_post_status_slug()`
+	 * semantics. Without this, a misbehaving filter that returns `''`
+	 * would register a broken, empty-slug status and every internal
+	 * comparison against it would silently stop matching.
+	 *
 	 * @since 0.4.0
 	 * @return string
 	 */
 	public static function resolved_slug(): string {
-		return (string) apply_filters( 'aps_post_status_slug', self::Slug->value );
+		$slug = (string) apply_filters( 'aps_post_status_slug', self::Slug->value );
+
+		return empty( $slug ) ? self::Slug->value : $slug;
 	}
 }

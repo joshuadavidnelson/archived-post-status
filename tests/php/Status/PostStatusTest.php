@@ -137,10 +137,6 @@ class PostStatusTest extends TestCase {
 			'show_in_admin_status_list is true when user can view archives' => array(
 				true, true, 'aps_status_arg_show_in_admin_status_list', true,
 			),
-			// Default is fixed at 'dashicons-archive'.
-			'dashicon default is dashicons-archive' => array(
-				true, true, 'aps_status_arg_dashicon', 'dashicons-archive',
-			),
 		);
 	}
 
@@ -197,7 +193,6 @@ class PostStatusTest extends TestCase {
 		\WP_Mock::onFilter( 'aps_status_arg_exclude_from_search' )->with( false )->reply( true );
 		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_all_list' )->with( false )->reply( true );
 		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_status_list' )->with( true )->reply( false );
-		\WP_Mock::onFilter( 'aps_status_arg_dashicon' )->with( 'dashicons-archive' )->reply( 'dashicons-lock' );
 
 		$this->post_status->register_status();
 
@@ -223,11 +218,57 @@ class PostStatusTest extends TestCase {
 		\WP_Mock::onFilter( 'aps_status_arg_exclude_from_search' )->with( false )->reply( '' ); // '' → false
 		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_all_list' )->with( false )->reply( 'false' ); // any non-empty string is truthy
 		\WP_Mock::onFilter( 'aps_status_arg_show_in_admin_status_list' )->with( true )->reply( null ); // null → false
-		\WP_Mock::onFilter( 'aps_status_arg_dashicon' )->with( 'dashicons-archive' )->reply( 123 );    // cast to string
 
 		$this->post_status->register_status();
 
 		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * §2.10: `dashicons` is not a real `register_post_status()` arg — core
+	 * silently ignores it (see the arg list in
+	 * `vendor/php-stubs/wordpress-stubs/wordpress-stubs.php`). The
+	 * `aps_status_arg_dashicon` filter that fed it was removed entirely
+	 * rather than left in place as a documented no-op. This pins the
+	 * removal directly on the args array actually passed to
+	 * `register_post_status()`, rather than only on the absence of a
+	 * filter-pinning test (which could pass merely by accident).
+	 *
+	 * `post_type` is asserted present in the same test to document that it
+	 * is a deliberate sibling case: also not consumed by core, but kept as
+	 * advisory metadata (see the SUT's inline comment) rather than removed.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatus::register_status
+	 */
+	public function test_register_status_omits_dashicons_arg_but_keeps_post_type_arg() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+		\WP_Mock::userFunction( 'aps_current_user_can_view' )->andReturn( true );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+		\WP_Mock::userFunction( 'aps_get_supported_post_types' )->andReturn( array( 'post' ) );
+		\WP_Mock::userFunction( '_n_noop' )->andReturn( array() );
+
+		$captured_args = null;
+		\WP_Mock::userFunction( 'register_post_status' )
+			->once()
+			->andReturnUsing(
+				static function ( $slug, $args ) use ( &$captured_args ) {
+					$captured_args = $args;
+				}
+			);
+
+		$this->post_status->register_status();
+
+		$this->assertArrayNotHasKey(
+			'dashicons',
+			$captured_args,
+			'dashicons is not a real register_post_status() arg and the dead aps_status_arg_dashicon filter feeding it was removed.'
+		);
+		$this->assertArrayHasKey(
+			'post_type',
+			$captured_args,
+			'post_type must stay — it is deliberate advisory metadata, not dead code to prune alongside dashicons.'
+		);
+		$this->assertSame( array( 'post' ), $captured_args['post_type'] );
 	}
 
 	/**

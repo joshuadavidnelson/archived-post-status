@@ -102,4 +102,57 @@ class PostStatusValueTest extends TestCase {
 
 		$this->assertSame( 'archived', PostStatusValue::resolved_slug() );
 	}
+
+	/**
+	 * §2.12 regression: 0.3.12's `aps_post_status_slug()` fell back to the
+	 * default whenever the filter returned an empty/falsy value (see
+	 * `git show stable:src/archived-post-status.php`). That fallback was
+	 * dropped when the filter was lifted into this method — a filter
+	 * callback returning `''` would register a broken, empty-slug status
+	 * and every internal `$slug === $post->post_status` comparison would
+	 * silently stop matching. This pins the restored fallback for the
+	 * empty-string case.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusValue::resolved_slug
+	 */
+	public function test_resolved_slug_falls_back_to_default_when_filter_returns_empty_string() {
+		\WP_Mock::onFilter( 'aps_post_status_slug' )
+			->with( 'archive' )
+			->reply( '' );
+
+		$this->assertSame( 'archive', PostStatusValue::resolved_slug() );
+	}
+
+	/**
+	 * §2.12: the fallback uses PHP's `empty()` semantics (matching
+	 * 0.3.12), not a strict `'' === $slug` check — so a filter returning
+	 * literal `false` (cast to the empty string) also falls back to the
+	 * default rather than registering a status under a falsy non-string
+	 * slug.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusValue::resolved_slug
+	 */
+	public function test_resolved_slug_falls_back_to_default_when_filter_returns_false() {
+		\WP_Mock::onFilter( 'aps_post_status_slug' )
+			->with( 'archive' )
+			->reply( false );
+
+		$this->assertSame( 'archive', PostStatusValue::resolved_slug() );
+	}
+
+	/**
+	 * Coverage pin: a non-empty override consisting entirely of falsy-ish
+	 * characters (e.g. the string `'0'`) is still `empty()` under PHP's
+	 * rules, so it must fall back too — proving the fallback isn't
+	 * accidentally narrowed to only the literal `''` case.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusValue::resolved_slug
+	 */
+	public function test_resolved_slug_falls_back_to_default_when_filter_returns_the_string_zero() {
+		\WP_Mock::onFilter( 'aps_post_status_slug' )
+			->with( 'archive' )
+			->reply( '0' );
+
+		$this->assertSame( 'archive', PostStatusValue::resolved_slug() );
+	}
 }

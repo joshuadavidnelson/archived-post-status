@@ -116,7 +116,10 @@ final class Store {
 	 * Wired to update_option_aps_settings, add_option_aps_settings, and
 	 * delete_option_aps_settings via HookAdapter so that external code that
 	 * writes the option directly (without going through update()/save()/delete())
-	 * still produces correct reads on the next call to all()/get().
+	 * still produces correct reads on the next call to all()/get(). Also wired
+	 * to `switch_blog` — on multisite, switch_to_blog() does not otherwise
+	 * clear this static cache, so without that hook a request that switches
+	 * sites would keep serving the previous site's settings.
 	 *
 	 * @since 0.4.0
 	 */
