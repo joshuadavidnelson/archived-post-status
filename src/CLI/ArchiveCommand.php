@@ -20,24 +20,41 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * Validation pipeline for the archive command.
  *
  * Order is load-bearing and matches the historical CLI::handle_action
- * sequence: supported-post-type → already-archived → capability →
- * archivable-status (with --force bypass). The existing test suite pins
- * this ordering.
+ * sequence: supported-post-type → already-archived → capability → lock
+ * check → archivable-status (with --force bypass). The existing test suite
+ * pins this ordering.
  *
  * @since 0.4.0
  */
 final class ArchiveCommand extends Command {
 
+	/**
+	 * Get the archive action.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return ArchiveAction The archive action.
+	 */
 	protected function action(): ArchiveAction {
 		return ArchiveAction::Archive;
 	}
 
+	/**
+	 * Get the WP-CLI progress label.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return string The WP-CLI command name.
+	 */
 	public function progress_label(): string {
-		return 'Archiving';
+		// translators: progress message for the WP-CLI archive command.
+		return __( 'Archiving', 'archived-post-status' );
 	}
 
 	/**
 	 * Run the archive-specific gates.
+	 *
+	 * @since 0.4.0
 	 *
 	 * @param int                  $post_id    The post ID to validate.
 	 * @param array<string, mixed> $assoc_args Associative CLI flags (--force, --defer-term-counting).
@@ -63,6 +80,11 @@ final class ArchiveCommand extends Command {
 		$cap_error = $this->capability_check( $post_id );
 		if ( $cap_error instanceof CliResult ) {
 			return $cap_error;
+		}
+
+		$lock_error = $this->ensure_not_locked( $post_id );
+		if ( $lock_error instanceof CliResult ) {
+			return $lock_error;
 		}
 
 		// --force bypasses the archivable-status whitelist.

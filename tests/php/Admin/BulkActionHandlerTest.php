@@ -393,13 +393,95 @@ class BulkActionHandlerTest extends TestCase {
 		\WP_Mock::expectFilterAdded(
 			'aps_unarchive_post_status',
 			'aps_unarchive_post_set_previous_status',
-			10,
+			PHP_INT_MAX,
 			3
 		);
 
 		$this->handler->handle( 'http://example.com/wp-admin/edit.php', 'unarchive', array( 10 ) );
 
 		// WP_Mock verifies expectFilterAdded during tearDown.
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * §2.3 regression: the undo-path remove_filter() call must target the
+	 * exact same priority (`PHP_INT_MAX`) the add_filter() call registered
+	 * at — mismatched priorities mean WordPress's remove_filter() silently
+	 * no-ops and the override callback stays registered past this request.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
+	 */
+	public function test_bulk_unarchive_removes_undo_filter_at_reserved_priority() {
+		$_GET = array( 'doaction' => 'undo' );
+
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 10 )
+			->andReturn( true );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 10,
+				'post_status' => 'archive',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 10 )->andReturn( $post );
+		$this->stubUnarchivePersistBoundary( 10 );
+
+		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( 'http://example.com/wp-admin/edit.php' );
+
+		$removed = array();
+		\WP_Mock::userFunction( 'remove_filter' )
+			->once()
+			->andReturnUsing(
+				static function ( $hook, $callback, $priority = 10 ) use ( &$removed ) {
+					$removed = array( $hook, $callback, $priority );
+					return true;
+				}
+			);
+
+		$this->handler->handle( 'http://example.com/wp-admin/edit.php', 'unarchive', array( 10 ) );
+
+		$this->assertSame(
+			array( 'aps_unarchive_post_status', 'aps_unarchive_post_set_previous_status', PHP_INT_MAX ),
+			$removed,
+			'remove_filter must target the same reserved priority the undo override was added at'
+		);
+	}
+
+	/**
+	 * §2.3 regression: before the fix, remove_filter() ran unconditionally
+	 * at the bottom of bulk_unarchive() even when add_filter() never fired
+	 * (the non-undo path) — which would have silently removed any
+	 * third-party registration of the same callback on the same hook and
+	 * priority. The add/remove pairing must now be symmetric: no
+	 * remove_filter() call at all when this request never added anything.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
+	 */
+	public function test_bulk_unarchive_does_not_call_remove_filter_for_regular_bulk_action() {
+		$_GET = array(); // no doaction=undo
+
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 10 )
+			->andReturn( true );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 10,
+				'post_status' => 'archive',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 10 )->andReturn( $post );
+		$this->stubUnarchivePersistBoundary( 10 );
+
+		\WP_Mock::userFunction( 'add_query_arg' )->andReturn( 'http://example.com/wp-admin/edit.php' );
+
+		\WP_Mock::userFunction( 'remove_filter' )->never();
+
+		$this->handler->handle( 'http://example.com/wp-admin/edit.php', 'unarchive', array( 10 ) );
+
 		$this->addToAssertionCount( 1 );
 	}
 
@@ -628,6 +710,54 @@ class BulkActionHandlerTest extends TestCase {
 		$this->assertSame( 1, $captured['denied'] ?? null, 'denied bucket should be 1' );
 		$this->assertSame( 0, $captured['unarchived'] ?? null, 'unarchived counter should be 0' );
 		$this->assertIsString( $result, 'handle() must return the redirect URL, not throw' );
+	}
+
+	/**
+	 * §2.6 regression: process_unarchive_post() must check wp_check_post_lock()
+	 * exactly like its process_archive_post() sibling — a post locked by
+	 * another user is bucketed as `locked` and skipped, not unarchived out
+	 * from under the editing user.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
+	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_locked
+	 */
+	public function test_bulk_unarchive_records_locked_post_when_post_is_locked_by_another_user() {
+
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 11 )
+			->andReturn( true );
+
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 11,
+				'post_status' => 'archive',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 11 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 11 )
+			->andReturn( 99 ); // a different user holds the lock
+
+		// Unarchive must never run on a locked post.
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+
+		$captured = array();
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing(
+				function ( $key, $value, $url ) use ( &$captured ) {
+					$captured[ $key ] = $value;
+					return $url;
+				}
+			);
+
+		$this->handler->handle( 'http://example.com/wp-admin/edit.php', 'unarchive', array( 11 ) );
+
+		$this->assertSame( 1, $captured['locked'] ?? null, 'locked counter should be 1' );
+		$this->assertSame( 0, $captured['unarchived'] ?? null, 'unarchived counter should be 0' );
 	}
 
 	/**
@@ -883,7 +1013,7 @@ class BulkActionHandlerTest extends TestCase {
 			->andReturn( 'http://example.com/wp-admin/edit.php' );
 		\WP_Mock::userFunction( 'remove_query_arg' )
 			->with(
-				array( 'archived', 'unarchived', 'ids' ),
+				array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ),
 				'http://example.com/wp-admin/edit.php'
 			)
 			->andReturn( 'http://example.com/wp-admin/edit.php' );
@@ -909,7 +1039,7 @@ class BulkActionHandlerTest extends TestCase {
 			->andReturn( 'http://example.com/wp-admin/edit.php?post_type=book' );
 		\WP_Mock::userFunction( 'remove_query_arg' )
 			->with(
-				array( 'archived', 'unarchived', 'ids' ),
+				array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ),
 				'http://example.com/wp-admin/edit.php?post_type=book'
 			)
 			->andReturn( 'http://example.com/wp-admin/edit.php?post_type=book' );
@@ -936,7 +1066,7 @@ class BulkActionHandlerTest extends TestCase {
 			->andReturn( 'http://example.com/wp-admin/edit.php' );
 		\WP_Mock::userFunction( 'remove_query_arg' )
 			->with(
-				array( 'archived', 'unarchived', 'ids' ),
+				array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ),
 				'http://example.com/wp-admin/edit.php'
 			)
 			->andReturn( 'http://example.com/wp-admin/edit.php' );
@@ -959,7 +1089,7 @@ class BulkActionHandlerTest extends TestCase {
 			->andReturn( 'http://example.com/wp-admin/edit.php?paged=2&archived=1' );
 		\WP_Mock::userFunction( 'remove_query_arg' )
 			->with(
-				array( 'archived', 'unarchived', 'ids' ),
+				array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ),
 				'http://example.com/wp-admin/edit.php?paged=2&archived=1'
 			)
 			->andReturn( 'http://example.com/wp-admin/edit.php?paged=2' );

@@ -42,12 +42,23 @@ final class BulkActionHandler {
 	 * builder ({@see get_redirect_url()}) so the two paths never drift.
 	 *
 	 * Any new counter or id-list arg must be added here AND to
-	 * {@see PostList::query_vars()} so WordPress recognizes it on the
-	 * subsequent edit.php load.
+	 * {@see PostList::query_vars()} (so WordPress recognizes it as a query
+	 * var on the subsequent edit.php load) AND to
+	 * {@see PostList::removable_query_args()} (so WordPress strips it back
+	 * out of the visible URL once the notice built from it has rendered).
 	 *
 	 * @var string[]
 	 */
-	private const STRIPPED_QUERY_ARGS = array( 'archived', 'unarchived', 'ids' );
+	private const STRIPPED_QUERY_ARGS = array(
+		'archived',
+		'unarchived',
+		'ids',
+		'locked',
+		'denied',
+		'not_found',
+		'wrong_status',
+		'skipped',
+	);
 
 	/**
 	 * Handle the bulk action filter callback.
@@ -151,14 +162,27 @@ final class BulkActionHandler {
 	 * {@see NoticeBuilder}). Bucketed counts flow through
 	 * {@see BulkActionResult} to the redirect URL.
 	 *
+	 * The undo override is registered at priority `PHP_INT_MAX` — the
+	 * priority reserved for the plugin's own overrides on
+	 * `aps_unarchive_post_status` (see the filter's docblock in
+	 * {@see \ArchivedPostStatus\Archive\UnarchiveOperation::dispatch_update()})
+	 * — rather than the default 10, so a third-party site that happens to
+	 * have registered this same callback on that hook at priority 10 for
+	 * its own reasons is never touched. The `remove_filter()` call is
+	 * gated behind the identical `$is_undo` condition as the `add_filter()`
+	 * call above it, so this class only ever removes a registration it
+	 * added in this request.
+	 *
 	 * @since 0.4.0
 	 * @param array<int, int> $post_ids Array of post IDs.
 	 * @param string          $sendback The redirect URL.
 	 * @return string
 	 */
 	private function bulk_unarchive( array $post_ids, string $sendback ): string {
-		if ( isset( $_GET['doaction'] ) && 'undo' === $_GET['doaction'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			add_filter( 'aps_unarchive_post_status', 'aps_unarchive_post_set_previous_status', 10, 3 );
+		$is_undo = isset( $_GET['doaction'] ) && 'undo' === $_GET['doaction']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( $is_undo ) {
+			add_filter( 'aps_unarchive_post_status', 'aps_unarchive_post_set_previous_status', PHP_INT_MAX, 3 );
 		}
 
 		$action = ArchiveAction::Unarchive;
@@ -168,7 +192,9 @@ final class BulkActionHandler {
 			$this->process_unarchive_post( $post_id, $action, $result );
 		}
 
-		remove_filter( 'aps_unarchive_post_status', 'aps_unarchive_post_set_previous_status', 10 );
+		if ( $is_undo ) {
+			remove_filter( 'aps_unarchive_post_status', 'aps_unarchive_post_set_previous_status', PHP_INT_MAX );
+		}
 
 		return $result->apply_to_url( $sendback, $action );
 	}
@@ -227,10 +253,12 @@ final class BulkActionHandler {
 	 * Per-id processor for the unarchive path.
 	 *
 	 * Kept out of the `foreach` body in {@see bulk_unarchive()}, mirroring
-	 * the archive path. Unarchive has fewer guards than archive
-	 * (no lock check, no status pre-check) because
-	 * {@see UnarchiveOperation::perform()} already returns false for
-	 * missing posts / non-archive-status posts / persist failures.
+	 * the archive path. Unarchive has one fewer guard than archive (no
+	 * status pre-check) because {@see UnarchiveOperation::perform()}
+	 * already returns false for missing posts / non-archive-status posts /
+	 * persist failures. The lock check, however, now mirrors
+	 * {@see process_archive_post()} exactly: a post another user is
+	 * editing is skipped and bucketed as `locked`, on both directions.
 	 *
 	 * @since 0.4.0
 	 */
@@ -239,6 +267,11 @@ final class BulkActionHandler {
 
 		if ( ! $cap( $post_id ) ) {
 			$result->record_denied( $post_id );
+			return;
+		}
+
+		if ( wp_check_post_lock( $post_id ) ) {
+			$result->record_locked();
 			return;
 		}
 

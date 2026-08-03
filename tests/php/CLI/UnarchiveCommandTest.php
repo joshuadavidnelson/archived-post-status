@@ -155,5 +155,51 @@ namespace {
 			$this->assertStringContainsString( 'unarchived', $result->message );
 			$this->assertStringContainsString( '42', $result->message );
 		}
+
+		/**
+		 * §2.6: a post locked for editing by another user must be rejected
+		 * with a clear CliResult error rather than being unarchived out from
+		 * under the editing user. Mirrors the admin bulk-action path's
+		 * wp_check_post_lock() gate, which previously existed only on the
+		 * archive direction.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Command::ensure_not_locked
+		 * @covers ArchivedPostStatus\CLI\UnarchiveCommand::validate
+		 */
+		public function test_returns_error_when_post_is_locked() {
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'post' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
+			\WP_Mock::userFunction( 'is_user_logged_in' )->andReturn( false );
+			\WP_Mock::userFunction( 'wp_check_post_lock' )->with( 42 )->andReturn( 7 );
+			\WP_Mock::userFunction( 'aps_unarchive_post' )->never();
+
+			$result = $this->cmd->run( 42, array() );
+
+			$this->assertFalse( $result->is_success );
+			$this->assertStringContainsString( 'locked', $result->message );
+			$this->assertStringContainsString( '42', $result->message );
+		}
+
+		/**
+		 * The lock check runs after the capability gate but before the
+		 * not-in-archive check — a locked post that also isn't currently
+		 * archived must still be rejected for the lock, not the status.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Command::ensure_not_locked
+		 * @covers ArchivedPostStatus\CLI\UnarchiveCommand::validate
+		 */
+		public function test_lock_check_is_rejected_before_not_in_archive_check() {
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'post' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'post' )->andReturn( true );
+			\WP_Mock::userFunction( 'is_user_logged_in' )->andReturn( false );
+			\WP_Mock::userFunction( 'wp_check_post_lock' )->with( 42 )->andReturn( 7 );
+			\WP_Mock::userFunction( 'get_post_status' )->with( 42 )->andReturn( 'publish' );
+			\WP_Mock::userFunction( 'aps_unarchive_post' )->never();
+
+			$result = $this->cmd->run( 42, array() );
+
+			$this->assertFalse( $result->is_success );
+			$this->assertStringContainsString( 'locked', $result->message );
+		}
 	}
 }
