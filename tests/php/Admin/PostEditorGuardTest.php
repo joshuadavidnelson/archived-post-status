@@ -215,6 +215,52 @@ class PostEditorGuardTest extends TestCase {
 	}
 
 	/**
+	 * `load-post.php` fires for EVERY post.php request, before post.php's own
+	 * `switch ( $action )` reaches `case 'trash'` / `'untrash'` / `'delete'`.
+	 * Those actions are not editor-render attempts, so the guard must let
+	 * them through rather than dying — otherwise an archived post can never
+	 * be trashed from wp-admin. `RowActionPolicy` deliberately keeps `trash`
+	 * visible on archived rows, so this is the only path that can reach it.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::enforce_read_only
+	 */
+	public function test_enforce_read_only_allows_trash_untrash_and_delete_actions() {
+		$post              = new WP_Post();
+		$post->ID          = 99;
+		$post->post_type   = 'post';
+		$post->post_status = 'archive';
+
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_post' )->with( 99 )->andReturn( $post );
+		\WP_Mock::userFunction( 'sanitize_text_field' )->andReturnUsing(
+			function ( $value ) {
+				return $value;
+			}
+		);
+		\WP_Mock::userFunction( 'wp_unslash' )->andReturnUsing(
+			function ( $value ) {
+				return $value;
+			}
+		);
+
+		// None of these actions render the editor, so none of them may die
+		// or redirect.
+		\WP_Mock::userFunction( 'wp_die' )->never();
+		\WP_Mock::userFunction( 'wp_safe_redirect' )->never();
+
+		foreach ( array( 'trash', 'untrash', 'delete' ) as $action ) {
+			$_GET = array(
+				'post'   => 99,
+				'action' => $action,
+			);
+
+			$this->guard->enforce_read_only();
+		}
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
 	 * hooks() registers the editor-access action and the map_meta_cap
 	 * editing deny, each pinned in full: hook name, callback, priority,
 	 * and accepted args.
@@ -259,6 +305,87 @@ class PostEditorGuardTest extends TestCase {
 	}
 
 	/**
+	 * Core's map_meta_cap() reassigns $cap to the post type's own edit_post
+	 * primitive (e.g. edit_book) — not the literal 'edit_post' — before
+	 * firing this filter, whenever the post type's map_meta_cap is false
+	 * (WordPress's default for any capability_type other than post/page).
+	 * Without matching that primitive too, such a post type stays editable
+	 * via a direct edit URL even though its row actions correctly hide Edit.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_matches_post_types_own_edit_primitive_when_map_meta_cap_is_false() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'book',
+		] );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+
+		$type_object      = new \stdClass();
+		$type_object->cap = (object) array( 'edit_post' => 'edit_book' );
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'book' )->andReturn( $type_object );
+
+		$caps = $this->guard->deny_editing_archived( array( 'edit_book' ), 'edit_book', 7, array( 5 ) );
+
+		$this->assertSame( array( 'edit_book', 'do_not_allow' ), $caps );
+	}
+
+	/**
+	 * A post row can outlive its post type's registration (e.g. a
+	 * deactivated CPT plugin) — `get_post_type_object()` returns null. The
+	 * deny falls back to matching the literal 'edit_post' only, rather than
+	 * fataling on a null-property access; a cap that isn't the literal
+	 * 'edit_post' has nothing left to match against and is left untouched.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_leaves_caps_when_type_object_is_missing() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'book',
+		] );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'book' )->andReturn( null );
+
+		$caps = $this->guard->deny_editing_archived( array( 'edit_book' ), 'edit_book', 7, array( 5 ) );
+
+		$this->assertSame( array( 'edit_book' ), $caps );
+	}
+
+	/**
+	 * A type object may exist without a full cap map — `->cap->edit_post` is
+	 * unset. The `??` fallback to the literal 'edit_post' must not fatal on
+	 * the missing property, and (as above) a non-'edit_post' cap then has
+	 * nothing to match against.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_leaves_caps_when_cap_map_is_incomplete() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'book',
+		] );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+
+		$type_object      = new \stdClass();
+		$type_object->cap = new \stdClass(); // No `edit_post` property.
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'book' )->andReturn( $type_object );
+
+		$caps = $this->guard->deny_editing_archived( array( 'edit_book' ), 'edit_book', 7, array( 5 ) );
+
+		$this->assertSame( array( 'edit_book' ), $caps );
+	}
+
+	/**
 	 * With read-only mode off, archived posts stay editable — the deny
 	 * never inspects the post.
 	 *
@@ -294,18 +421,46 @@ class PostEditorGuardTest extends TestCase {
 	}
 
 	/**
-	 * Other meta caps pass through before any read-only or post lookup.
+	 * Missing args short-circuits before any read-only, post, or post-type
+	 * lookup — $args[0] is required to resolve the post, and the post's type
+	 * is what the cap has to be checked against, so there is nothing left to
+	 * do without it.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
 	 */
-	public function test_deny_editing_archived_ignores_other_caps_and_missing_args() {
+	public function test_deny_editing_archived_ignores_missing_args() {
 		\WP_Mock::userFunction( 'aps_is_read_only' )->never();
 		\WP_Mock::userFunction( 'get_post' )->never();
 
-		$untouched = $this->guard->deny_editing_archived( array( 'delete_posts' ), 'delete_post', 7, array( 5 ) );
-		$this->assertSame( array( 'delete_posts' ), $untouched );
-
 		$no_args = $this->guard->deny_editing_archived( array( 'edit_posts' ), 'edit_post', 7, array() );
 		$this->assertSame( array( 'edit_posts' ), $no_args );
+	}
+
+	/**
+	 * A cap that matches neither the literal 'edit_post' nor the post type's
+	 * own edit_post primitive is left untouched. The post still has to be
+	 * resolved to know that — matching the cap requires knowing the post's
+	 * type — so this is the one case where the post lookup happens before
+	 * the deny is ruled out.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived
+	 */
+	public function test_deny_editing_archived_ignores_caps_that_match_neither_primitive() {
+		\WP_Mock::userFunction( 'aps_is_read_only' )->andReturn( true );
+
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'book',
+		] );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+
+		$type_object      = new \stdClass();
+		$type_object->cap = (object) array( 'edit_post' => 'edit_book' );
+		\WP_Mock::userFunction( 'get_post_type_object' )->with( 'book' )->andReturn( $type_object );
+
+		$untouched = $this->guard->deny_editing_archived( array( 'delete_book' ), 'delete_book', 7, array( 5 ) );
+
+		$this->assertSame( array( 'delete_book' ), $untouched );
 	}
 }
