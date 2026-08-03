@@ -120,13 +120,30 @@ final class Notices implements HookableInterface {
 	 * @return void
 	 */
 	private function render_notices( array $notices ): void {
-		wp_admin_notice(
-			implode( ' ', $notices ),
-			array(
-				'id'                 => 'message',
-				'additional_classes' => array( 'updated' ),
-				'dismissible'        => true,
-			)
+		$combined_message = implode( ' ', $notices );
+
+		// wp_admin_notice() landed in WordPress 6.4. The plugin supports 5.9,
+		// so the guard is what keeps that support real — plugin-check reports
+		// the call as incompatible because it cannot see the guard, and that
+		// check is ignored in .github/workflows/plugin-check.yml for exactly
+		// this reason.
+		if ( function_exists( 'wp_admin_notice' ) ) {
+			wp_admin_notice(
+				$combined_message,
+				array(
+					'id'                 => 'message',
+					'additional_classes' => array( 'updated' ),
+					'dismissible'        => true,
+				)
+			);
+			return;
+		}
+
+		// Fallback for WordPress < 6.4.0 — the same markup wp_admin_notice()
+		// produces for these arguments, so older installs see the notice too.
+		printf(
+			'<div id="message" class="notice notice-success is-dismissible"><p>%s</p></div>',
+			wp_kses_post( $combined_message )
 		);
 	}
 

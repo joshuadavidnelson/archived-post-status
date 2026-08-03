@@ -48,21 +48,75 @@ class EditorContextTest extends TestCase {
 	}
 
 	/**
-	 * (a) Default-true: no block-editor screen + Classic Editor plugin
-	 * active → returns true.
+	 * (a) Default-true: a screen that is not the block editor is the classic
+	 * editor, whatever turned the block editor off. Core reaches that state
+	 * only when `use_block_editor_for_post()` returned false, so the Classic
+	 * Editor plugin, a `use_block_editor_for_post_type` filter, and a post
+	 * type without `editor` support all arrive here identically.
+	 *
+	 * `is_plugin_active` is asserted never to be called: probing for one
+	 * plugin by name was the old detection, and it reported every other
+	 * route as non-classic.
 	 *
 	 * @covers ArchivedPostStatus\Admin\EditorContext::is_classic_editor
 	 */
-	public function test_returns_true_when_classic_editor_plugin_active_and_screen_is_not_block_editor() {
+	public function test_returns_true_when_screen_is_not_the_block_editor() {
 		$this->stub_screen( false );
-		\WP_Mock::userFunction( 'is_plugin_active' )
-			->with( 'classic-editor/classic-editor.php' )
-			->andReturn( true );
+		\WP_Mock::userFunction( 'is_plugin_active' )->never();
 
 		// Filter not registered — default flows through unchanged.
 		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( true )->reply( true );
 
 		$this->assertTrue( EditorContext::is_classic_editor() );
+	}
+
+	/**
+	 * Screen-less contexts fall back to the same question core asks. A post
+	 * whose type has the block editor disabled is classic.
+	 *
+	 * @covers ArchivedPostStatus\Admin\EditorContext::is_classic_editor
+	 */
+	public function test_returns_true_without_a_screen_when_core_says_the_post_is_not_block_editable() {
+		$post = \Mockery::mock( 'WP_Post' );
+		$this->stub_screen( null );
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'use_block_editor_for_post' )->with( $post )->andReturn( false );
+
+		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( true )->reply( true );
+
+		$this->assertTrue( EditorContext::is_classic_editor() );
+	}
+
+	/**
+	 * The mirror of the above: screen-less, but core says the post IS block
+	 * editable, so this is not the classic editor.
+	 *
+	 * @covers ArchivedPostStatus\Admin\EditorContext::is_classic_editor
+	 */
+	public function test_returns_false_without_a_screen_when_core_says_the_post_is_block_editable() {
+		$post = \Mockery::mock( 'WP_Post' );
+		$this->stub_screen( null );
+		\WP_Mock::userFunction( 'get_post' )->andReturn( $post );
+		\WP_Mock::userFunction( 'use_block_editor_for_post' )->with( $post )->andReturn( true );
+
+		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( false )->reply( false );
+
+		$this->assertFalse( EditorContext::is_classic_editor() );
+	}
+
+	/**
+	 * No screen and no post — nothing to be classic about.
+	 *
+	 * @covers ArchivedPostStatus\Admin\EditorContext::is_classic_editor
+	 */
+	public function test_returns_false_without_a_screen_or_a_post() {
+		$this->stub_screen( null );
+		\WP_Mock::userFunction( 'get_post' )->andReturn( null );
+		\WP_Mock::userFunction( 'use_block_editor_for_post' )->never();
+
+		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( false )->reply( false );
+
+		$this->assertFalse( EditorContext::is_classic_editor() );
 	}
 
 	/**
@@ -103,17 +157,14 @@ class EditorContextTest extends TestCase {
 
 	/**
 	 * (d) Filter-override to false: even when the default detection says
-	 * `true` (Classic Editor plugin active), the filter can force the
-	 * classic-editor flag off. Models a site that hosts both editors and
+	 * `true` (a screen that is not the block editor), the filter can force
+	 * the classic-editor flag off. Models a site that hosts both editors and
 	 * wants the plugin's classic-mode branch to stay disabled.
 	 *
 	 * @covers ArchivedPostStatus\Admin\EditorContext::is_classic_editor
 	 */
 	public function test_filter_can_override_default_true_to_false() {
 		$this->stub_screen( false );
-		\WP_Mock::userFunction( 'is_plugin_active' )
-			->with( 'classic-editor/classic-editor.php' )
-			->andReturn( true );
 
 		\WP_Mock::onFilter( 'aps_is_classic_editor' )
 			->with( true )
