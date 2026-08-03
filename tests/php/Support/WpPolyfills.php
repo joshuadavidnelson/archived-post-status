@@ -129,6 +129,25 @@ function sanitize_key( $key ) {
 }
 
 /**
+ * Mock wp_unslash() function.
+ *
+ * Deterministic stand-in so any code path that unslashes request data can be
+ * exercised without a WordPress install. Previously only one test mocked this
+ * through WP_Mock, which defines it process-wide — so whether a later test
+ * could call it depended on execution order, and the suite passed locally
+ * (result-cache ordering) while failing in CI.
+ *
+ * @since 0.4.0
+ * @param string|array<mixed> $value
+ * @return string|array<mixed>
+ */
+function wp_unslash( $value ) {
+
+	return is_array( $value ) ? array_map( 'stripslashes', $value ) : stripslashes( (string) $value );
+
+}
+
+/**
  * Mock plugin_dir_path() function.
  */
 function plugin_dir_path( $file ) {
