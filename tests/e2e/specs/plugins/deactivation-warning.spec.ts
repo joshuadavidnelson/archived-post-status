@@ -5,7 +5,9 @@
  * before deactivating this plugin whenever archived content exists —
  * deactivating unregisters the archived post status, which would leave that
  * content in limbo. With no archived content, the confirm is skipped
- * entirely and the Deactivate link behaves like any other plugin's.
+ * entirely and the Deactivate link behaves like any other plugin's. The same
+ * confirm also fires on Bulk Actions -> Deactivate when this plugin's row is
+ * among the checked items.
  */
 
 /**
@@ -111,6 +113,59 @@ test.describe( 'plugins screen: deactivation warning', () => {
 		// The click handler calls preventDefault() on dismiss, so no
 		// navigation follows — nothing here to await beyond the click.
 		await page.locator( PLUGIN_ROW ).locator( '.deactivate a' ).click();
+
+		expect( page.url() ).toContain( 'plugins.php' );
+		expect( await isPluginActive( requestUtils ) ).toBe( true );
+	} );
+
+	test( 'accepting the warning via Bulk Actions -> Deactivate deactivates the plugin', async ( {
+		admin,
+		page,
+		requestUtils,
+	} ) => {
+		const post = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Deactivation warning bulk accept' ),
+			status: 'publish',
+		} );
+		created.push( post.id );
+		await archivePost( requestUtils, post.id );
+
+		await admin.visitAdminPage( 'plugins.php' );
+
+		await page.locator( PLUGIN_ROW ).locator( 'input[type="checkbox"]' ).check();
+		await page.locator( '#bulk-action-selector-top' ).selectOption( 'deactivate-selected' );
+
+		page.once( 'dialog', ( dialog ) => dialog.accept() );
+		await Promise.all( [
+			page.waitForURL( /deactivate-multi=true/ ),
+			page.locator( '#doaction' ).click(),
+		] );
+
+		expect( await isPluginActive( requestUtils ) ).toBe( false );
+	} );
+
+	test( 'dismissing the warning via Bulk Actions -> Deactivate leaves the plugin active', async ( {
+		admin,
+		page,
+		requestUtils,
+	} ) => {
+		const post = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Deactivation warning bulk dismiss' ),
+			status: 'publish',
+		} );
+		created.push( post.id );
+		await archivePost( requestUtils, post.id );
+
+		await admin.visitAdminPage( 'plugins.php' );
+
+		await page.locator( PLUGIN_ROW ).locator( 'input[type="checkbox"]' ).check();
+		await page.locator( '#bulk-action-selector-top' ).selectOption( 'deactivate-selected' );
+
+		page.once( 'dialog', ( dialog ) => dialog.dismiss() );
+		// As with the single-link dismiss test above, preventDefault() on
+		// dismiss blocks the form submit outright — nothing here to await
+		// beyond the click.
+		await page.locator( '#doaction' ).click();
 
 		expect( page.url() ).toContain( 'plugins.php' );
 		expect( await isPluginActive( requestUtils ) ).toBe( true );

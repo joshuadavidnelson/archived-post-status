@@ -62,6 +62,8 @@ class PluginScreenTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PluginScreen::enqueue_scripts
 	 */
 	public function test_enqueue_scripts_enqueues_and_localizes_true_when_archived_posts_exist() {
+		\WP_Mock::userFunction( 'is_network_admin' )->once()->andReturn( false );
+
 		\WP_Mock::userFunction( 'get_posts' )
 			->once()
 			->with(
@@ -109,6 +111,7 @@ class PluginScreenTest extends TestCase {
 
 		$this->assertSame( 'aps-plugin-screen', $localized['handle'] );
 		$this->assertSame( 'archivedPostStatus', $localized['object_name'] );
+		$this->assertFalse( $localized['l10n']['isNetworkAdmin'] );
 		$this->assertTrue( $localized['l10n']['hasArchivedPosts'] );
 	}
 
@@ -121,6 +124,7 @@ class PluginScreenTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PluginScreen::enqueue_scripts
 	 */
 	public function test_enqueue_scripts_localizes_false_when_no_archived_posts_exist() {
+		\WP_Mock::userFunction( 'is_network_admin' )->once()->andReturn( false );
 		\WP_Mock::userFunction( 'get_posts' )->once()->andReturn( array() );
 		$this->stubSupportedPostTypesBoundary( array( 'post', 'page' ), array( 'post', 'page' ) );
 
@@ -142,6 +146,37 @@ class PluginScreenTest extends TestCase {
 	}
 
 	/**
+	 * On Network Admin's Plugins screen, one site's archived-content count
+	 * can't answer a network-wide question — `enqueue_scripts()` must skip
+	 * `has_archived_posts()`'s query entirely (asserted via `get_posts()`
+	 * `->never()`) and localize `isNetworkAdmin` as `true` so the JS always
+	 * warns there, independent of `hasArchivedPosts`.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PluginScreen::enqueue_scripts
+	 */
+	public function test_enqueue_scripts_on_network_admin_skips_query_and_localizes_network_admin_true() {
+		\WP_Mock::userFunction( 'is_network_admin' )->once()->andReturn( true );
+		\WP_Mock::userFunction( 'get_posts' )->never();
+
+		\WP_Mock::userFunction( 'wp_enqueue_script' )->once();
+		\WP_Mock::userFunction( 'wp_set_script_translations' )->once();
+
+		$localized = null;
+		\WP_Mock::userFunction( 'wp_localize_script' )
+			->once()
+			->andReturnUsing(
+				function ( $handle, $object_name, $l10n ) use ( &$localized ) {
+					$localized = $l10n;
+				}
+			);
+
+		$this->plugin_screen->enqueue_scripts( 'plugins.php' );
+
+		$this->assertTrue( $localized['isNetworkAdmin'] );
+		$this->assertFalse( $localized['hasArchivedPosts'] );
+	}
+
+	/**
 	 * On any screen other than `plugins.php`, `enqueue_scripts()` must be a
 	 * silent no-op — including skipping the `get_posts()` existence check,
 	 * which would otherwise run an unnecessary query on every admin page
@@ -150,6 +185,7 @@ class PluginScreenTest extends TestCase {
 	 * @covers ArchivedPostStatus\Admin\PluginScreen::enqueue_scripts
 	 */
 	public function test_enqueue_scripts_skips_on_non_plugins_php_hook() {
+		\WP_Mock::userFunction( 'is_network_admin' )->never();
 		\WP_Mock::userFunction( 'get_posts' )->never();
 		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
 		\WP_Mock::userFunction( 'wp_localize_script' )->never();

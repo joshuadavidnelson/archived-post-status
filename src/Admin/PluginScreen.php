@@ -15,7 +15,16 @@ use ArchivedPostStatus\Status\PostStatusValue;
  * Deactivating unregisters the archived post status, so any content in it
  * would fall back to WordPress's default handling for an unregistered
  * status. The JS reads the localized `archivedPostStatus.hasArchivedPosts`
- * flag to decide whether to prompt on the Plugins screen's Deactivate link.
+ * flag to decide whether to prompt — on the Plugins screen's Deactivate
+ * link, and on a Bulk Actions -> Deactivate submit that includes this
+ * plugin.
+ *
+ * Network Admin's Plugins screen shares the same `admin_enqueue_scripts`
+ * hook suffix, but a single site's `has_archived_posts()` query cannot
+ * answer a network-wide question. There, `enqueue_scripts()` skips the
+ * query entirely and localizes `archivedPostStatus.isNetworkAdmin` instead
+ * — the JS always warns on that screen, with a generalized message,
+ * independent of `hasArchivedPosts`.
  *
  * @since 0.4.0
  */
@@ -59,17 +68,27 @@ final class PluginScreen implements HookableInterface {
 			plugin_dir_path( dirname( __DIR__ ) ) . '/languages/'
 		);
 
+		$is_network_admin = is_network_admin();
+
 		wp_localize_script(
 			'aps-plugin-screen',
 			'archivedPostStatus',
 			array(
-				'hasArchivedPosts' => $this->has_archived_posts(),
+				'isNetworkAdmin'   => $is_network_admin,
+				// On Network Admin, one site can't speak for the network —
+				// skip the query and let the JS's unconditional, generalized
+				// warning take over instead (see has_archived_posts()).
+				'hasArchivedPosts' => $is_network_admin ? false : $this->has_archived_posts(),
 			)
 		);
 	}
 
 	/**
 	 * Cheap existence check for archived content across supported post types.
+	 *
+	 * Answers only for the current site — {@see enqueue_scripts()} never
+	 * calls this on Network Admin, where no single site's answer is
+	 * meaningful for the network as a whole.
 	 *
 	 * @since 0.4.0
 	 * @return bool
