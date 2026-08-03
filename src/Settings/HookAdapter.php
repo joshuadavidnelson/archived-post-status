@@ -75,6 +75,22 @@ final class HookAdapter implements HookableInterface {
 			),
 
 			/*
+			 * Multisite: switch_to_blog()/restore_current_blog() fire
+			 * `switch_blog` but do NOT touch Store's static cache, so
+			 * without this a request that switches sites keeps serving the
+			 * previous site's settings after the switch. Flushing on every
+			 * switch is the same fix the three option-write hooks above
+			 * apply for direct update_option() calls — just triggered by a
+			 * different event.
+			 */
+			HookDescriptor::action(
+				'switch_blog',
+				array( Store::class, 'flush_cache' ),
+				10,
+				0
+			),
+
+			/*
 			 * Add one entry here per setting as each is introduced.
 			 * Each callback follows the same pattern: read from Store,
 			 * fall back to the incoming $default if not explicitly set.

@@ -55,15 +55,16 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
-	 * hooks() returns four descriptors: one filter for the value bridge
-	 * and three actions for cache invalidation on option writes.
+	 * hooks() returns five descriptors: one filter for the value bridge
+	 * and four actions for cache invalidation (three option-write hooks,
+	 * plus `switch_blog` for multisite).
 	 *
 	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
 	 */
-	public function test_hooks_returns_four_descriptors() {
+	public function test_hooks_returns_five_descriptors() {
 		$hooks = $this->adapter->hooks();
 
-		$this->assertCount( 4, $hooks );
+		$this->assertCount( 5, $hooks );
 		foreach ( $hooks as $hook ) {
 			$this->assertInstanceOf( HookDescriptor::class, $hook );
 		}
@@ -90,17 +91,17 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
-	 * Cache invalidation: HookAdapter registers three option-write
+	 * Cache invalidation: HookAdapter registers four cache-invalidation
 	 * actions on Store::flush_cache, each at the default priority with
-	 * zero accepted args (flush_cache() takes no parameters), so that
-	 * external code that writes the option directly (bypassing
-	 * Store::update()) still produces correct reads on the next get()
-	 * call.
+	 * zero accepted args (flush_cache() takes no parameters) — three for
+	 * direct option writes that bypass Store::update()/save()/delete(),
+	 * plus `switch_blog` (§2.9) so a multisite switch_to_blog() doesn't
+	 * leave Store's static cache serving the previous site's settings.
 	 *
 	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
 	 * @covers ArchivedPostStatus\Settings\Store::flush_cache
 	 */
-	public function test_hooks_registers_three_cache_invalidation_actions() {
+	public function test_hooks_registers_four_cache_invalidation_actions() {
 		$hooks = $this->adapter->hooks();
 
 		$cache_actions  = array_slice( $hooks, 1 );
@@ -108,6 +109,7 @@ class HookAdapterTest extends TestCase {
 			'update_option_' . Store::OPTION_KEY,
 			'add_option_' . Store::OPTION_KEY,
 			'delete_option_' . Store::OPTION_KEY,
+			'switch_blog',
 		);
 		$actual_hooks   = array();
 

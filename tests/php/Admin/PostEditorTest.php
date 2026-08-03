@@ -85,6 +85,10 @@ class PostEditorTest extends TestCase {
 	 */
 	public function test_post_submitbox_archive_button_renders_anchor_to_archive_url() {
 		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_type' )
+			->with( 7 )->andReturn( 'post' );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )->andReturn( true );
 		\WP_Mock::userFunction( 'aps_current_user_can_archive' )
 			->with( 7 )->andReturn( true );
 		\WP_Mock::userFunction( 'aps_get_archive_post_link' )
@@ -132,10 +136,44 @@ class PostEditorTest extends TestCase {
 	 */
 	public function test_post_submitbox_archive_button_emits_nothing_when_user_cannot_archive() {
 		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_type' )
+			->with( 7 )->andReturn( 'post' );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )->andReturn( true );
 		\WP_Mock::userFunction( 'aps_current_user_can_archive' )
 			->with( 7 )->andReturn( false );
 
 		// These must never run on the early-return branch.
+		\WP_Mock::userFunction( 'aps_get_archive_post_link' )->never();
+		\WP_Mock::userFunction( 'esc_url' )->never();
+
+		ob_start();
+		$this->post_editor->post_submitbox_archive_button();
+		$output = ob_get_clean();
+
+		$this->assertSame( '', $output );
+	}
+
+	/**
+	 * §2.5 regression: the post-type gate must be checked BEFORE the
+	 * capability check — mirroring RowActionPolicy::for_post() and
+	 * ArchivePostLink::build(), both of which reject an unsupported post
+	 * type without ever consulting the archive capability. Prior to the
+	 * fix, this method gated only on capability, so the classic-editor
+	 * Archive button rendered for post types the plugin does not support.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditor::post_submitbox_archive_button
+	 */
+	public function test_post_submitbox_archive_button_emits_nothing_for_unsupported_post_type() {
+		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_type' )
+			->with( 7 )->andReturn( 'attachment' );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'attachment' )->andReturn( false );
+
+		// The capability check and the render must never run once the
+		// post-type gate rejects — proves the ordering, not just the outcome.
+		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->never();
 		\WP_Mock::userFunction( 'aps_get_archive_post_link' )->never();
 		\WP_Mock::userFunction( 'esc_url' )->never();
 
@@ -175,6 +213,10 @@ class PostEditorTest extends TestCase {
 		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( false )->reply( false );
 
 		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_type' )
+			->with( 7 )->andReturn( 'post' );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )->andReturn( true );
 		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->with( 7 )->andReturn( true );
 		\WP_Mock::userFunction( 'aps_get_archive_post_link' )
 			->with( 7 )
@@ -242,6 +284,41 @@ class PostEditorTest extends TestCase {
 	}
 
 	/**
+	 * §2.5 regression: enqueue_scripts() bails for a post type the plugin
+	 * does not support — assets/js/block-editor.js's docblock already
+	 * documents "the server side (Admin\PostEditor) enqueues this for
+	 * supported post types" as the contract; prior to the fix nothing
+	 * actually enforced it, so the block-editor bundle (and a working,
+	 * capability-gated archiveUrl) loaded on every post type regardless of
+	 * plugin support. Mirrors
+	 * test_post_submitbox_archive_button_emits_nothing_for_unsupported_post_type.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostEditor::enqueue_scripts
+	 */
+	public function test_enqueue_scripts_does_nothing_for_unsupported_post_type() {
+		\WP_Mock::userFunction( 'get_current_screen' )->andReturn( null );
+		\WP_Mock::userFunction( 'is_plugin_active' )
+			->with( 'classic-editor/classic-editor.php' )->andReturn( false );
+		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( false )->reply( false );
+
+		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_type' )
+			->with( 7 )->andReturn( 'attachment' );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'attachment' )->andReturn( false );
+
+		// The capability check and both script calls must never run once
+		// the post-type gate rejects.
+		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->never();
+		\WP_Mock::userFunction( 'wp_enqueue_script' )->never();
+		\WP_Mock::userFunction( 'wp_localize_script' )->never();
+
+		$this->post_editor->enqueue_scripts( 'post.php' );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
 	 * Denied-capability branch of enqueue_scripts(): `ArchivePostLink::build()`
 	 * no longer checks capability itself, so a user who cannot archive must
 	 * not receive a working, nonce-signed `archiveUrl` in the localized
@@ -263,6 +340,10 @@ class PostEditorTest extends TestCase {
 		\WP_Mock::onFilter( 'aps_is_classic_editor' )->with( false )->reply( false );
 
 		\WP_Mock::userFunction( 'get_the_ID' )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_type' )
+			->with( 7 )->andReturn( 'post' );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )->andReturn( true );
 		\WP_Mock::userFunction( 'aps_current_user_can_archive' )->with( 7 )->andReturn( false );
 
 		// Must never run on the denied branch — a call here would mean a

@@ -155,17 +155,13 @@ final class PostStatus implements HookableInterface {
 		 */
 		$show_in_status_list = (bool) apply_filters( 'aps_status_arg_show_in_admin_status_list', aps_current_user_can_view() );
 
-		/**
-		 * Filter the icon used for the Archived post status.
-		 *
-		 * @since 0.4.0
-		 * @param string $icon The dashicon name.
-		 * @return string
-		 */
-		$icon = (string) apply_filters( 'aps_status_arg_dashicon', 'dashicons-archive' );
-
 		return array(
 			'label'                     => aps_archived_label_string(),
+			// Not a real register_post_status() arg — core ignores it. Kept
+			// deliberately as advisory metadata: it declares the plugin's
+			// supported-type mapping on the status object itself, where
+			// third parties can introspect it via get_post_status_object().
+			// Do not remove.
 			'post_type'                 => aps_get_supported_post_types(),
 			'public'                    => $public,
 			'private'                   => $private,
@@ -173,7 +169,6 @@ final class PostStatus implements HookableInterface {
 			'exclude_from_search'       => $exclude_from_search,
 			'show_in_admin_all_list'    => $show_in_all_list,
 			'show_in_admin_status_list' => $show_in_status_list,
-			'dashicons'                 => $icon,
 			/* translators: %s: post count */
 			'label_count'               => _n_noop(
 				'Archived <span class="count">(%s)</span>',
