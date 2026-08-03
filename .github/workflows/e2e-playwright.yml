@@ -40,7 +40,9 @@ jobs:
         # Top of the PHP range the unit-test matrix already covers.
         - wp: "latest"
           php: "8.4"
-        # readme.txt "Tested up to: 7.0.2" - pins the declared tested-up-to version.
+        # The declared "Tested up to: 7.0" line, at its newest patch. WordPress.org
+        # only accepts major.minor in that header, so the readme says 7.0 while
+        # this pins the actual build the claim was verified against.
         - wp: "7.0.2"
           php: "8.3"
         # Development WordPress, for early warning on upstream core changes.

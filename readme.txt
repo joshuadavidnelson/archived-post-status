@@ -2,9 +2,9 @@
 Contributors:      joshuadnelson, fjarrett
 Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
-Requires at least: 5.9
+Requires at least: 6.4
 Requires PHP:      8.1
-Tested up to:      7.0.2
+Tested up to:      7.0
 Stable tag:        0.4.0
 License:           GPL-2.0+
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -103,7 +103,8 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - Archived posts are now kept out of the default "All" view on the posts list, the same way Trash is. Use the "Archived" filter link to see them.
 - Archiving is now restricted to `public` post types. 0.3.x allowed archiving any post type that wasn't explicitly excluded via `aps_excluded_post_types`, including non-public ones; 0.4.0 starts from the public post types and subtracts the excluded set (`aps_get_supported_post_types()` returns the resulting list). If you need to archive a non-public custom post type, add it back with the `aps_supported_post_types` filter.
 - Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
-- Tested up to WordPress 7.0.2.
+- Tested up to WordPress 7.0.
+- The minimum supported WordPress version is now 6.4 (was 5.9). Admin notices are rendered with core's `wp_admin_notice()`, added in 6.4. Sites below 6.4 are a small and shrinking share of installs.
 
 **Removed**
 
