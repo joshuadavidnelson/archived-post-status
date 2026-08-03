@@ -250,4 +250,61 @@ class BulkActionResultTest extends TestCase {
 		// Aggregate: denied + not_found + wrong_status + locked = 4.
 		$this->assertSame( 4, $captured['skipped'] ?? null );
 	}
+
+	// -----------------------------------------------------------------------
+	// ids= URL-length cap
+	// -----------------------------------------------------------------------
+
+	/**
+	 * At exactly the MAX_IDS_IN_URL cap (200), the 'ids' arg is still
+	 * emitted — the cap excludes only counts strictly greater than it.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionResult::apply_to_url
+	 */
+	public function test_apply_to_url_includes_ids_when_count_is_exactly_at_cap() {
+		$result = new BulkActionResult();
+		for ( $i = 1; $i <= 200; $i++ ) {
+			$result->record( $i );
+		}
+
+		$captured = array();
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing( function ( $key, $value, $url ) use ( &$captured ) {
+				$captured[ $key ] = $value;
+				return $url;
+			} );
+
+		$result->apply_to_url( 'http://example.test/wp-admin/edit.php', ArchiveAction::Archive );
+
+		$this->assertArrayHasKey( 'ids', $captured, 'the ids arg must still be emitted at exactly the cap' );
+		$this->assertSame( 200, $result->count() );
+	}
+
+	/**
+	 * Beyond MAX_IDS_IN_URL (201+ successful ids), apply_to_url() omits the
+	 * 'ids' query arg entirely — a large bulk batch degrades to a
+	 * count-only success notice instead of risking a URL-length-related
+	 * redirect failure. The action's own counter arg (e.g. 'archived=201')
+	 * is still emitted so the count-only notice renders correctly.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionResult::apply_to_url
+	 */
+	public function test_apply_to_url_omits_ids_when_count_exceeds_cap() {
+		$result = new BulkActionResult();
+		for ( $i = 1; $i <= 201; $i++ ) {
+			$result->record( $i );
+		}
+
+		$captured = array();
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing( function ( $key, $value, $url ) use ( &$captured ) {
+				$captured[ $key ] = $value;
+				return $url;
+			} );
+
+		$result->apply_to_url( 'http://example.test/wp-admin/edit.php', ArchiveAction::Archive );
+
+		$this->assertArrayNotHasKey( 'ids', $captured, 'the ids arg must be omitted once the cap is exceeded' );
+		$this->assertSame( 201, $captured['archived'] ?? null, 'the plain success count must still be emitted' );
+	}
 }

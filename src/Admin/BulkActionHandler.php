@@ -61,10 +61,21 @@ final class BulkActionHandler {
 	 * are bucketed via {@see BulkActionResult} and the loop continues —
 	 * no mid-batch wp_die().
 	 *
+	 * $post_ids is normalized (absint + drop non-numeric/zero junk)
+	 * immediately after the emptiness guard, before any per-id dispatch:
+	 * WordPress core's `ids=` fallback path on `wp-admin/edit.php` (used
+	 * when JS is disabled) populates it via a bare `explode( ',', … )` with
+	 * no `intval`, unlike the `post[]` checkbox path. Without normalization
+	 * a non-numeric entry would reach the strictly int-typed
+	 * {@see process_archive_post()} / {@see process_unarchive_post()} and
+	 * throw, killing the whole batch.
+	 *
 	 * @since 0.4.0
-	 * @param string          $sendback The redirect URL.
-	 * @param string          $doaction The action being taken.
-	 * @param array<int, int> $post_ids The items to take the action on.
+	 * @param string            $sendback The redirect URL.
+	 * @param string            $doaction The action being taken.
+	 * @param array<int, mixed> $post_ids The items to take the action on,
+	 *                                    as received from WordPress — entries
+	 *                                    are not guaranteed to be int.
 	 * @return string
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchiveAction::from()} is the
@@ -73,6 +84,20 @@ final class BulkActionHandler {
 	 */
 	public function handle( string $sendback, string $doaction, array $post_ids ): string {
 		// Early validation
+		if ( empty( $post_ids ) ) {
+			return $sendback;
+		}
+
+		// WordPress core's `ids=` fallback path (wp-admin/edit.php, used when
+		// JS is disabled) populates $post_ids via a bare
+		// `explode( ',', $_REQUEST['ids'] )` — no intval — unlike the
+		// `post[]` checkbox path, which does map to ints. Normalize here so
+		// the strictly int-typed process_archive_post() /
+		// process_unarchive_post() below never see non-numeric junk.
+		// absint() coerces non-numeric strings to 0, and array_filter() drops
+		// the zeros — 0 is never a valid post id anyway.
+		$post_ids = array_filter( array_map( 'absint', $post_ids ) );
+
 		if ( empty( $post_ids ) ) {
 			return $sendback;
 		}

@@ -123,6 +123,68 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	/**
+	 * WordPress core's `wp-admin/edit.php` `ids=` fallback path populates
+	 * $post_ids via a bare `explode(',', $_REQUEST['ids'])` — no `intval` —
+	 * unlike the `post[]` checkbox path, which does map to ints. A request
+	 * such as `edit.php?post_type=post&action=archive&ids=1,abc` therefore
+	 * hands handle() a mixed array containing non-numeric strings.
+	 *
+	 * Those non-numeric entries reach the strictly `int`-typed
+	 * process_archive_post() call site and must NOT throw — a TypeError
+	 * there would kill the whole batch, violating this class's documented
+	 * "the loop continues on every per-item failure" invariant. handle()
+	 * must normalize $post_ids (absint + drop non-numeric/zero junk) before
+	 * dispatch so the batch completes and only the surviving numeric ids
+	 * are processed.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
+	 */
+	public function test_bulk_archive_survives_non_numeric_post_ids_from_unfiltered_ids_query_arg() {
+
+		// Anonymous mock user: the ownership-aware default resolves to the
+		// others-primitive.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 1 )
+			->andReturn( false );
+		\WP_Mock::userFunction( 'get_post' )->with( 1 )->andReturn(
+			$this->createMockPost( array( 'ID' => 1 ) )
+		);
+
+		// Only reached once the fix normalizes the array — proves the
+		// surviving numeric id after the junk entries still gets processed.
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 2 )
+			->andReturn( false );
+		\WP_Mock::userFunction( 'get_post' )->with( 2 )->andReturn(
+			$this->createMockPost( array( 'ID' => 2 ) )
+		);
+
+		$captured = array();
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing(
+				function ( $key, $value, $url ) use ( &$captured ) {
+					$captured[ $key ] = $value;
+					return $url;
+				}
+			);
+
+		// '' -> absint('') = 0 (junk); '0' -> absint('0') = 0 (never a real
+		// post id); 'abc' -> absint('abc') = 0 (junk). All three must be
+		// dropped without ever reaching the int-typed process_archive_post().
+		$result = $this->handler->handle(
+			'http://example.com/wp-admin/edit.php',
+			'archive',
+			array( 1, 'abc', '', '0', 2 )
+		);
+
+		$this->assertIsString( $result, 'handle() must return the redirect URL, not throw a TypeError mid-batch.' );
+		$this->assertSame( 2, $captured['denied'] ?? null, 'both surviving numeric ids (1 and 2) must be processed and bucketed as denied' );
+		$this->assertSame( 0, $captured['archived'] ?? null, 'archived counter should be 0' );
+	}
+
+	/**
 	 * Archive bulk action — per-item capability denial buckets the post
 	 * into `denied` and continues the batch. The legacy
 	 * mid-batch wp_die() was removed in the 0.4.0 refactor.

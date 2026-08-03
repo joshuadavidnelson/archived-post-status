@@ -30,6 +30,27 @@ use ArchivedPostStatus\Archive\ArchiveAction;
  */
 final class BulkActionResult {
 
+	/**
+	 * Maximum number of ids folded into the redirect URL's `ids=` arg.
+	 *
+	 * Beyond this the id list is omitted entirely and the notice falls back
+	 * to reporting a plain count — a large bulk action (hundreds of posts)
+	 * would otherwise produce a comma-joined `ids=` value long enough to
+	 * risk practical URL-length limits (browsers, proxies, and some server
+	 * configs commonly cap request lines around 2000-8000 characters).
+	 *
+	 * 200 is chosen as a conservative headroom figure: post ids rarely
+	 * exceed 7 digits, so 200 comma-joined ids is at most ~1600 characters
+	 * for that one query arg, leaving ample room under even the tightest
+	 * common limit once the handful of other short query args on this
+	 * redirect (post_type, archived/unarchived, skipped, denied, …) are
+	 * accounted for.
+	 *
+	 * @since 0.4.0
+	 * @var int
+	 */
+	private const MAX_IDS_IN_URL = 200;
+
 	private int $count        = 0;
 	private int $locked       = 0;
 	private int $denied       = 0;
@@ -127,6 +148,13 @@ final class BulkActionResult {
 	 * No notice is built from `skipped`: the notice layer reads the
 	 * individual buckets and renders one line per reason. The aggregate is
 	 * carried in the URL only, pending a decision on whether to display it.
+	 *
+	 * The 'ids' arg is omitted entirely once the successful-id count
+	 * exceeds {@see MAX_IDS_IN_URL} — {@see NoticeBuilder} already renders
+	 * a plain count-only notice whenever `ids` is absent (no undo/edit link
+	 * appended), so a capped batch degrades to a count-only success notice
+	 * rather than risking a URL-length-related redirect failure or
+	 * offering a truncated/broken undo link.
 	 */
 	public function apply_to_url( string $url, ArchiveAction $action ): string {
 		$url = add_query_arg( $action->query_arg(), $this->count, $url );
@@ -153,7 +181,7 @@ final class BulkActionResult {
 			$url = add_query_arg( 'wrong_status', $this->wrong_status, $url );
 		}
 
-		if ( $this->ids ) {
+		if ( $this->ids && count( $this->ids ) <= self::MAX_IDS_IN_URL ) {
 			$url = add_query_arg( 'ids', implode( ',', $this->ids ), $url );
 		}
 
