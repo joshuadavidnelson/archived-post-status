@@ -54,6 +54,12 @@ final class PostStatus implements HookableInterface {
 	 *
 	 * Each arg is filterable so site owners can override defaults.
 	 *
+	 * The `label` arg is passed through unescaped by design (§1.6):
+	 * register_post_status() 'label' is consumed by WP core, which is
+	 * responsible for escaping it at whatever output site eventually
+	 * renders it — the same way core treats its own built-in status
+	 * labels. Escaping here would double-escape once core applies its own.
+	 *
 	 * @since 0.4.0
 	 * @return array<string, mixed> Args ready for register_post_status().
 	 */
@@ -201,7 +207,10 @@ final class PostStatus implements HookableInterface {
 		return array_merge(
 			$post_states,
 			array(
-				$slug => aps_archived_label_string(),
+				// esc_html() here because this IS the output site: core's
+				// _post_states() concatenates every post state directly
+				// into raw HTML with no escaping of its own (§1.6).
+				$slug => esc_html( aps_archived_label_string() ),
 			)
 		);
 	}

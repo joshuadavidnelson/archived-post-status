@@ -84,4 +84,36 @@ class ArchiveLabelTest extends TestCase {
 
 		$this->assertSame( '42', $result );
 	}
+
+	/**
+	 * §1.6 regression: value() must return the filtered label verbatim,
+	 * unescaped. Escaping belongs at each consumer's own output site
+	 * (esc_html() for HTML text, esc_attr() for an attribute, or none at
+	 * all where core does its own escaping) — not here, where the method
+	 * has no output context of its own. Before the fix this returned
+	 * `esc_attr( 'Archived & Retired' )`, i.e. an already-escaped string,
+	 * which is exactly what caused every text-context consumer that
+	 * (correctly) escapes again on its own account to double-escape.
+	 *
+	 * A real esc_attr() stand-in (htmlspecialchars) is required to make a
+	 * lingering esc_attr() call inside value() observable: WP_Mock's
+	 * default esc_attr() stub is an inert passthrough, so without this
+	 * override an un-fixed value() would return the input unchanged and
+	 * this test would pass regardless of whether the fix landed.
+	 *
+	 * @covers ArchivedPostStatus\Status\ArchiveLabel::value
+	 */
+	public function test_value_returns_the_filtered_label_verbatim_without_escaping() {
+		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing(
+			static fn( $value ) => htmlspecialchars( (string) $value, ENT_QUOTES, 'UTF-8' )
+		);
+
+		\WP_Mock::onFilter( 'aps_archived_label_string' )
+			->with( 'Archived' )
+			->reply( 'Archived & Retired' );
+
+		$result = ArchiveLabel::value();
+
+		$this->assertSame( 'Archived & Retired', $result );
+	}
 }

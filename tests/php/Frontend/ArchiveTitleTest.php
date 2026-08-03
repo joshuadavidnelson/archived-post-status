@@ -34,9 +34,20 @@ class ArchiveTitleTest extends TestCase {
 		parent::set_up();
 		$this->feature = new ArchivedPostStatus\Frontend\ArchiveTitle();
 
-		// Mock archived label string retrieval
+		// Delegates to the real accessor instead of a fixed string so a
+		// test can inject an alternate label via the
+		// `aps_archived_label_string` filter and exercise
+		// ArchiveLabel::value()'s own behavior end to end -- see
+		// test_filter_title_escapes_ampersand_label_exactly_once(). Every
+		// other test in this file still observes the plain translated
+		// default ('Archived'): __() and apply_filters() both fall back to
+		// WP_Mock's identity passthrough when nothing overrides them, so
+		// this is behaviorally identical to the previous fixed stub for
+		// every test that doesn't register its own filter reply.
 		\WP_Mock::userFunction( 'aps_archived_label_string' )
-			->andReturn( 'Archived' );
+			->andReturnUsing( static function () {
+				return \ArchivedPostStatus\Status\ArchiveLabel::value();
+			} );
 
 		// Mock current post ID retrieval
 		\WP_Mock::userFunction( 'get_the_ID' )
@@ -417,5 +428,54 @@ class ArchiveTitleTest extends TestCase {
 
 		// Assert
 		$this->assertEquals( 'Archivé: Tëst Pöst & Special Chars', $result );
+	}
+
+	/**
+	 * §1.6 regression: a label containing an ampersand, supplied via a
+	 * site's `aps_archived_label_string` filter callback, must appear in
+	 * the rendered title escaped exactly once. Before the fix,
+	 * ArchiveLabel::value() escaped the filtered label with esc_attr() and
+	 * this method's `array_map( 'esc_html', ... )` escaped it again,
+	 * turning `&` into `&amp;amp;` instead of `&amp;`.
+	 *
+	 * Real esc_attr()/esc_html() (htmlspecialchars) stand in for WP_Mock's
+	 * inert passthrough defaults so a double-escape is observable in the
+	 * final string. set_up() wires aps_archived_label_string() through to
+	 * the real ArchiveLabel::value() so this test exercises the actual
+	 * accessor -- a stubbed-away label would hide the bug entirely.
+	 *
+	 * @covers ArchivedPostStatus\Frontend\ArchiveTitle::filter_title
+	 * @covers ArchivedPostStatus\Status\ArchiveLabel::value
+	 */
+	public function test_filter_title_escapes_ampersand_label_exactly_once() {
+		// Arrange
+		$post = $this->createMockPost([
+			'post_status' => 'archive'
+		]);
+
+		\WP_Mock::userFunction( 'get_post' )
+			->with( 123 )
+			->andReturn( $post );
+
+		\WP_Mock::userFunction( 'is_admin' )
+			->andReturn( false );
+
+		$real_escape = static fn( $value ) => htmlspecialchars( (string) $value, ENT_QUOTES, 'UTF-8' );
+
+		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing( $real_escape );
+		\WP_Mock::userFunction( 'esc_html' )->andReturnUsing( $real_escape );
+
+		// A site filter replaces the translated default with a label
+		// containing an ampersand -- exactly the scenario from the bug
+		// report.
+		\WP_Mock::onFilter( 'aps_archived_label_string' )
+			->with( 'Archived' )
+			->reply( 'Archived & Retired' );
+
+		// Act
+		$result = $this->feature->filter_title( 'Test Post', 123 );
+
+		// Assert - escaped exactly once: '&' becomes '&amp;', not '&amp;amp;'.
+		$this->assertSame( 'Archived &amp; Retired: Test Post', $result );
 	}
 }

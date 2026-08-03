@@ -478,6 +478,48 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
+	 * §1.6 regression (self-discovered consumer, found by grepping for
+	 * `aps_archived_label_string()` callers): display_post_states() feeds
+	 * the label straight into WP core's `_post_states()`, which
+	 * concatenates every post state directly into raw HTML with no
+	 * escaping of its own (`"<span class='post-state'>{$state}...`"`).
+	 * Before the fix this happened to look correct only because
+	 * ArchiveLabel::value() escaped with esc_attr() internally; once that
+	 * internal escaping is removed, display_post_states() must escape the
+	 * label itself.
+	 *
+	 * Distinguishable esc_attr()/esc_html() markers prove which function
+	 * actually produced the returned value.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatus::display_post_states
+	 */
+	public function test_display_post_states_escapes_label_for_html_output() {
+		$post              = new WP_Post();
+		$post->ID          = 42;
+		$post->post_type   = 'post';
+		$post->post_status = 'archive';
+
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )
+			->with( 'post' )
+			->andReturn( true );
+		\WP_Mock::userFunction( 'get_query_var' )
+			->with( 'post_status' )
+			->andReturn( '' );
+		\WP_Mock::userFunction( 'aps_archived_label_string' )->andReturn( 'Archived' );
+
+		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing(
+			static fn( $s ) => "(({$s}))"
+		);
+		\WP_Mock::userFunction( 'esc_html' )->andReturnUsing(
+			static fn( $s ) => "[[{$s}]]"
+		);
+
+		$result = $this->post_status->display_post_states( array(), $post );
+
+		$this->assertSame( '[[Archived]]', $result['archive'] );
+	}
+
+	/**
 	 * Coverage pin: a multi-status filter that does NOT include
 	 * `'archive'` (e.g. `?post_status[]=publish&post_status[]=draft`) must
 	 * still surface the "Archived" label for an archived post. The
