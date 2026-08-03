@@ -74,6 +74,15 @@ class UninstallTest extends TestCase {
 	 * path uses `exit`, which PHPUnit's process isolation cannot observe
 	 * cleanly). The subprocess produces no output and the function
 	 * `aps_uninstall_site` is never declared in its scope.
+	 *
+	 * `@coversNothing` overrides the class-level `@covers ::aps_uninstall_site`
+	 * on purpose: the whole point of this test is that the function is never
+	 * declared in this process, so there is nothing here for PHPUnit to map
+	 * coverage onto. Inheriting the class annotation makes it an unresolvable
+	 * target, which PHPUnit reports as an invalid-@covers warning — and
+	 * warnings fail the coverage leg.
+	 *
+	 * @coversNothing
 	 */
 	public function test_no_op_when_wp_uninstall_plugin_constant_is_not_defined() {
 		$uninstall_path = realpath( self::UNINSTALL_FILE );
