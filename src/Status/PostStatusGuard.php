@@ -6,6 +6,7 @@ namespace ArchivedPostStatus\Status;
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 use ArchivedPostStatus\Archive\ArchiveMeta;
+use ArchivedPostStatus\Archive\ArchiveOperation;
 use ArchivedPostStatus\Archive\UnarchiveOperation;
 use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
@@ -60,9 +61,14 @@ final class PostStatusGuard implements HookableInterface {
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
 	 * is the canonical filterable slug accessor consulted by every consumer
-	 * that compares against `$post->post_status`.
+	 * that compares against `$post->post_status`; {@see ArchiveOperation::in_flight()}
+	 * is the canonical accessor for the plugin's own-write signal.
 	 */
 	public function enforce_archive_state( int $post_id, \WP_Post $post ): void {
+		if ( ArchiveOperation::in_flight() ) {
+			return;
+		}
+
 		if ( wp_doing_ajax() || wp_doing_cron() || wp_is_post_revision( $post_id ) ) {
 			return;
 		}

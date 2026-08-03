@@ -93,6 +93,49 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
+	 * New-filter pin: `aps_enable_notices` returning false suppresses the
+	 * post-action notices entirely, checked before screen detection or any
+	 * query-var reads — get_current_screen() must never be reached.
+	 *
+	 * @covers ArchivedPostStatus\Admin\Notices::display_notices
+	 */
+	public function test_display_notices_suppressed_when_aps_enable_notices_filter_returns_false() {
+		\WP_Mock::onFilter( 'aps_enable_notices' )
+			->with( true )
+			->reply( false );
+
+		\WP_Mock::userFunction( 'get_current_screen' )->never();
+		\WP_Mock::userFunction( 'wp_admin_notice' )->never();
+
+		ob_start();
+		$this->notices->display_notices();
+		$output = ob_get_clean();
+
+		$this->assertSame( '', $output, 'No output should be emitted when aps_enable_notices returns false' );
+	}
+
+	/**
+	 * Default-behavior pin: with `aps_enable_notices` left untouched, an
+	 * archive success notice on an allowed screen still renders. Proves the
+	 * new suppression filter does not change default behavior.
+	 *
+	 * @covers ArchivedPostStatus\Admin\Notices::display_notices
+	 */
+	public function test_display_notices_renders_by_default_when_aps_enable_notices_filter_is_untouched() {
+		$this->mockUndoNoticeFixture( '1', '123' );
+
+		ob_start();
+		$this->notices->display_notices();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'moved to the Archive',
+			$output,
+			'Notices must still render by default when aps_enable_notices is untouched'
+		);
+	}
+
+	/**
 	 * display_notices() does not emit a notice when no query vars are set
 	 * (no archived/unarchived/locked counters).
 	 *

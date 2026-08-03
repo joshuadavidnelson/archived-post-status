@@ -78,6 +78,24 @@ final class Notices implements HookableInterface {
 	 * @return void
 	 */
 	public function display_notices(): void {
+		/**
+		 * Filters whether the archive/unarchive admin notices should render.
+		 *
+		 * Return false to suppress the post-action notices entirely — the
+		 * "N post(s) moved to the Archive." / "N post(s) restored from the
+		 * Archive." success messages built by {@see NoticeBuilder}, along
+		 * with their per-bucket skip-reason companions (locked, denied,
+		 * not_found, wrong_status). Checked first, before screen detection
+		 * or any query-var reads.
+		 *
+		 * @since 0.4.0
+		 * @param bool $enabled Whether to render the notices. Default true.
+		 * @return bool
+		 */
+		if ( ! apply_filters( 'aps_enable_notices', true ) ) {
+			return;
+		}
+
 		if ( ! $this->should_show_notices() ) {
 			return;
 		}
