@@ -28,4 +28,5 @@ try {
   fs.writeFileSync(path, JSON.stringify(config));
 } catch (err) {
   console.error(err);
+  exit(1);
 }

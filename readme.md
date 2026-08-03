@@ -11,9 +11,9 @@
 **Minimum PHP version supported:** 8.1  
 **Tested up to PHP version:** 8.4  
 **Minimum WP Version supported:** 5.9  
-**Tested up to WP version:** 6.9.1  
+**Tested up to WP version:** 7.0.2  
 **Stable tag:** 0.4.0  
-**License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
+**License:** [GPL-2.0+](https://www.gnu.org/licenses/gpl-2.0.html)  
 
 ## Description
 
@@ -53,10 +53,11 @@ Whatever the reason, incorporating the 'Archive' status can be a useful addition
 * **"Archived" admin column** - a sortable column showing who archived each post and when.
 * **Archive metadata** - the previous post status, previous comment and ping status, archive date, and archiving user are recorded on archive and restored on unarchive.
 * **WP-CLI** - `wp post archive <id>...` and `wp post unarchive <id>...`, with `--force`, `--status=<status>`, and `--defer-term-counting` flags.
-* **`aps_archive_post()` / `aps_unarchive_post()`** - API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with matching pre-filters and post-actions.
+* **`aps_archive_post()` / `aps_unarchive_post()`** - API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with matching pre-filters and post-actions. `aps_get_archive_post_link()`, `aps_get_unarchive_post_link()`, and `aps_get_archived_post_link()` return the corresponding URLs.
 * **Front-end protection** - visitors without permission to view archived content get a 404 for a single archived post.
-* **Per-action, ownership-aware capabilities** - `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, each filterable via a matching `aps_default_*_capability` filter. Authors can archive, unarchive, and view their own content; archiving or unarchiving other authors' content requires `edit_others_posts`. Viewing others' archived content is unchanged - `aps_default_read_capability`, default `read_private_posts`.
+* **Per-action, ownership-aware capabilities** - `aps_current_user_can_view()`, `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, each filterable via a matching `aps_default_*_capability` filter. Authors can archive, unarchive, and view their own content; archiving or unarchiving other authors' content requires `edit_others_posts`. Viewing others' archived content defaults to `read_private_posts`.
 * **Settings groundwork** - settings are stored in a single `aps_settings` option (currently just `is_read_only`). There is no settings screen yet; the admin UI is planned for a future release.
+* **Archiving is now restricted to `public` post types** - `aps_get_supported_post_types()` returns the public post types minus `aps_excluded_post_types`; a non-public post type that wasn't explicitly excluded could be archived in 0.3.x, and can no longer be unless added back via the `aps_supported_post_types` filter.
 * **Deprecated** `aps_is_excluded_post_type()` in favor of `! aps_is_supported_post_type( $post_type )`.
 * **Removed** eleven 0.3.x global functions, including `aps_post_status_slug()`, `aps_the_title()`, `aps_save_post()`, and `aps_is_frontend()` - calling any of them now fatals, and unhooking one (e.g. `remove_filter( 'the_title', 'aps_the_title' )`) is now a silent no-op. 0.4.0 registers its hooks on internal object instances that third-party code cannot reach, so use the documented filters instead - to drop the "Archived: " title prefix, for example, return an empty string from `aps_title_label`. See [changelog.md](changelog.md) for the full list and replacements.
 * **Fixed** the `aps_post_status_slug` filter, which 0.3.x only applied when registering the status while still saving the literal `archive` to the database. The default slug is unchanged (`archive`); only sites that add this filter to rename it need a one-off database migration - see [changelog.md](changelog.md) before updating.
