@@ -17,14 +17,14 @@
  * Version:     0.4.0
  * Plugin URI:  https://archivedpoststat.us/
  * Requires at least: 5.9
- * Tested up to: 6.9
+ * Tested up to: 7.0.2
  * Requires PHP: 8.1
  * Author:      Joshua David Nelson
  * Author URI:  https://joshuadnelson.com
  * Text Domain: archived-post-status
  * Domain Path: /languages
  * License:     GPL-2.0+
- * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 // Exit if accessed directly, prevent direct access to this file.
@@ -42,24 +42,27 @@ define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN )
 /**
  * The code that runs during plugin activation.
  *
- * @since 0.4.0
- * @return void
- */
-function aps_activate() {
-	// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules -- Required during plugin activation to set up rewrite rules.
-	flush_rewrite_rules();
-}
-
-/**
- * The code that runs during plugin deactivation.
+ * No-op today: the plugin registers a post *status* (register_post_status()),
+ * not a post type or any rewrite rules, so there is nothing here that needs
+ * flushing. Kept as the registered activation hook so a future feature that
+ * DOES need first-activation setup has a single place to add it.
  *
  * @since 0.4.0
  * @return void
  */
-function aps_deactivate() {
-	// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.flush_rewrite_rules_flush_rewrite_rules -- Required during plugin deactivation to clean up rewrite rules.
-	flush_rewrite_rules();
-}
+function aps_activate() {}
+
+/**
+ * The code that runs during plugin deactivation.
+ *
+ * No-op today, for the same reason as {@see aps_activate()} — no rewrite
+ * rules are ever registered. Kept as the registered deactivation hook for
+ * the same future-extension reason.
+ *
+ * @since 0.4.0
+ * @return void
+ */
+function aps_deactivate() {}
 register_activation_hook( __FILE__, 'aps_activate' );
 register_deactivation_hook( __FILE__, 'aps_deactivate' );
 
