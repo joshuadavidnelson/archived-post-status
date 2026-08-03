@@ -52,8 +52,19 @@ enum ArchiveAction: string {
 	 *
 	 * Centralises the dispatch so callers (PostList, CLI) never branch on
 	 * action type to decide which function to call.
+	 *
+	 * Return type mirrors `aps_archive_post()` / `aps_unarchive_post()`
+	 * (and, in turn, `ArchiveOperation::perform()` / `UnarchiveOperation::perform()`):
+	 * `\WP_Post|bool`, not `\WP_Post|false`. Both functions pass the
+	 * `aps_pre_archive_post` / `aps_pre_unarchive_post` filter's return value
+	 * through when it is non-null, and that filter is documented as
+	 * `bool|null` — so a site-registered `true` must be a legal return here.
+	 *
+	 * @since 0.4.0
+	 * @param int $post_id The post ID to act on.
+	 * @return \WP_Post|bool
 	 */
-	public function perform( int $post_id ): \WP_Post|false {
+	public function perform( int $post_id ): \WP_Post|bool {
 		return match ( $this ) {
 			self::Archive   => aps_archive_post( $post_id ),
 			self::Unarchive => aps_unarchive_post( $post_id ),

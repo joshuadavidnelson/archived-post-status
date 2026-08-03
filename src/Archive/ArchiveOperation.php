@@ -38,9 +38,10 @@ final class ArchiveOperation {
 	 *   - `\WP_Post` on success (the pre-archive snapshot).
 	 *   - `false` on validation failure (missing post, already archived,
 	 *     `wp_update_post` failure).
-	 *   - The `aps_pre_archive_post` filter return verbatim when it is
-	 *     non-null. Sites typically use `false` to veto archival; `true` is
-	 *     accepted but undocumented.
+	 *   - The `aps_pre_archive_post` filter only supports a `bool|null`
+	 *     return: `null` lets archival continue; any other value
+	 *     short-circuits and is returned here as-is. Sites typically
+	 *     return `false` to veto archival.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to archive.
