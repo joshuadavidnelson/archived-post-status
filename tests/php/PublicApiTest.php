@@ -454,7 +454,11 @@ class PublicApiTest extends TestCase {
 	/**
 	 * The `aps_pre_unarchive_post` filter short-circuit — returning any
 	 * non-null value aborts the SUT and propagates the value back to the
-	 * caller. A string sentinel verifies the value flows through unchanged.
+	 * caller. A boolean sentinel verifies the value flows through with its
+	 * type intact: `assertEquals()` would pass even if the SUT silently
+	 * coerced the return value, since `'custom_return' == true` under PHP's
+	 * loose comparison; `assertSame()` against an explicit `true` closes
+	 * that gap.
 	 *
 	 * @covers ::aps_unarchive_post
 	 */
@@ -470,13 +474,13 @@ class PublicApiTest extends TestCase {
 
 		\WP_Mock::onFilter( 'aps_pre_unarchive_post' )
 			->with( null, $post, 'publish' )
-			->reply( 'custom_return' );
+			->reply( true );
 
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
 		$result = aps_unarchive_post( 123 );
 
-		$this->assertEquals( 'custom_return', $result );
+		$this->assertSame( true, $result );
 	}
 
 	// -----------------------------------------------------------------------

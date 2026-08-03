@@ -65,9 +65,10 @@ final class UnarchiveOperation {
 	 *   - `\WP_Post` on success (the pre-unarchive snapshot).
 	 *   - `false` on validation failure (missing post, not currently
 	 *     archived, `wp_update_post` failure).
-	 *   - The `aps_pre_unarchive_post` filter return verbatim when it is
-	 *     non-null. Sites typically use `false` to veto unarchival; `true`
-	 *     is accepted but undocumented.
+	 *   - The `aps_pre_unarchive_post` filter only supports a `bool|null`
+	 *     return: `null` lets unarchival continue; any other value
+	 *     short-circuits and is returned here as-is. Sites typically
+	 *     return `false` to veto unarchival.
 	 *
 	 * The body is decomposed into private helpers — {@see validate()},
 	 * {@see resolve_restore_values()}, {@see dispatch_update()}, and the

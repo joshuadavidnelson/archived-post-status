@@ -122,4 +122,42 @@ class ArchiveActionTest extends TestCase {
 
 		$this->assertSame( $post, $result );
 	}
+
+	/**
+	 * Regression (§1.1): `aps_archive_post()` returns `\WP_Post|bool` and,
+	 * per its own docblock, propagates the `aps_pre_archive_post` filter's
+	 * return value verbatim — including a bare `true`. `perform()`'s return
+	 * type must widen to accept that shape; a narrower `\WP_Post|false`
+	 * declaration throws a TypeError the moment a site adds
+	 * `add_filter( 'aps_pre_archive_post', '__return_true' )`.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::perform
+	 */
+	public function test_perform_archive_returns_true_when_aps_archive_post_short_circuits_true() {
+		\WP_Mock::userFunction( 'aps_archive_post' )
+			->once()
+			->with( 42 )
+			->andReturn( true );
+
+		$result = ArchiveAction::Archive->perform( 42 );
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Regression (§1.1): the Unarchive twin of the above. `aps_unarchive_post()`
+	 * short-circuits on `aps_pre_unarchive_post` the same way.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::perform
+	 */
+	public function test_perform_unarchive_returns_true_when_aps_unarchive_post_short_circuits_true() {
+		\WP_Mock::userFunction( 'aps_unarchive_post' )
+			->once()
+			->with( 42 )
+			->andReturn( true );
+
+		$result = ArchiveAction::Unarchive->perform( 42 );
+
+		$this->assertTrue( $result );
+	}
 }
