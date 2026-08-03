@@ -28,6 +28,33 @@ use ArchivedPostStatus\Status\PostStatusValue;
 final class ArchiveOperation {
 
 	/**
+	 * True while perform() is writing the archive transition.
+	 *
+	 * @var bool
+	 */
+	private static bool $in_flight = false;
+
+	/**
+	 * Whether this operation is currently writing its own status transition.
+	 *
+	 * {@see \ArchivedPostStatus\Status\PostStatusGuard::enforce_archive_state()}
+	 * consults this so the plugin's own archive write is never treated as an
+	 * out-of-band entry into the archived status. Without this guard, a site
+	 * using the `aps_archive_post_comment_status` / `aps_archive_post_ping_status`
+	 * filters below to keep comments or pings open would have that choice
+	 * silently reverted: `enforce_archive_state()` reacts to the `save_post`
+	 * hook, which `wp_update_post()` fires synchronously — inside the very
+	 * call this flag wraps — and would otherwise "correct" the freshly
+	 * filtered state back to closed/closed.
+	 *
+	 * @since 0.4.0
+	 * @return bool
+	 */
+	public static function in_flight(): bool {
+		return self::$in_flight;
+	}
+
+	/**
 	 * Archive a post.
 	 *
 	 * Modeled after the core `wp_trash_post()` function.
@@ -89,14 +116,45 @@ final class ArchiveOperation {
 		 */
 		do_action( 'aps_archive_post', $post_id, $previous_status );
 
-		$post_archived = wp_update_post(
-			array(
-				'ID'             => $post_id,
-				'post_status'    => $slug,
-				'comment_status' => 'closed',
-				'ping_status'    => 'closed',
-			)
-		);
+		/**
+		 * Filters the comment status that a post gets assigned when it is archived.
+		 *
+		 * @since 0.4.0
+		 * @param string $comment_status  The comment status of the post being archived.
+		 * @param int    $post_id         The ID of the post being archived.
+		 * @param string $previous_status The status of the post about to be archived.
+		 * @return string
+		 */
+		$comment_status = apply_filters( 'aps_archive_post_comment_status', 'closed', $post_id, $previous_status );
+
+		$comment_status = in_array( $comment_status, array( 'open', 'closed' ), true ) ? $comment_status : 'closed';
+
+		/**
+		 * Filters the ping status that a post gets assigned when it is archived.
+		 *
+		 * @since 0.4.0
+		 * @param string $ping_status     The ping status of the post being archived.
+		 * @param int    $post_id         The ID of the post being archived.
+		 * @param string $previous_status The status of the post about to be archived.
+		 * @return string
+		 */
+		$ping_status = apply_filters( 'aps_archive_post_ping_status', 'closed', $post_id, $previous_status );
+
+		$ping_status = in_array( $ping_status, array( 'open', 'closed' ), true ) ? $ping_status : 'closed';
+
+		self::$in_flight = true;
+		try {
+			$post_archived = wp_update_post(
+				array(
+					'ID'             => $post_id,
+					'post_status'    => $slug,
+					'comment_status' => $comment_status,
+					'ping_status'    => $ping_status,
+				)
+			);
+		} finally {
+			self::$in_flight = false;
+		}
 
 		if ( ! $post_archived ) {
 			return false;

@@ -305,6 +305,47 @@ class PostStatusGuardTest extends TestCase {
 	}
 
 	/**
+	 * The plugin's own archive path must not double-fire the entry guard:
+	 * while ArchiveOperation reports in_flight(), the guard is a no-op. This
+	 * is what lets the archive-side aps_archive_post_comment_status /
+	 * aps_archive_post_ping_status filters actually take effect — without
+	 * this guard, the corrective wp_update_post() fired by
+	 * enforce_archive_state() during the nested save_post dispatch would
+	 * silently force comments/pings back to closed/closed, overriding any
+	 * non-default filtered value.
+	 *
+	 * @covers ArchivedPostStatus\Status\PostStatusGuard::enforce_archive_state
+	 */
+	public function test_enforce_archive_state_skips_while_archive_operation_in_flight() {
+		\WP_Mock::userFunction( 'wp_doing_ajax' )->never();
+		\WP_Mock::userFunction( 'wp_doing_cron' )->never();
+		\WP_Mock::userFunction( 'wp_is_post_revision' )->never();
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->never();
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'remove_action' )->never();
+
+		$flag = new \ReflectionProperty( ArchivedPostStatus\Archive\ArchiveOperation::class, 'in_flight' );
+		$flag->setAccessible( true );
+		$flag->setValue( null, true );
+
+		try {
+			$post = new \WP_Post( [
+				'ID'             => 1,
+				'post_status'    => 'archive',
+				'post_type'      => 'post',
+				'comment_status' => 'open',
+				'ping_status'    => 'open',
+			] );
+
+			$this->guard->enforce_archive_state( 1, $post );
+		} finally {
+			$flag->setValue( null, false );
+		}
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
 	 * Stub the archive-meta read boundary for the exit guard: META_PREVIOUS_STATUS
 	 * first (ArchiveMeta::for_post() short-circuits to null on empty), then the
 	 * remaining four keys when a full value object will be built.
