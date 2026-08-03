@@ -25,6 +25,3 @@ vendor
 /artifacts/
 /playwright-report/
 /.wp-env.override.json
-
-# Working docs (untracked by design)
-/docs/
