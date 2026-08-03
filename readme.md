@@ -10,8 +10,8 @@
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Minimum PHP version supported:** 8.1  
 **Tested up to PHP version:** 8.4  
-**Minimum WP Version supported:** 5.9  
-**Tested up to WP version:** 7.0.2  
+**Minimum WP Version supported:** 6.4  
+**Tested up to WP version:** 7.0  
 **Stable tag:** 0.4.0  
 **License:** [GPL-2.0+](https://www.gnu.org/licenses/gpl-2.0.html)  
 

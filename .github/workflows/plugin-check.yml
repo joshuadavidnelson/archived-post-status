@@ -20,9 +20,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v6
 
+    # The PrefixAllGlobals codes are ignored because plugin-check derives the
+    # expected prefix from the plugin slug — it looks for `archived_post_status_`
+    # and flags every `aps_` function, hook and uninstall-scope variable as
+    # unprefixed. `aps_` IS the prefix; it has been the plugin's public API
+    # since 0.3.x, and renaming it would break every site calling
+    # aps_archive_post() and friends. The action exposes no way to declare an
+    # alternative prefix, so ignoring the three codes is the only lever.
+    #
+    # NonPrefixedVariableFound additionally fires on ordinary local variables
+    # in uninstall.php, which the sniff treats as globals because that file
+    # runs in the global scope.
     - name: Run plugin check
       uses: wordpress/plugin-check-action@v1
       with:
         exclude-directories: 'vendor,node_modules,tests,.github,.git,.wordpress-org,bin,reports'
         exclude-files: 'package.json,package-lock.json,composer.json,composer.lock,contributing.md,code-of-conduct.md,phpstan.neon.dist,phpunit.xml.dist,readme.md,changelog.md,.phpcs.xml.dist,.gitbook.yaml,jest.config.js,LICENSE'
-        ignore-codes: 'hidden_files,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound'
+        ignore-codes: 'hidden_files,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound'

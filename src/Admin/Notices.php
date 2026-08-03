@@ -120,24 +120,13 @@ final class Notices implements HookableInterface {
 	 * @return void
 	 */
 	private function render_notices( array $notices ): void {
-		$combined_message = implode( ' ', $notices );
-
-		if ( function_exists( 'wp_admin_notice' ) ) {
-			wp_admin_notice(
-				$combined_message,
-				array(
-					'id'                 => 'message',
-					'additional_classes' => array( 'updated' ),
-					'dismissible'        => true,
-				)
-			);
-			return;
-		}
-
-		// Fallback for WordPress < 6.4.0
-		printf(
-			'<div id="message" class="notice notice-success is-dismissible"><p>%s</p></div>',
-			wp_kses_post( $combined_message )
+		wp_admin_notice(
+			implode( ' ', $notices ),
+			array(
+				'id'                 => 'message',
+				'additional_classes' => array( 'updated' ),
+				'dismissible'        => true,
+			)
 		);
 	}
 
@@ -173,8 +162,13 @@ final class Notices implements HookableInterface {
 			return $post_type;
 		}
 
+		// Read-only: this only picks which post type's list URL a notice links
+		// back to. The action that produced the notice verified its own nonce
+		// before redirecting here, and nothing below changes state.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['post_type'] ) ) {
-			return sanitize_key( $_GET['post_type'] );
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return sanitize_key( wp_unslash( $_GET['post_type'] ) );
 		}
 
 		return get_post_type() ?: null;

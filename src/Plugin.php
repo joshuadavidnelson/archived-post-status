@@ -54,8 +54,11 @@ final class Plugin {
 		// check for upgrades.
 		$this->upgrade_check();
 
-		// Load the textdomain.
-		$this->load_textdomain();
+		// No load_plugin_textdomain() call: WordPress has loaded translations
+		// just in time since 4.6, using the plugin slug and the Domain Path
+		// header, so an explicit call adds nothing. Calling it here — on
+		// plugins_loaded, before init — is also what trips WP 6.7+'s
+		// "translation loading was triggered too early" notice.
 
 		// Load all hookables and register their hooks.
 		( new HookLoader() )->add_all( $this->hookables() )->run();
@@ -196,11 +199,4 @@ final class Plugin {
 		);
 	}
 
-	private function load_textdomain(): void {
-		load_plugin_textdomain(
-			'archived-post-status',
-			false,
-			ARCHIVED_POST_STATUS_LANG_PATH
-		);
-	}
 }

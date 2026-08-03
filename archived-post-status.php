@@ -20,8 +20,8 @@
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
  * Version:     0.4.0
  * Plugin URI:  https://archivedpoststat.us/
- * Requires at least: 5.9
- * Tested up to: 7.0.2
+ * Requires at least: 6.4
+ * Tested up to: 7.0
  * Requires PHP: 8.1
  * Author:      Joshua David Nelson
  * Author URI:  https://joshuadnelson.com
@@ -41,7 +41,8 @@ define( 'ARCHIVED_POST_STATUS_VERSION', '0.4.0' );
 define( 'ARCHIVED_POST_STATUS_PLUGIN', plugin_basename( __FILE__ ) );
 define( 'ARCHIVED_POST_STATUS_DIR', __DIR__ );
 define( 'ARCHIVED_POST_STATUS_URL', plugins_url( '/', __FILE__ ) );
-define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN ) . '/languages' );
+// No language-path constant: translations load just in time from the
+// Domain Path header, so nothing needs to name that directory in PHP.
 
 /**
  * Initialize the class loader and run the plugin.

@@ -382,7 +382,6 @@ class PluginTest extends TestCase {
 	 *
 	 * @covers ArchivedPostStatus\Plugin::run
 	 * @covers ArchivedPostStatus\Plugin::upgrade_check
-	 * @covers ArchivedPostStatus\Plugin::load_textdomain
 	 */
 	public function test_run_fires_aps_init_and_aps_loaded_actions() {
 		\WP_Mock::expectAction( 'aps_init' );
@@ -393,9 +392,10 @@ class PluginTest extends TestCase {
 			->with( 'archived_post_status_version', false )
 			->andReturn( '0.4.0' ); // same as $version → no update_option
 
-		\WP_Mock::userFunction( 'load_plugin_textdomain' )
-			->once()
-			->with( 'archived-post-status', false, \WP_Mock\Functions::type( 'string' ) );
+		// Translations load just in time from the Domain Path header; the
+		// plugin must not call this itself, which on plugins_loaded would
+		// trip WP 6.7+'s "triggered too early" notice.
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->never();
 
 		// Stub hookables so HookLoader has something safe to iterate.
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
@@ -435,7 +435,7 @@ class PluginTest extends TestCase {
 		// path must not touch it (the option exists by definition).
 		\WP_Mock::userFunction( 'add_option' )->never();
 
-		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->never();
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
 
 		$this->plugin->run();
@@ -479,7 +479,7 @@ class PluginTest extends TestCase {
 			->with( 'archived_post_status_previous_version', \WP_Mock\Functions::type( 'string' ), false )
 			->never();
 
-		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->never();
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
 
 		try {
@@ -524,7 +524,7 @@ class PluginTest extends TestCase {
 			->with( 'archived_post_status_version', '0.4.0', '', false )
 			->once();
 
-		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->never();
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
 
 		try {
@@ -573,7 +573,7 @@ class PluginTest extends TestCase {
 		\WP_Mock::userFunction( 'update_option' )->never();
 		\WP_Mock::userFunction( 'add_option' )->never();
 
-		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->never();
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
 
 		try {
@@ -602,7 +602,7 @@ class PluginTest extends TestCase {
 		\WP_Mock::userFunction( 'update_option' )->never();
 		\WP_Mock::userFunction( 'add_option' )->never();
 
-		\WP_Mock::userFunction( 'load_plugin_textdomain' )->once();
+		\WP_Mock::userFunction( 'load_plugin_textdomain' )->never();
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( false );
 
 		$this->plugin->run();
