@@ -641,8 +641,11 @@ class PostListTest extends TestCase {
 	 * link (`?action=archive&post=99&_wpnonce=...`). Validation
 	 * runs first (get_post, is_supported_post_type), then the nonce check
 	 * with the action-specific nonce key (`archive-{id}`), then the
-	 * capability check. We short-circuit the rest of the method by denying
-	 * the capability check after the nonce passes.
+	 * capability check.
+	 *
+	 * Regression (§2.1): a denied capability check used to return silently —
+	 * the user clicks Archive, the page reloads, and nothing explains why.
+	 * It must now wp_die() with the archive-specific permission message.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
 	 */
@@ -667,15 +670,16 @@ class PostListTest extends TestCase {
 		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
 		\WP_Mock::userFunction( 'current_user_can' )
 			->with( 'edit_others_posts', 99 )
-			->andReturn( false ); // short-circuit before archive
+			->andReturn( false ); // denied -> wp_die(), never reaches archive
 
 		// Subsequent calls must not fire when the capability check denies.
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 		\WP_Mock::userFunction( 'wp_safe_redirect' )->never();
 
-		$this->post_list->post_action_archive( 99 );
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/permission to archive this item/' );
 
-		$this->addToAssertionCount( 1 );
+		$this->post_list->post_action_archive( 99 );
 	}
 
 	/**
@@ -776,6 +780,147 @@ class PostListTest extends TestCase {
 		$this->expectExceptionMessageMatches( '/Error in archiving/' );
 
 		$this->post_list->post_action_archive( 52 );
+	}
+
+	// -----------------------------------------------------------------------
+	// wp_die() escaping (§1.7)
+	// -----------------------------------------------------------------------
+	//
+	// Three wp_die() calls in handle_post_action() used to pass translated
+	// strings straight through with no esc_html() at all (compare
+	// PostEditorGuard::enforce_read_only(), which wraps its wp_die() message
+	// in esc_html()). A content-only assertion (e.g. a regex on the English
+	// text) can't tell an escaped call from an unescaped one, because the
+	// wp_die() test polyfill (tests/php/Support/WpPolyfills.php) itself
+	// always runs the final message through esc_html() once before throwing.
+	// So these assert the exact *call count* on esc_html(): the polyfill
+	// contributes one call no matter what; anything beyond that one must
+	// come from the SUT.
+
+	/**
+	 * The "Invalid post type" wp_die() message must be escaped: one call
+	 * from the SUT plus the polyfill's own defensive call = 2 total.
+	 * Pre-fix, only the polyfill's call happens = 1 total.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
+	 */
+	public function test_post_action_archive_escapes_invalid_post_type_message() {
+		$post              = $this->createMockPost(
+			array(
+				'ID'          => 70,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 70 )->andReturn( $post );
+		$this->stubSupportedPostTypesBoundary( array( 'post' ), array( 'post' ) );
+
+		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 70 )
+			->andReturn( true );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( null );
+
+		\WP_Mock::userFunction( 'esc_html' )
+			->times( 2 )
+			->andReturnUsing( static fn( $text ) => $text );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/Invalid post type/' );
+
+		$this->post_list->post_action_archive( 70 );
+	}
+
+	/**
+	 * The locked-post wp_die() message must escape BOTH the translated
+	 * template and the interpolated display name, without an extra outer
+	 * esc_html() wrapping the composed sprintf() result (which would
+	 * double-escape the already-escaped name). Expected calls: template +
+	 * name from the SUT, plus the polyfill's own call on the final composed
+	 * string = 3 total. Pre-fix, only the name and the polyfill's call
+	 * happen = 2 total.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
+	 */
+	public function test_post_action_archive_escapes_locked_message_exactly_once_per_part() {
+		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 55 )
+			->andReturn( true );
+
+		$post              = new \stdClass();
+		$post->ID          = 55;
+		$post->post_type   = 'post';
+		$post->post_status = 'publish';
+		\WP_Mock::userFunction( 'get_post' )->with( 55 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 55 )
+			->andReturn( 7 );
+
+		$locking_user               = new \stdClass();
+		$locking_user->display_name = 'Jane Doe';
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 7 )
+			->andReturn( $locking_user );
+
+		\WP_Mock::userFunction( 'esc_html' )
+			->times( 3 )
+			->andReturnUsing( static fn( $text ) => $text );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/Jane Doe is currently editing/' );
+
+		$this->post_list->post_action_archive( 55 );
+	}
+
+	/**
+	 * The persist-failure wp_die() message must be escaped: one call from
+	 * the SUT plus the polyfill's own call = 2 total. Pre-fix, only the
+	 * polyfill's call happens = 1 total.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
+	 */
+	public function test_post_action_archive_escapes_failure_message() {
+		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 56 )
+			->andReturn( true );
+
+		$post              = new \stdClass();
+		$post->ID          = 56;
+		$post->post_type   = 'post';
+		$post->post_status = 'publish';
+		\WP_Mock::userFunction( 'get_post' )->with( 56 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 56 )
+			->andReturn( false );
+
+		\WP_Mock::userFunction( 'wp_update_post' )->andReturn( 0 );
+
+		\WP_Mock::userFunction( 'esc_html' )
+			->times( 2 )
+			->andReturnUsing( static fn( $text ) => $text );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/Error in archiving/' );
+
+		$this->post_list->post_action_archive( 56 );
 	}
 
 	// -----------------------------------------------------------------------
@@ -930,6 +1075,15 @@ class PostListTest extends TestCase {
 		$this->addToAssertionCount( 1 );
 	}
 
+	/**
+	 * Mirror of the archive nonce-key test above, for the unarchive
+	 * direction. Regression (§2.1): a denied capability check must
+	 * wp_die() with the *unarchive*-specific permission message, not the
+	 * archive-only copy the shared handle_post_action() used to emit
+	 * regardless of direction.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_unarchive
+	 */
 	public function test_post_action_unarchive_checks_nonce_with_unarchive_post_id_key() {
 		// Pre-nonce validation needs a real post + supported type.
 		$post              = $this->createMockPost(
@@ -955,9 +1109,100 @@ class PostListTest extends TestCase {
 
 		\WP_Mock::userFunction( 'wp_update_post' )->never();
 
-		$this->post_list->post_action_unarchive( 99 );
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/permission to unarchive this item/' );
 
-		$this->addToAssertionCount( 1 );
+		$this->post_list->post_action_unarchive( 99 );
+	}
+
+	/**
+	 * Direction-correct copy (§2.1): a locked post blocks unarchiving with
+	 * "You cannot unarchive this item..." — not the archive-only wording the
+	 * shared handle_post_action() used to emit for both directions.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_unarchive
+	 */
+	public function test_post_action_unarchive_dies_with_unarchive_specific_message_when_locked() {
+		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 63 )
+			->andReturn( true );
+
+		$post              = new \stdClass();
+		$post->ID          = 63;
+		$post->post_type   = 'post';
+		$post->post_status = 'archive';
+		\WP_Mock::userFunction( 'get_post' )->with( 63 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 63 )
+			->andReturn( 7 );
+
+		$locking_user               = new \stdClass();
+		$locking_user->display_name = 'Jane Doe';
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 7 )
+			->andReturn( $locking_user );
+
+		\WP_Mock::userFunction( 'wp_update_post' )->never();
+		\WP_Mock::userFunction( 'wp_safe_redirect' )->never();
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/cannot unarchive this item\. Jane Doe is currently editing/' );
+
+		$this->post_list->post_action_unarchive( 63 );
+	}
+
+	/**
+	 * Direction-correct copy (§2.1): a persist failure on unarchive dies
+	 * with "Error in unarchiving this item." — not the archive-only
+	 * "Error in archiving this item." the shared handle_post_action() used
+	 * to emit for both directions.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::post_action_unarchive
+	 */
+	public function test_post_action_unarchive_dies_with_unarchive_specific_message_on_failure() {
+		\WP_Mock::userFunction( 'check_admin_referer' )->once();
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 64 )
+			->andReturn( true );
+
+		// UnarchiveOperation::validate() type-hints its return \WP_Post|false
+		// and re-reads via get_post() internally, so — unlike the archive
+		// counterpart above — the fixture must be a real WP_Post, not a bare
+		// stdClass.
+		$post = $this->createMockPost(
+			array(
+				'ID'          => 64,
+				'post_type'   => 'post',
+				'post_status' => 'archive',
+			)
+		);
+		\WP_Mock::userFunction( 'get_post' )->with( 64 )->andReturn( $post );
+
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( (object) array( 'name' => 'post' ) );
+
+		\WP_Mock::userFunction( 'wp_check_post_lock' )
+			->with( 64 )
+			->andReturn( false );
+
+		// aps_unarchive_post(64) reaches wp_update_post which returns 0.
+		$this->stubUnarchivePersistBoundary( 64, 0 );
+
+		\WP_Mock::userFunction( 'wp_safe_redirect' )->never();
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessageMatches( '/Error in unarchiving this item/' );
+
+		$this->post_list->post_action_unarchive( 64 );
 	}
 
 	// -----------------------------------------------------------------------

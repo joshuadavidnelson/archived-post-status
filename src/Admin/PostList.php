@@ -269,6 +269,14 @@ final class PostList implements HookableInterface {
 	 * silently — and a subsequent nonce check on a valid request still
 	 * provides the CSRF guarantee.
 	 *
+	 * Shared by both `post_action_archive()` and `post_action_unarchive()`,
+	 * so every wp_die() message below is sourced from `$action` (via
+	 * {@see ArchiveAction::denied_message()}, {@see ArchiveAction::locked_message()},
+	 * {@see ArchiveAction::failure_message()}) rather than hardcoded, so each
+	 * direction reads correctly instead of always naming "archive". A denied
+	 * capability check now explains itself with wp_die() too, rather than
+	 * reloading the list table with no feedback at all.
+	 *
 	 * @since 0.4.0
 	 * @param int           $post_id The post ID.
 	 * @param ArchiveAction $action The action to perform.
@@ -294,11 +302,11 @@ final class PostList implements HookableInterface {
 		check_admin_referer( $action->nonce_key( $post_id ) );
 
 		if ( ! ( $action->capability_function() )( $post_id ) ) {
-			return;
+			wp_die( esc_html( $action->denied_message() ) );
 		}
 
 		if ( ! get_post_type_object( $post->post_type ) ) {
-			wp_die( __( 'Invalid post type.', 'archived-post-status' ) );
+			wp_die( esc_html( __( 'Invalid post type.', 'archived-post-status' ) ) );
 		}
 
 		$user_id = wp_check_post_lock( $post_id );
@@ -308,15 +316,14 @@ final class PostList implements HookableInterface {
 			$user_name = $user ? $user->display_name : __( 'Another user', 'archived-post-status' );
 			wp_die(
 				sprintf(
-					/* translators: %s: User's display name. */
-					__( 'You cannot archive this item. %s is currently editing.', 'archived-post-status' ),
+					esc_html( $action->locked_message() ),
 					esc_html( $user_name )
 				)
 			);
 		}
 
 		if ( ! $action->perform( $post_id ) ) {
-			wp_die( __( 'Error in archiving this item.', 'archived-post-status' ) );
+			wp_die( esc_html( $action->failure_message() ) );
 		}
 
 		$sendback = add_query_arg(

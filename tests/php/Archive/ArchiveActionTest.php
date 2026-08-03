@@ -160,4 +160,80 @@ class ArchiveActionTest extends TestCase {
 
 		$this->assertTrue( $result );
 	}
+
+	// -----------------------------------------------------------------------
+	// locked_message() / failure_message() / denied_message() (§1.7 + §2.1)
+	// -----------------------------------------------------------------------
+	//
+	// PostList::handle_post_action() is shared by both directions but its
+	// wp_die() copy used to be archive-only regardless of which action was
+	// running. These three accessors give each direction its own complete,
+	// independently translatable string — not a shared template assembled by
+	// concatenating a direction word into it — so PostList can select the
+	// right copy without ever building a sentence out of fragments.
+
+	/**
+	 * locked_message() names the archive action and carries the %s
+	 * placeholder PostList fills in with the locking user's display name.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::locked_message
+	 */
+	public function test_locked_message_archive_names_the_archive_action() {
+		$message = ArchiveAction::Archive->locked_message();
+
+		$this->assertStringContainsString( 'cannot archive this item', $message );
+		$this->assertStringNotContainsString( 'unarchive', $message );
+		$this->assertStringContainsString( '%s', $message );
+	}
+
+	/**
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::locked_message
+	 */
+	public function test_locked_message_unarchive_names_the_unarchive_action() {
+		$message = ArchiveAction::Unarchive->locked_message();
+
+		$this->assertStringContainsString( 'cannot unarchive this item', $message );
+		$this->assertStringContainsString( '%s', $message );
+	}
+
+	/**
+	 * failure_message() names the archive action — the wp_die() shown when
+	 * ArchiveAction::perform() fails to persist the status change.
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::failure_message
+	 */
+	public function test_failure_message_archive_names_the_archive_action() {
+		$this->assertSame( 'Error in archiving this item.', ArchiveAction::Archive->failure_message() );
+	}
+
+	/**
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::failure_message
+	 */
+	public function test_failure_message_unarchive_names_the_unarchive_action() {
+		$this->assertSame( 'Error in unarchiving this item.', ArchiveAction::Unarchive->failure_message() );
+	}
+
+	/**
+	 * denied_message() names the archive action — the wp_die() shown when
+	 * the current user fails the capability check (§2.1: this branch used
+	 * to return silently with no explanation at all).
+	 *
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::denied_message
+	 */
+	public function test_denied_message_archive_names_the_archive_action() {
+		$this->assertSame(
+			'You do not have permission to archive this item.',
+			ArchiveAction::Archive->denied_message()
+		);
+	}
+
+	/**
+	 * @covers ArchivedPostStatus\Archive\ArchiveAction::denied_message
+	 */
+	public function test_denied_message_unarchive_names_the_unarchive_action() {
+		$this->assertSame(
+			'You do not have permission to unarchive this item.',
+			ArchiveAction::Unarchive->denied_message()
+		);
+	}
 }
