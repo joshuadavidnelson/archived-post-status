@@ -150,21 +150,15 @@ final class PostEditorGuard implements HookableInterface {
 			return;
 		}
 
-		$post_id = absint( $_GET['post'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! $post_id ) {
+		$post = $this->archived_post_in_request();
+		if ( ! $post ) {
 			return;
 		}
 
-		$post = get_post( $post_id );
-		if ( ! $post || PostStatusValue::resolved_slug() !== $post->post_status ) {
-			return;
-		}
-
-		$action  = isset( $_GET['action'] ) ? sanitize_text_field( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$message = isset( $_GET['message'] ) ? absint( $_GET['message'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$action = $this->request_action();
 
 		// Redirect to list table after saving as Archived (action=edit&message=1).
-		if ( 'edit' === $action && 1 === $message ) {
+		if ( 'edit' === $action && 1 === $this->request_message() ) {
 			$this->redirect_to_list( $post );
 		}
 
@@ -177,7 +171,7 @@ final class PostEditorGuard implements HookableInterface {
 		// standalone: deny_editing_archived()'s map_meta_cap deny independently
 		// blocks a real save inside core's edit_post(), and destructive
 		// actions gate on delete_post, which this plugin never touches.
-		if ( '' !== $action && 'edit' !== $action ) {
+		if ( ! $this->renders_editor( $action ) ) {
 			return;
 		}
 
@@ -186,6 +180,71 @@ final class PostEditorGuard implements HookableInterface {
 			esc_html( self::read_only_message() ),
 			esc_html__( 'WordPress &rsaquo; Error', 'archived-post-status' )
 		);
+	}
+
+	/**
+	 * The archived post this request targets, or null.
+	 *
+	 * Null covers all three uninteresting cases together — no post id on the
+	 * request, no such post, or a post that is not archived — so the caller
+	 * reads as a single guard rather than three.
+	 *
+	 * @since 0.4.0
+	 * @return \WP_Post|null
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
+	 * is the canonical filterable slug accessor.
+	 */
+	private function archived_post_in_request(): ?\WP_Post {
+		$post_id = absint( $_GET['post'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! $post_id ) {
+			return null;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post || PostStatusValue::resolved_slug() !== $post->post_status ) {
+			return null;
+		}
+
+		return $post;
+	}
+
+	/**
+	 * The sanitized `action` query arg, or an empty string.
+	 *
+	 * @since 0.4.0
+	 * @return string
+	 */
+	private function request_action(): string {
+		if ( ! isset( $_GET['action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return '';
+		}
+
+		return sanitize_text_field( wp_unslash( $_GET['action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	}
+
+	/**
+	 * The `message` query arg core appends after a save, or 0.
+	 *
+	 * @since 0.4.0
+	 * @return int
+	 */
+	private function request_message(): int {
+		return absint( $_GET['message'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	}
+
+	/**
+	 * Whether an action would actually render the post editor.
+	 *
+	 * Only the bare edit screen and `action=edit` do. Every other post.php
+	 * action — trash, untrash, delete, unarchive — passes through to core.
+	 *
+	 * @since 0.4.0
+	 * @param string $action The request's action.
+	 * @return bool
+	 */
+	private function renders_editor( string $action ): bool {
+		return '' === $action || 'edit' === $action;
 	}
 
 	/**
