@@ -464,4 +464,106 @@ test.describe( 'post list: bulk actions', () => {
 		).toBeVisible();
 		await expectNoInvalidBucket( page, params );
 	} );
+
+	// The Undo tests in the per-post-type loop at the top of this file only
+	// exercise an all-succeeded batch. `BulkActionResult::record()` — the
+	// only method that appends to the id list the Undo link is built from —
+	// is called exclusively on the success path; every skip bucket
+	// (`record_denied()`, `record_locked()`, etc.) deliberately does not
+	// touch it. This test pins that contract end to end: a batch with one
+	// skipped item must produce an Undo link carrying ONLY the ids that
+	// were actually archived, and clicking it must reverse only those.
+	test( 'Undo after a mixed batch restores only the items that were actually archived', async ( {
+		admin,
+		page,
+		requestUtils,
+	} ) => {
+		const first = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Bulk undo mixed first' ),
+			status: 'publish',
+		} );
+		const second = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Bulk undo mixed second' ),
+			status: 'publish',
+		} );
+		const denied = await seedPost( requestUtils, {
+			title: uniqueTitle( 'Bulk undo mixed denied' ),
+			status: 'publish',
+		} );
+		created.push(
+			{ id: first.id, type: 'posts' },
+			{ id: second.id, type: 'posts' },
+			{ id: denied.id, type: 'posts' }
+		);
+
+		// Per-post denial: the screen-level gate still passes, so the batch
+		// runs and exactly one of the three selected items is skipped.
+		await setFixtures( requestUtils, {
+			[ FIXTURE_TOGGLES.deniedPostId ]: denied.id,
+		} );
+
+		await admin.visitAdminPage( 'edit.php', postListQuery() );
+		await selectRows( page, [ first.id, second.id, denied.id ] );
+		const params = await applyBulkAction( page, 'archive' );
+
+		expect( params.get( 'archived' ) ).toBe( '2' );
+		expect( params.get( 'denied' ) ).toBe( '1' );
+		expect( params.get( 'skipped' ) ).toBe( '1' );
+
+		expect(
+			( await postState( requestUtils, first.id ) ).post_status
+		).toBe( ARCHIVED_STATUS_SLUG );
+		expect(
+			( await postState( requestUtils, second.id ) ).post_status
+		).toBe( ARCHIVED_STATUS_SLUG );
+		expect(
+			( await postState( requestUtils, denied.id ) ).post_status
+		).toBe( 'publish' );
+
+		const undo = noticeLocator( page ).getByRole( 'link', {
+			name: strings.undo_label,
+		} );
+		await expect( undo ).toBeVisible();
+
+		// Read the Undo link's own `ids` before clicking it: the denied
+		// post's id must never appear here, regardless of what clicking the
+		// link goes on to do.
+		const undoHref = await undo.getAttribute( 'href' );
+		if ( ! undoHref ) {
+			throw new Error( 'The Undo link had no href.' );
+		}
+		const idsParam = new URL( undoHref, page.url() ).searchParams.get(
+			'ids'
+		);
+		if ( ! idsParam ) {
+			throw new Error( 'The Undo link had no "ids" query arg.' );
+		}
+		const undoIds = idsParam
+			.split( ',' )
+			.map( Number )
+			.sort( ( a, b ) => a - b );
+		expect( undoIds ).toEqual(
+			[ first.id, second.id ].sort( ( a, b ) => a - b )
+		);
+
+		await Promise.all( [ page.waitForURL( /edit\.php/ ), undo.click() ] );
+
+		await expect(
+			noticeWith( page, strings.unarchived_notice_many )
+		).toBeVisible();
+
+		// Undo reversed exactly the two posts it archived...
+		expect(
+			( await postState( requestUtils, first.id ) ).post_status
+		).toBe( 'publish' );
+		expect(
+			( await postState( requestUtils, second.id ) ).post_status
+		).toBe( 'publish' );
+
+		// ...and the skipped post is exactly where the failed archive
+		// attempt left it — never touched by the archive OR by Undo.
+		expect(
+			( await postState( requestUtils, denied.id ) ).post_status
+		).toBe( 'publish' );
+	} );
 } );

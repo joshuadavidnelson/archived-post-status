@@ -409,6 +409,36 @@ class PostListTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Deny path: a hidden checkbox on an archived row must STAY hidden when
+	 * the user cannot unarchive that row. The allow-path tests above only
+	 * pin the restore; without this, a regression that always returned true
+	 * for archived rows (dropping the capability check entirely) would pass
+	 * every other test in this section.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::show_archived_row_checkbox
+	 */
+	public function test_show_archived_row_checkbox_stays_hidden_when_user_cannot_unarchive() {
+		$post = new \WP_Post( [
+			'ID'          => 5,
+			'post_status' => 'archive',
+			'post_type'   => 'post',
+		] );
+
+		// Ownership-aware default: anonymous mock user resolves to the
+		// others-primitive; deny it here.
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'get_post' )->with( 5 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_post_type_object' )
+			->with( 'post' )
+			->andReturn( null );
+		\WP_Mock::userFunction( 'current_user_can' )
+			->with( 'edit_others_posts', 5 )
+			->andReturn( false );
+
+		$this->assertFalse( $this->post_list->show_archived_row_checkbox( false, $post ) );
+	}
+
 	// -----------------------------------------------------------------------
 	// row_actions
 	// -----------------------------------------------------------------------

@@ -37,6 +37,8 @@ export const FIXTURE_TOGGLES = {
 	deniedPostId: 'aps_test_denied_post_id',
 	/** Publish archived content: `aps_status_arg_public|private|exclude_from_search`. */
 	publicArchive: 'aps_test_public_archive_enabled',
+	/** `aps_enable_archive_meta` -> false; no archive meta is ever written. */
+	disableArchiveMeta: 'aps_test_disable_archive_meta_enabled',
 } as const;
 
 export type FixtureToggle =
@@ -53,6 +55,7 @@ const TOGGLE_OFF: Record< FixtureToggle, boolean | number > = {
 	[ FIXTURE_TOGGLES.classicEditor ]: false,
 	[ FIXTURE_TOGGLES.deniedPostId ]: 0,
 	[ FIXTURE_TOGGLES.publicArchive ]: false,
+	[ FIXTURE_TOGGLES.disableArchiveMeta ]: false,
 };
 
 /**
