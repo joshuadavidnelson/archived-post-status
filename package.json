@@ -37,10 +37,7 @@
     "env:db-info": "echo 'WordPress Database Connection Details:' && echo 'Host: localhost' && echo 'Port:' $(docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep mysql | head -1 | grep -o '0.0.0.0:[0-9]*->3306' | cut -d: -f2 | cut -d- -f1) && echo 'Database: wordpress' && echo 'Username: root' && echo 'Password: password' && echo '' && echo 'All MySQL containers:' && docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep mysql",
     "test": "jest --verbose --runInBand --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:e2e": "wp-scripts test-e2e --config playwright.config.ts",
-    "test:e2e:cli": "bash ./tests/e2e/cli/run.sh",
-    "test:e2e:core-version": "node ./tests/bin/set-core-version.js"
+    "test:coverage": "jest --coverage"
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
