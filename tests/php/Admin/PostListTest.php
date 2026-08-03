@@ -118,7 +118,7 @@ class PostListTest extends TestCase {
 	public function test_hooks_registers_query_vars_filter_and_post_actions() {
 		$hooks = $this->post_list->hooks();
 
-		$this->assertCount( 7, $hooks );
+		$this->assertCount( 8, $hooks );
 
 		$this->assertSame( 'filter', $hooks[0]->type );
 		$this->assertSame( 'query_vars', $hooks[0]->hook );
@@ -161,6 +161,12 @@ class PostListTest extends TestCase {
 		$this->assertSame( array( $this->post_list, 'register_post_type_hooks' ), $hooks[6]->callback );
 		$this->assertSame( 10, $hooks[6]->priority );
 		$this->assertSame( 1, $hooks[6]->accepted_args );
+
+		$this->assertSame( 'filter', $hooks[7]->type );
+		$this->assertSame( 'removable_query_args', $hooks[7]->hook );
+		$this->assertSame( array( $this->post_list, 'removable_query_args' ), $hooks[7]->callback );
+		$this->assertSame( 10, $hooks[7]->priority );
+		$this->assertSame( 1, $hooks[7]->accepted_args );
 
 		// The per-post-type bulk-action hooks must NOT be built eagerly —
 		// they are only registered once register_post_type_hooks() runs
@@ -229,6 +235,54 @@ class PostListTest extends TestCase {
 		$this->assertContains( 'archived', $result );
 		$this->assertContains( 'unarchived', $result );
 		$this->assertContains( 'ids', $result );
+	}
+
+	/**
+	 * query_vars() also carries the five reason-skip buckets
+	 * (`locked`, `denied`, `not_found`, `wrong_status`) plus the aggregate
+	 * `skipped` counter that NoticeBuilder reads back from the redirect URL.
+	 * Missing any of these means a fresh page load can't recover that part
+	 * of the notice.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::query_vars
+	 */
+	public function test_query_vars_adds_all_reason_bucket_keys() {
+		$result = $this->post_list->query_vars( array() );
+
+		$this->assertContains( 'locked', $result );
+		$this->assertContains( 'denied', $result );
+		$this->assertContains( 'not_found', $result );
+		$this->assertContains( 'wrong_status', $result );
+		$this->assertContains( 'skipped', $result );
+	}
+
+	// -----------------------------------------------------------------------
+	// removable_query_args
+	// -----------------------------------------------------------------------
+	//
+	// §2.4: none of the eight bulk-action notice query args were registered
+	// on WordPress's `removable_query_args` filter, so a stale notice (and
+	// a stale skip-reason bucket from a previous, unrelated action) would
+	// survive in the visible URL across page refreshes instead of being
+	// stripped by history.replaceState() after the notice renders once.
+
+	/**
+	 * removable_query_args() must append the exact same eight names
+	 * query_vars() registers, on top of whatever WordPress core (or another
+	 * plugin) already contributed — never replacing the incoming array.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::removable_query_args
+	 */
+	public function test_removable_query_args_adds_all_eight_notice_query_args() {
+		$result = $this->post_list->removable_query_args( array( 'untrashed', 'deleted' ) );
+
+		// Pre-existing core/third-party entries survive untouched.
+		$this->assertContains( 'untrashed', $result );
+		$this->assertContains( 'deleted', $result );
+
+		foreach ( array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ) as $arg ) {
+			$this->assertContains( $arg, $result, "removable_query_args() must include '{$arg}'" );
+		}
 	}
 
 	// -----------------------------------------------------------------------
@@ -1269,7 +1323,7 @@ class PostListTest extends TestCase {
 			->andReturn( 'http://example.com/wp-admin/edit.php' );
 		\WP_Mock::userFunction( 'remove_query_arg' )
 			->with(
-				array( 'archived', 'unarchived', 'ids' ),
+				array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ),
 				'http://example.com/wp-admin/edit.php'
 			)
 			->andReturn( 'http://example.com/wp-admin/edit.php' );
@@ -1369,7 +1423,7 @@ class PostListTest extends TestCase {
 			->andReturn( 'http://example.com/wp-admin/edit.php' );
 		\WP_Mock::userFunction( 'remove_query_arg' )
 			->with(
-				array( 'archived', 'unarchived', 'ids' ),
+				array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ),
 				'http://example.com/wp-admin/edit.php'
 			)
 			->andReturn( 'http://example.com/wp-admin/edit.php' );

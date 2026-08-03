@@ -156,4 +156,30 @@ abstract class Command {
 
 		return null;
 	}
+
+	/**
+	 * Reject a post that is currently locked for editing by another user.
+	 *
+	 * Mirrors the admin bulk-action path — {@see
+	 * \ArchivedPostStatus\Admin\BulkActionHandler::process_archive_post()}
+	 * and {@see \ArchivedPostStatus\Admin\BulkActionHandler::process_unarchive_post()}
+	 * both bucket a locked post as a skip reason rather than acting on it —
+	 * so the CLI and admin surfaces treat a lock the same way on both
+	 * directions. This is a deliberate departure from core's own
+	 * `wp post update` convention, which does not check post locks at all;
+	 * the maintainer's choice is to match this plugin's existing admin
+	 * behavior instead, since the admin paths already treat a lock as a
+	 * skip reason.
+	 *
+	 * @since 0.4.0
+	 * @param int $post_id The post ID to check.
+	 * @return CliResult|null Error result, or null if the post is not locked.
+	 */
+	final protected function ensure_not_locked( int $post_id ): ?CliResult {
+		if ( wp_check_post_lock( $post_id ) ) {
+			return new CliResult( false, "Post {$post_id} is locked for editing." );
+		}
+
+		return null;
+	}
 }

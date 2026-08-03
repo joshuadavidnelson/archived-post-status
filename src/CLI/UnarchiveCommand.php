@@ -18,8 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * Validation pipeline for the unarchive command.
  *
  * Order matches the historical CLI::handle_action sequence:
- * supported-post-type → capability → not-in-archive. There is no
- * already-archived short-circuit on this path (the inverse condition is
+ * supported-post-type → capability → lock check → not-in-archive. There is
+ * no already-archived short-circuit on this path (the inverse condition is
  * checked at the end).
  *
  * @since 0.4.0
@@ -30,8 +30,16 @@ final class UnarchiveCommand extends Command {
 		return ArchiveAction::Unarchive;
 	}
 
+	/**
+	 * Get the WP-CLI progress label.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return string The WP-CLI command name.
+	 */
 	public function progress_label(): string {
-		return 'Unarchiving';
+		// translators: progress message for the WP-CLI unarchive command.
+		return __( 'Unarchiving', 'archived-post-status' );
 	}
 
 	/**
@@ -53,6 +61,11 @@ final class UnarchiveCommand extends Command {
 		$cap_error = $this->capability_check( $post_id );
 		if ( $cap_error instanceof CliResult ) {
 			return $cap_error;
+		}
+
+		$lock_error = $this->ensure_not_locked( $post_id );
+		if ( $lock_error instanceof CliResult ) {
+			return $lock_error;
 		}
 
 		if ( PostStatusValue::resolved_slug() !== get_post_status( $post_id ) ) {

@@ -117,10 +117,17 @@ final class Registrar implements HookableInterface {
 		// pairing. A standard WP-CLI invocation exits inside run(), so the
 		// cleanup matters only in contexts where run() returns — a runner
 		// with an overridden terminate(), or future embedded reuse.
+		//
+		// Registered at PHP_INT_MAX — the priority reserved for the
+		// plugin's own overrides on this hook (see the filter's docblock in
+		// UnarchiveOperation::dispatch_update()) — for the same reason the
+		// bulk-action Undo override uses it: a third party may have their
+		// own reasons to hook aps_unarchive_post_status at the default
+		// priority 10, and this override must never collide with theirs.
 		$status_filter = static fn() => $new_status;
 
-		add_filter( 'aps_unarchive_post_status', $status_filter );
+		add_filter( 'aps_unarchive_post_status', $status_filter, PHP_INT_MAX );
 		$this->runner->run( $this->unarchive_command, $args, $assoc_args );
-		remove_filter( 'aps_unarchive_post_status', $status_filter );
+		remove_filter( 'aps_unarchive_post_status', $status_filter, PHP_INT_MAX );
 	}
 }

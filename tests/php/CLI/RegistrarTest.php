@@ -134,7 +134,7 @@ namespace {
 			$added_callback = $callback_property->getValue( $hooked_callback );
 
 			$this->assertSame( 'aps_unarchive_post_status', $removed_hook );
-			$this->assertSame( 10, $removed_priority );
+			$this->assertSame( PHP_INT_MAX, $removed_priority );
 			$this->assertSame(
 				$added_callback,
 				$removed_callback,

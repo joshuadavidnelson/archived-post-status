@@ -67,6 +67,7 @@ final class PostList implements HookableInterface {
 			HookDescriptor::filter( 'post_row_actions', array( $this, 'row_actions' ), 10, 2 ),
 			HookDescriptor::filter( 'page_row_actions', array( $this, 'row_actions' ), 10, 2 ),
 			HookDescriptor::action( 'wp_loaded', array( $this, 'register_post_type_hooks' ) ),
+			HookDescriptor::filter( 'removable_query_args', array( $this, 'removable_query_args' ) ),
 		);
 	}
 
@@ -146,6 +147,30 @@ final class PostList implements HookableInterface {
 		$vars[] = 'wrong_status';
 		$vars[] = 'skipped';
 		return $vars;
+	}
+
+	/**
+	 * Register the bulk-action notice query args with WordPress's
+	 * `removable_query_args` filter so they're stripped from the visible
+	 * URL (via `history.replaceState()` in common.js) once the admin
+	 * notice built from them has rendered.
+	 *
+	 * Must list the exact same eight names as {@see query_vars()} above and
+	 * {@see BulkActionHandler::STRIPPED_QUERY_ARGS} — every counter or
+	 * id-list arg the bulk-action plumbing round-trips through the
+	 * redirect URL needs to disappear from the address bar on the next
+	 * page load, or a stale skip-reason notice (or a stale `ids=`/undo
+	 * link) re-renders on every subsequent refresh of that URL.
+	 *
+	 * @since 0.4.0
+	 * @param array<int, string> $args Existing removable query arg names.
+	 * @return array<int, string>
+	 */
+	public function removable_query_args( array $args ): array {
+		return array_merge(
+			$args,
+			array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' )
+		);
 	}
 
 	/**

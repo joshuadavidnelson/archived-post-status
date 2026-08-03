@@ -242,6 +242,16 @@ final class UnarchiveOperation {
 		 *
 		 * By default posts will be restored to their previous status.
 		 *
+		 * Priority `PHP_INT_MAX` on this hook is reserved for the plugin's
+		 * own overrides: the bulk-action Undo callback registered in
+		 * {@see \ArchivedPostStatus\Admin\BulkActionHandler::bulk_unarchive()}
+		 * and the `wp post unarchive --status=<status>` override registered
+		 * in {@see \ArchivedPostStatus\CLI\Registrar::unarchive()}. Both are
+		 * added and removed in the same request, at that priority, so they
+		 * never collide with a third-party callback a site may have
+		 * registered at the default priority 10. Third-party callbacks
+		 * should avoid registering at `PHP_INT_MAX` on this hook.
+		 *
 		 * @since 0.4.0
 		 * @param string $new_status      The new status of the post being restored.
 		 * @param int    $post_id         The ID of the post being restored.

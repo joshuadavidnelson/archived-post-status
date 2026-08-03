@@ -51,6 +51,10 @@ namespace {
 				return $this->ensure_supported_post_type( $post_id );
 			}
 
+			public function call_ensure_not_locked( int $post_id ): ?CliResult {
+				return $this->ensure_not_locked( $post_id );
+			}
+
 			public function call_execute( int $post_id, array $assoc_args ): CliResult {
 				return $this->execute( $post_id, $assoc_args );
 			}
@@ -165,6 +169,37 @@ namespace {
 			$this->assertFalse( $result->is_success );
 			$this->assertStringContainsString( '42', $result->message );
 			$this->assertStringContainsString( 'not a supported post type', $result->message );
+		}
+
+		/**
+		 * §2.6: an unlocked post passes the shared lock-check primitive with
+		 * a null return, mirroring capability_check() / ensure_supported_post_type()'s
+		 * pass-through shape.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Command::ensure_not_locked
+		 */
+		public function test_ensure_not_locked_returns_null_when_post_is_not_locked() {
+			\WP_Mock::userFunction( 'wp_check_post_lock' )->with( 42 )->andReturn( false );
+
+			$this->assertNull( $this->cmd->call_ensure_not_locked( 42 ) );
+		}
+
+		/**
+		 * §2.6: a post locked by another user returns an error CliResult
+		 * naming the post id, so both ArchiveCommand and UnarchiveCommand
+		 * get identical lock-rejection behavior from the shared base.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Command::ensure_not_locked
+		 */
+		public function test_ensure_not_locked_returns_error_when_post_is_locked() {
+			\WP_Mock::userFunction( 'wp_check_post_lock' )->with( 42 )->andReturn( 7 );
+
+			$result = $this->cmd->call_ensure_not_locked( 42 );
+
+			$this->assertInstanceOf( CliResult::class, $result );
+			$this->assertFalse( $result->is_success );
+			$this->assertStringContainsString( '42', $result->message );
+			$this->assertStringContainsString( 'locked', $result->message );
 		}
 
 		/**
