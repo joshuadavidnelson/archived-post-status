@@ -198,16 +198,16 @@ class ArchiveTitleTest extends TestCase {
 	/**
 	 * Test skips modification in admin context
 	 *
+	 * §4 perf fix: is_admin() is checked before any post resolution, since
+	 * this filter runs on every the_title() call on a page — get_post()
+	 * must never be reached in admin context.
+	 *
 	 * @covers ArchivedPostStatus\Frontend\ArchiveTitle::filter_title
 	 */
 	public function test_skips_modification_in_admin_context() {
 		// Arrange
-		$post = $this->createMockPost([
-			'post_status' => 'archive'
-		]);
-
-		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
 		\WP_Mock::userFunction( 'is_admin' )->andReturn( true ); // Admin context
+		\WP_Mock::userFunction( 'get_post' )->never();
 
 		// Act
 		$result = $this->feature->filter_title( 'Test Post', 123 );

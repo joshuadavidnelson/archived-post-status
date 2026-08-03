@@ -8,15 +8,17 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * The vocabulary used to identify the archived post status throughout the plugin.
  *
- * Replaces the bare-string literals `'archive'` (slug) and `'Archived'` (label)
- * that previously appeared scattered across the codebase; call sites consume
- * `PostStatusValue::Slug->value` / `PostStatusValue::Label->value` — or
- * {@see self::resolved_slug()} where the `aps_post_status_slug` filter must be
- * honoured — in place of the literals.
+ * Replaces the bare-string literal `'archive'` (slug) that previously
+ * appeared scattered across the codebase; call sites consume
+ * `PostStatusValue::Slug->value` — or {@see self::resolved_slug()} where the
+ * `aps_post_status_slug` filter must be honoured — in place of the literal.
  *
- * Deliberately narrow: only the status slug and label live here. Other
- * status-related vocabulary (query var names, option keys, meta keys, hook
- * names) lives with the consuming class.
+ * Deliberately narrow: only the status slug lives here. The label has its
+ * own accessor, {@see \ArchivedPostStatus\Status\ArchiveLabel::value()},
+ * since (unlike the slug) every consumer needs the `aps_archived_label_string`
+ * filter applied too — there is no bare "default label" call site left to
+ * absorb into an enum case. Other status-related vocabulary (query var
+ * names, option keys, meta keys, hook names) lives with the consuming class.
  *
  * @since 0.4.0
  */
@@ -29,15 +31,6 @@ enum PostStatusValue: string {
 	 * filter; the literal default is centralised here.
 	 */
 	case Slug = 'archive';
-
-	/**
-	 * The default human-readable label for the archived post status.
-	 *
-	 * Site authors can override the label via the `aps_archived_label_string`
-	 * filter; the literal default is centralised here so that translation
-	 * call sites continue to feed the canonical English source string.
-	 */
-	case Label = 'Archived';
 
 	/**
 	 * Filterable runtime accessor for the archived post status slug.

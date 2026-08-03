@@ -18,15 +18,47 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 final class SupportedPostTypes {
 
 	/**
+	 * Per-request memo of {@see all()}'s result. Null means "not computed
+	 * yet this request"; {@see reset()} is the only way back to null.
+	 *
+	 * @since 0.4.0
+	 * @var array<int|string, string>|null
+	 */
+	private static ?array $cache = null;
+
+	/**
 	 * Get the post types that can use the Archived post status.
 	 *
 	 * The canonical implementation behind `aps_get_supported_post_types()`,
 	 * which is a one-line delegate to this method.
 	 *
+	 * Memoized for the rest of the request after the first call: this is a
+	 * list-table-row-heavy getter (called several times per row via
+	 * `aps_is_supported_post_type()`), and get_post_types() plus two
+	 * apply_filters() passes on every single call added up. Safe to memoize
+	 * because every caller that needs a just-registered post type to show
+	 * up ({@see \ArchivedPostStatus\Admin\ArchiveColumn::register_post_type_hooks()},
+	 * {@see \ArchivedPostStatus\Admin\PostList::register_post_type_hooks()})
+	 * is already deferred to `wp_loaded` specifically so every `init`-priority
+	 * post type registration has finished first — by the time anything
+	 * calls `all()` in a normal request, there is nothing left to miss.
+	 *
+	 * A site that registers a post type or changes the
+	 * `aps_excluded_post_types` / `aps_supported_post_types` filters mid-request
+	 * (after `all()` has already memoized) must call {@see reset()} first, or
+	 * the change will not be picked up until the next request. The test
+	 * suite calls {@see reset()} before and after every test (see
+	 * `tests/php/includes/TestCase.php`) so the memo can never leak from one
+	 * test into the next — a stale memoized post-type list would otherwise
+	 * silently pass or fail unrelated tests depending on run order.
+	 *
 	 * @since 0.4.0
 	 * @return array<int|string, string> List of supported post type slugs.
 	 */
 	public static function all(): array {
+		if ( null !== self::$cache ) {
+			return self::$cache;
+		}
 
 		// Get all public post types.
 		$public_post_types = get_post_types( array( 'public' => true ) );
@@ -53,7 +85,19 @@ final class SupportedPostTypes {
 		 * @param array $post_types An array of post type slugs.
 		 * @return array
 		 */
-		return (array) apply_filters( 'aps_supported_post_types', $supported_post_types );
+		self::$cache = (array) apply_filters( 'aps_supported_post_types', $supported_post_types );
+
+		return self::$cache;
+	}
+
+	/**
+	 * Clear the per-request memo so the next {@see all()} call recomputes.
+	 *
+	 * @since 0.4.0
+	 * @return void
+	 */
+	public static function reset(): void {
+		self::$cache = null;
 	}
 
 	/**

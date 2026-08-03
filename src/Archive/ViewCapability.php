@@ -59,6 +59,10 @@ final class ViewCapability {
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to check against; 0 disables the fallback.
 	 * @return bool
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostTypeCapabilityPrimitive::resolve()}
+	 * is the shared post-type-primitive lookup used identically here and in
+	 * ArchiveCapability / PostEditorGuard.
 	 */
 	private static function author_owns_and_can_edit( int $post_id ): bool {
 		if ( $post_id <= 0 ) {
@@ -71,11 +75,6 @@ final class ViewCapability {
 			return false;
 		}
 
-		// A post row can outlive its post type's registration (e.g. a
-		// deactivated CPT plugin) — fall back to the core primitive. The
-		// `??` also tolerates type objects without a full cap map.
-		$type_object = get_post_type_object( $post->post_type );
-
-		return current_user_can( $type_object ? ( $type_object->cap->edit_posts ?? 'edit_posts' ) : 'edit_posts' );
+		return current_user_can( PostTypeCapabilityPrimitive::resolve( $post->post_type, 'edit_posts' ) );
 	}
 }

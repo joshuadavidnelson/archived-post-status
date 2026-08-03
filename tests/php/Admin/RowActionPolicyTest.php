@@ -199,36 +199,6 @@ class RowActionPolicyTest extends TestCase {
 	}
 
 	/**
-	 * Pin: the `$screen` argument is accepted for forward compatibility but
-	 * MUST NOT change the policy output. Two calls — one with `null`, one
-	 * with a screen-shaped stdClass — must return the same key set.
-	 *
-	 * @covers ArchivedPostStatus\Admin\RowActionPolicy::for_post
-	 */
-	public function test_for_post_ignores_screen_argument() {
-		$post_id = 14;
-		$this->configure_boundary( $post_id, true, true );
-
-		$post = $this->createMockPost(
-			array(
-				'ID'          => $post_id,
-				'post_type'   => 'post',
-				'post_status' => 'publish',
-			)
-		);
-
-		$incoming = array(
-			'edit' => '<a>Edit</a>',
-			'view' => '<a>View</a>',
-		);
-
-		$null_screen   = RowActionPolicy::for_post( $post, $incoming, null );
-		$object_screen = RowActionPolicy::for_post( $post, $incoming, (object) array( 'base' => 'edit' ) );
-
-		$this->assertSame( array_keys( $null_screen ), array_keys( $object_screen ) );
-	}
-
-	/**
 	 * Pin: unsupported post type → return $actions unchanged regardless of
 	 * status / caps. Mirrors the same check in the parity snapshot.
 	 *

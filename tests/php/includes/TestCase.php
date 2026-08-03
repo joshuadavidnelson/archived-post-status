@@ -25,15 +25,26 @@ class TestCase extends BaseTestCase {
 
 	/**
 	 * Set up with WP_Mock.
+	 *
+	 * Also resets {@see \ArchivedPostStatus\Status\SupportedPostTypes}'s
+	 * per-request memo — it is a plain static, so without an explicit reset
+	 * here it would otherwise survive from whatever the previous test left
+	 * behind and silently feed a stale post-type list into this one.
 	 */
 	public function set_up() {
 		\WP_Mock::setUp();
+		\ArchivedPostStatus\Status\SupportedPostTypes::reset();
 	}
 
 	/**
 	 * Tear down with WP_Mock.
+	 *
+	 * Resets the same memo on the way out too — symmetric with the
+	 * WP_Mock::setUp()/tearDown() pairing above, and belt-and-suspenders
+	 * against leaking a cached post-type list into whichever test runs next.
 	 */
 	public function tear_down() {
+		\ArchivedPostStatus\Status\SupportedPostTypes::reset();
 		\WP_Mock::tearDown();
 	}
 

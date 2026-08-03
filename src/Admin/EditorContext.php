@@ -14,8 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * Hybrid architecture pattern:
  *   - This class is STATIC; it has no state and no collaborators worth
  *     swapping. Pure functions of environment input only.
- *   - Consumers (`PostEditor`, `PostEditorGuard`, etc.) call
- *     {@see is_classic_editor()} at the use site — no constructor injection.
+ *   - Consumers call {@see is_classic_editor()} at the use site — no
+ *     constructor injection. `PostEditor::enqueue_scripts()` is the one
+ *     production caller today; the static, no-DI shape is what would let a
+ *     future consumer (e.g. `PostEditorGuard`) call it the same way.
  *
  * @since 0.4.0
  */

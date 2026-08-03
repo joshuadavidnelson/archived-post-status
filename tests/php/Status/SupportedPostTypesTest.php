@@ -110,6 +110,72 @@ class SupportedPostTypesTest extends TestCase {
 	}
 
 	/**
+	 * §4 perf fix: a second `all()` call in the same request must not
+	 * re-run get_post_types() or either filter — the result is memoized.
+	 * The `->once()` constraint on get_post_types() is the proof: if `all()`
+	 * recomputed on every call, the second invocation here would trip a
+	 * Mockery "expected exactly 1 call" failure.
+	 *
+	 * @covers ArchivedPostStatus\Status\SupportedPostTypes::all
+	 */
+	public function test_all_memoizes_result_for_the_rest_of_the_request() {
+		\WP_Mock::userFunction( 'get_post_types' )
+			->once()
+			->andReturn( array( 'post' => 'post', 'page' => 'page' ) );
+
+		\WP_Mock::userFunction( 'post_type_exists' )->andReturn( true );
+
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( array( 'post' => 'post', 'page' => 'page' ) )
+			->reply( array( 'post', 'page' ) );
+
+		$first  = SupportedPostTypes::all();
+		$second = SupportedPostTypes::all();
+
+		$this->assertSame( $first, $second );
+	}
+
+	/**
+	 * §4 perf fix: reset() clears the memo so the next all() call
+	 * recomputes from scratch. get_post_types() is constrained to `->twice()`
+	 * across the two all() calls (separated by a reset()) — if reset()
+	 * didn't actually clear the memo, the second all() call would return the
+	 * cached value without invoking get_post_types() again, and the
+	 * `->twice()` expectation would fail with only one recorded call.
+	 *
+	 * @covers ArchivedPostStatus\Status\SupportedPostTypes::all
+	 * @covers ArchivedPostStatus\Status\SupportedPostTypes::reset
+	 */
+	public function test_reset_forces_all_to_recompute() {
+		\WP_Mock::userFunction( 'get_post_types' )
+			->twice()
+			->andReturn( array( 'post' => 'post' ) );
+
+		\WP_Mock::userFunction( 'post_type_exists' )->andReturn( true );
+
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( array( 'post' => 'post' ) )
+			->reply( array( 'post' ) );
+
+		$first = SupportedPostTypes::all();
+
+		SupportedPostTypes::reset();
+
+		$second = SupportedPostTypes::all();
+
+		$this->assertSame( array( 'post' ), $first );
+		$this->assertSame( array( 'post' ), $second );
+	}
+
+	/**
 	 * `includes()` is a thin convenience over `in_array(.., all(), true)`.
 	 * Two true rows and one false row cover both branches.
 	 *

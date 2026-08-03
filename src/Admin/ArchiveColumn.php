@@ -98,6 +98,7 @@ final class ArchiveColumn implements HookableInterface {
 	public function hooks(): array {
 		return array(
 			HookDescriptor::action( 'pre_get_posts', array( $this, 'handle_sort' ) ),
+			HookDescriptor::filter( 'the_posts', array( $this, 'prime_archive_user_cache' ), 10, 2 ),
 			HookDescriptor::action( 'wp_loaded', array( $this, 'register_post_type_hooks' ) ),
 		);
 	}
@@ -208,6 +209,58 @@ final class ArchiveColumn implements HookableInterface {
 		$columns[ self::COLUMN_KEY ] = self::COLUMN_KEY;
 
 		return $columns;
+	}
+
+	// -----------------------------------------------------------------------
+	// User-cache priming
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Prime the user cache for the whole page of rows in one query.
+	 *
+	 * Without this, {@see resolve_archive_agent_name()}'s `get_userdata()`
+	 * call runs once per row outside core's own author-cache priming (core
+	 * only primes `post_author`, not this plugin's separate archive-user
+	 * meta) — a 20-row archived list adds ~20 uncached user lookups. Reading
+	 * the archive-user ids off the already-primed post-meta cache and
+	 * warming them all with one `cache_users()` call, before any row
+	 * renders, turns that into a single query for the whole page.
+	 *
+	 * Scoped identically to {@see add_column()} / {@see register_sortable()}
+	 * — the archived-by cell (and its get_userdata() call) only ever
+	 * renders on the admin archived-list main query, so priming anywhere
+	 * else would spend a cache_users() query for no reader.
+	 *
+	 * @since 0.4.0
+	 * @param array<int, \WP_Post> $posts The posts about to be rendered.
+	 * @param \WP_Query            $query The query that produced them.
+	 * @return array<int, \WP_Post>
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
+	 * is the canonical filterable slug accessor.
+	 */
+	public function prime_archive_user_cache( array $posts, \WP_Query $query ): array {
+		if ( ! is_admin() || ! $query->is_main_query() ) {
+			return $posts;
+		}
+
+		if ( ! in_array( PostStatusValue::resolved_slug(), (array) $query->get( 'post_status' ), true ) ) {
+			return $posts;
+		}
+
+		$user_ids = array();
+		foreach ( $posts as $post ) {
+			$archive_user = (int) get_post_meta( $post->ID, ArchiveMeta::META_ARCHIVE_USER, true );
+			if ( $archive_user ) {
+				$user_ids[] = $archive_user;
+			}
+		}
+
+		if ( $user_ids ) {
+			cache_users( array_unique( $user_ids ) );
+		}
+
+		return $posts;
 	}
 
 	// -----------------------------------------------------------------------

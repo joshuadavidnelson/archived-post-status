@@ -120,13 +120,20 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Status\PostStatusGuard::class,
 			ArchivedPostStatus\Frontend\ArchiveTitle::class,
 			ArchivedPostStatus\Frontend\AccessGuard::class,
-			ArchivedPostStatus\Admin\PostEditor::class,
 			ArchivedPostStatus\Admin\PostEditorGuard::class,
-			ArchivedPostStatus\Admin\Notices::class,
 			ArchivedPostStatus\Settings\HookAdapter::class,
 			ArchivedPostStatus\Archive\ArchiveMetaListener::class,
+			// PostEditor, Notices, PostList, ArchiveColumn, and PluginScreen are
+			// the is_admin()-gated admin-only block. PostEditor and Notices
+			// moved here in the perf fix that gated them on is_admin() -- every
+			// hook either one registers only fires on an actual wp-admin page
+			// load, so hooking them on every request (front end, WP-CLI) was
+			// pure overhead. PostEditorGuard stays in the unconditional spine
+			// above -- its map_meta_cap filter runs on every capability check
+			// anywhere, not just inside wp-admin.
+			ArchivedPostStatus\Admin\PostEditor::class,
+			ArchivedPostStatus\Admin\Notices::class,
 			ArchivedPostStatus\Admin\PostList::class,
-			// ArchiveColumn and PluginScreen live at the end of the admin block.
 			ArchivedPostStatus\Admin\ArchiveColumn::class,
 			ArchivedPostStatus\Admin\PluginScreen::class,
 		);

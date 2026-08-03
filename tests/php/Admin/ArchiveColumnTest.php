@@ -7,12 +7,14 @@
  * @covers ArchivedPostStatus\Admin\ArchiveColumn
  * @covers ArchivedPostStatus\Archive\ArchiveMeta
  *
- * Covers the four observable behaviors of ArchiveColumn:
+ * Covers the five observable behaviors of ArchiveColumn:
  *   - add_column() adds the 'aps_archived' key only on the archive filter,
  *     handling both scalar and array `post_status` query vars (§1.3 #11)
  *   - register_sortable() registers the column on the archive filter
  *   - render_cell() emits the right markup per archive-meta shape
  *   - handle_sort() rewrites the WP_Query orderby only when it should
+ *   - prime_archive_user_cache() warms the user cache once per page instead
+ *     of once per row (§4 perf fix)
  *
  * Cell rendering tests dispatch through the real ArchiveMeta::for_post()
  * (mocking get_post_meta) rather than stubbing the static — the test
@@ -52,9 +54,10 @@ class ArchiveColumnTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * hooks() registers exactly two descriptors: the `pre_get_posts`
-	 * sorting action, and the `wp_loaded` deferral that later registers
-	 * the per-post-type column hooks (see
+	 * hooks() registers exactly three descriptors: the `pre_get_posts`
+	 * sorting action, the `the_posts` user-cache-priming filter, and the
+	 * `wp_loaded` deferral that later registers the per-post-type column
+	 * hooks (see
 	 * test_register_post_type_hooks_registers_column_hooks_per_supported_post_type()
 	 * below).
 	 *
@@ -70,11 +73,12 @@ class ArchiveColumnTest extends TestCase {
 	public function test_hooks_registers_sort_action_and_defers_column_hooks_to_wp_loaded() {
 		$descriptors = $this->column->hooks();
 
-		$this->assertCount( 2, $descriptors );
+		$this->assertCount( 3, $descriptors );
 
 		$hook_names = array_map( static fn( $d ) => $d->hook, $descriptors );
 
 		$this->assertContains( 'pre_get_posts', $hook_names );
+		$this->assertContains( 'the_posts', $hook_names );
 		$this->assertContains( 'wp_loaded', $hook_names );
 	}
 
@@ -842,5 +846,160 @@ class ArchiveColumnTest extends TestCase {
 		$this->column->handle_sort( $query );
 
 		$this->addToAssertionCount( 1 );
+	}
+
+	// -----------------------------------------------------------------------
+	// prime_archive_user_cache
+	// -----------------------------------------------------------------------
+
+	/**
+	 * §4 perf fix: on the admin archived-list main query, every row's
+	 * archive-user id is collected and warmed with a single cache_users()
+	 * call — a duplicate id (two posts archived by the same user) proves
+	 * the call is deduped, not one cache_users() per row. The filter must
+	 * also return $posts completely unchanged (the `the_posts` contract).
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::prime_archive_user_cache
+	 */
+	public function test_prime_archive_user_cache_warms_the_cache_for_archived_user_ids_on_the_archived_list_view() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'post_status' )->once()->andReturn( 'archive' );
+
+		$posts = array(
+			$this->createMockPost( array( 'ID' => 1 ) ),
+			$this->createMockPost( array( 'ID' => 2 ) ),
+			$this->createMockPost( array( 'ID' => 3 ) ),
+		);
+
+		\WP_Mock::userFunction( 'get_post_meta' )->with( 1, ArchiveMeta::META_ARCHIVE_USER, true )->andReturn( 7 );
+		\WP_Mock::userFunction( 'get_post_meta' )->with( 2, ArchiveMeta::META_ARCHIVE_USER, true )->andReturn( 7 ); // duplicate on purpose -- proves dedup.
+		\WP_Mock::userFunction( 'get_post_meta' )->with( 3, ArchiveMeta::META_ARCHIVE_USER, true )->andReturn( 9 );
+
+		$captured = null;
+		\WP_Mock::userFunction( 'cache_users' )
+			->once()
+			->andReturnUsing(
+				static function ( $ids ) use ( &$captured ) {
+					$captured = $ids;
+				}
+			);
+
+		$result = $this->column->prime_archive_user_cache( $posts, $query );
+
+		$this->assertSame( $posts, $result, 'the filter must return $posts unchanged' );
+		$this->assertSame( array( 7, 9 ), array_values( $captured ) );
+	}
+
+	/**
+	 * A post archived in a system context (anonymous WP-CLI/cron, no
+	 * archive_user recorded) has nothing to prime — cache_users() must not
+	 * fire when every row's archive-user id resolves to 0.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::prime_archive_user_cache
+	 */
+	public function test_prime_archive_user_cache_skips_posts_with_no_archive_user() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'post_status' )->once()->andReturn( 'archive' );
+
+		$posts = array( $this->createMockPost( array( 'ID' => 1 ) ) );
+
+		\WP_Mock::userFunction( 'get_post_meta' )->with( 1, ArchiveMeta::META_ARCHIVE_USER, true )->andReturn( 0 );
+		\WP_Mock::userFunction( 'cache_users' )->never();
+
+		$result = $this->column->prime_archive_user_cache( $posts, $query );
+
+		$this->assertSame( $posts, $result );
+	}
+
+	/**
+	 * An empty page (no rows at all) has nothing to prime either.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::prime_archive_user_cache
+	 */
+	public function test_prime_archive_user_cache_does_nothing_for_an_empty_page() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'post_status' )->once()->andReturn( 'archive' );
+
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'cache_users' )->never();
+
+		$result = $this->column->prime_archive_user_cache( array(), $query );
+
+		$this->assertSame( array(), $result );
+	}
+
+	/**
+	 * Outside the admin (`is_admin()` false), priming never consults the
+	 * query or the posts at all.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::prime_archive_user_cache
+	 */
+	public function test_prime_archive_user_cache_does_nothing_outside_admin() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->never();
+
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'cache_users' )->never();
+
+		$posts  = array( $this->createMockPost( array( 'ID' => 1 ) ) );
+		$result = $this->column->prime_archive_user_cache( $posts, $query );
+
+		$this->assertSame( $posts, $result );
+	}
+
+	/**
+	 * On a secondary query (is_main_query() === false), priming does
+	 * nothing — only the main admin list-table query is primed.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::prime_archive_user_cache
+	 */
+	public function test_prime_archive_user_cache_does_nothing_for_secondary_query() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( false );
+
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'cache_users' )->never();
+
+		$posts  = array( $this->createMockPost( array( 'ID' => 1 ) ) );
+		$result = $this->column->prime_archive_user_cache( $posts, $query );
+
+		$this->assertSame( $posts, $result );
+	}
+
+	/**
+	 * Outside the archived-status filter view, priming does nothing — the
+	 * archived-by cell never renders there, so warming the user cache would
+	 * spend a query for no reader. Mirrors add_column() / register_sortable()'s
+	 * own gate.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::prime_archive_user_cache
+	 */
+	public function test_prime_archive_user_cache_does_nothing_outside_archived_view() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'post_status' )->once()->andReturn( 'publish' );
+
+		\WP_Mock::userFunction( 'get_post_meta' )->never();
+		\WP_Mock::userFunction( 'cache_users' )->never();
+
+		$posts  = array( $this->createMockPost( array( 'ID' => 1 ) ) );
+		$result = $this->column->prime_archive_user_cache( $posts, $query );
+
+		$this->assertSame( $posts, $result );
 	}
 }
