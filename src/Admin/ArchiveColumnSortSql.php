@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 use ArchivedPostStatus\Archive\ArchiveMeta;
 
 /**
- * Builds the SQL fragments ArchiveColumn's sort filters need to order the
+ * Builds the SQL fragments ArchiveColumnSort's sort filters need to order the
  * post list by archive date.
  *
  * Pure functions of their arguments — no hook plumbing, no WP_Query. Callers

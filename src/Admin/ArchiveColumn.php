@@ -24,7 +24,7 @@ use ArchivedPostStatus\Status\ArchiveLabel;
 final class ArchiveColumn implements HookableInterface {
 
 	/** The column key used in all column hook names and checks. */
-	private const COLUMN_KEY = 'aps_archived';
+	public const COLUMN_KEY = 'aps_archived';
 
 	/**
 	 * Label of the Archived column header.
@@ -82,7 +82,6 @@ final class ArchiveColumn implements HookableInterface {
 	 */
 	public function hooks(): array {
 		return array(
-			HookDescriptor::action( 'pre_get_posts', array( $this, 'handle_sort' ) ),
 			HookDescriptor::filter( 'the_posts', array( $this, 'prime_archive_user_cache' ), 10, 2 ),
 			HookDescriptor::action( 'wp_loaded', array( $this, 'register_post_type_hooks' ) ),
 		);
@@ -300,91 +299,4 @@ final class ArchiveColumn implements HookableInterface {
 		return $user ? $user->display_name : self::unknown_attribution_label();
 	}
 
-	// -----------------------------------------------------------------------
-	// Sorting
-	// -----------------------------------------------------------------------
-
-	/**
-	 * The query handle_sort() opted into meta-aware sorting for. Compared by
-	 * identity inside the posts_join / posts_orderby filters so they are a
-	 * no-op for every other query on the page.
-	 *
-	 * @since 0.4.0
-	 * @var \WP_Query|null
-	 */
-	private ?\WP_Query $sort_query = null;
-
-	/**
-	 * Apply meta-aware ordering when sorting by the Archived column.
-	 *
-	 * Do not replace this with `$query->set( 'meta_key', ... )`. That routes
-	 * ordering through WP_Query's meta_query machinery, whose JOIN + WHERE only
-	 * matches posts that have a row for the key — silently dropping every post
-	 * that doesn't. Pre-0.4.0 archives wrote no archive postmeta at all, so
-	 * clicking the column header would make that content vanish with no error.
-	 *
-	 * The LEFT JOIN in filter_sort_join() plus the COALESCE in
-	 * filter_sort_orderby() sort meta-less rows to one end instead.
-	 *
-	 * @param \WP_Query $query The current query object.
-	 */
-	public function handle_sort( \WP_Query $query ): void {
-		if ( ! is_admin() || ! $query->is_main_query() ) {
-			return;
-		}
-
-		if ( self::COLUMN_KEY !== $query->get( 'orderby' ) ) {
-			return;
-		}
-
-		$this->sort_query = $query;
-
-		add_filter( 'posts_join', array( $this, 'filter_sort_join' ), 10, 2 );
-		add_filter( 'posts_orderby', array( $this, 'filter_sort_orderby' ), 10, 2 );
-	}
-
-	/**
-	 * LEFT JOIN wp_postmeta on the archive-date key.
-	 *
-	 * Once registered this filter runs for every WP_Query on the page, so the
-	 * identity check against $this->sort_query is what keeps it from leaking
-	 * onto a secondary query in the same request.
-	 *
-	 * @param string    $join  The current JOIN clause.
-	 * @param \WP_Query $query The query being filtered.
-	 * @return string
-	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- stateless SQL-fragment builder.
-	 */
-	public function filter_sort_join( string $join, \WP_Query $query ): string {
-		if ( $query !== $this->sort_query ) {
-			return $join;
-		}
-
-		global $wpdb;
-
-		return $join . ArchiveColumnSortSql::join( $wpdb );
-	}
-
-	/**
-	 * Order by the LEFT JOINed archive-date value.
-	 *
-	 * The direction comes from the query's own `order` var so the column
-	 * header's toggle-on-click keeps working.
-	 *
-	 * Scoped by identity like filter_sort_join().
-	 *
-	 * @param string    $orderby The current ORDER BY clause.
-	 * @param \WP_Query $query   The query being filtered.
-	 * @return string
-	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- stateless SQL-fragment builder.
-	 */
-	public function filter_sort_orderby( string $orderby, \WP_Query $query ): string {
-		if ( $query !== $this->sort_query ) {
-			return $orderby;
-		}
-
-		return ArchiveColumnSortSql::order_by( (string) $query->get( 'order' ) );
-	}
 }

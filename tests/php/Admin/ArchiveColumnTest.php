@@ -7,21 +7,24 @@
  * @covers ArchivedPostStatus\Admin\ArchiveColumn
  * @covers ArchivedPostStatus\Archive\ArchiveMeta
  *
- * Covers the five observable behaviors of ArchiveColumn:
+ * Covers the four observable behaviors of ArchiveColumn:
  *   - add_column() adds the 'aps_archived' key only on the archive filter,
  *     handling both scalar and array `post_status` query vars
  *   - register_sortable() registers the column on the archive filter
  *   - render_cell() emits the right markup per archive-meta shape
- *   - handle_sort() rewrites the WP_Query orderby only when it should
  *   - prime_archive_user_cache() warms the user cache once per page instead
  *     of once per row
  *
  * Cell rendering tests dispatch through the real ArchiveMeta::for_post()
  * (mocking get_post_meta) rather than stubbing the static — the test
  * stays at the observable HTML output level. Because the render path
- * intentionally exercises ArchiveMeta::for_post() and the handle_sort
- * path references ArchiveMeta::META_ARCHIVE_DATE, ArchiveMeta is declared
+ * intentionally exercises ArchiveMeta::for_post(), ArchiveMeta is declared
  * at class level so its coverage is credited.
+ *
+ * The meta-aware sorting cluster (handle_sort() / filter_sort_join() /
+ * filter_sort_orderby()) moved to ArchivedPostStatus\Admin\ArchiveColumnSort
+ * as part of the 0.4.0 restructure; its tests moved to
+ * ArchiveColumnSortTest.
  */
 
 use ArchivedPostStatus\Admin\ArchiveColumn;
@@ -54,12 +57,13 @@ class ArchiveColumnTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * hooks() registers exactly three descriptors: the `pre_get_posts`
-	 * sorting action, the `the_posts` user-cache-priming filter, and the
-	 * `wp_loaded` deferral that later registers the per-post-type column
-	 * hooks (see
+	 * hooks() registers exactly two descriptors: the `the_posts`
+	 * user-cache-priming filter, and the `wp_loaded` deferral that later
+	 * registers the per-post-type column hooks (see
 	 * test_register_post_type_hooks_registers_column_hooks_per_supported_post_type()
-	 * below).
+	 * below). The `pre_get_posts` sorting action moved to
+	 * ArchiveColumnSort::hooks() as part of the 0.4.0 restructure — see
+	 * ArchiveColumnSortTest::test_hooks_registers_the_pre_get_posts_sort_action().
 	 *
 	 * Before the 0.4.0 CPT-timing fix, hooks() enumerated
 	 * aps_get_supported_post_types() directly and built three descriptors
@@ -70,14 +74,13 @@ class ArchiveColumnTest extends TestCase {
 	 *
 	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::hooks
 	 */
-	public function test_hooks_registers_sort_action_and_defers_column_hooks_to_wp_loaded() {
+	public function test_hooks_registers_user_cache_priming_and_defers_column_hooks_to_wp_loaded() {
 		$descriptors = $this->column->hooks();
 
-		$this->assertCount( 3, $descriptors );
+		$this->assertCount( 2, $descriptors );
 
 		$hook_names = array_map( static fn( $d ) => $d->hook, $descriptors );
 
-		$this->assertContains( 'pre_get_posts', $hook_names );
 		$this->assertContains( 'the_posts', $hook_names );
 		$this->assertContains( 'wp_loaded', $hook_names );
 	}
@@ -886,388 +889,6 @@ class ArchiveColumnTest extends TestCase {
 			'<span>[[Archived by [[Alice Editor]]]]</span><br><span class="aps-archive-datetime">[[November 14, 2023 at 10:13 pm]]</span>',
 			$output
 		);
-	}
-
-	// -----------------------------------------------------------------------
-	// handle_sort
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Regression: a naive `$query->set( 'meta_key', ... )` hands
-	 * ordering off to WP_Query's meta_query machinery, which builds a JOIN
-	 * + WHERE that only matches posts that HAVE a postmeta row for that
-	 * key — silently dropping every post that doesn't. That population is
-	 * not hypothetical: posts archived under pre-0.4.0 releases wrote no
-	 * archive postmeta at all (see ArchiveMeta::for_post()'s legacy branch
-	 * and Plugin::has_pre_040_content()), so clicking the Archived column
-	 * header would make that content vanish from the list with no error
-	 * and no explanation.
-	 *
-	 * On an admin main query with `orderby=aps_archived`, handle_sort()
-	 * must therefore never touch the query directly via `set()` at all —
-	 * it instead registers scoped `posts_join` / `posts_orderby` filters
-	 * (see the filter_sort_join() / filter_sort_orderby() tests below) that
-	 * LEFT JOIN + COALESCE so meta-less rows sort to one end instead of
-	 * disappearing.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 */
-	public function test_handle_sort_registers_scoped_join_and_orderby_filters_instead_of_exclusionary_meta_key() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-
-		// The exclusionary `set( 'meta_key', ... )` / `set( 'orderby', 'meta_value_num' )`
-		// path must never run again — it drops meta-less rows entirely.
-		$query->shouldReceive( 'set' )->never();
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		// WP_Mock verifies the expectFilterAdded() expectations during tearDown.
-		$this->addToAssertionCount( 1 );
-	}
-
-	/**
-	 * filter_sort_join() LEFT JOINs wp_postmeta on the archive-date key so
-	 * meta-less posts still appear in the JOINed result set — a LEFT JOIN,
-	 * unlike the INNER-JOIN-like WHERE the old `set( 'meta_key', ... )`
-	 * path produced, cannot exclude rows on its own.
-	 *
-	 * The scoping proof is the second half of this test: invoked for a
-	 * DIFFERENT \WP_Query instance than the one handle_sort() opted in, it
-	 * must return $join completely untouched. That identity check is what
-	 * actually stops this filter from leaking onto some other query later
-	 * in the same admin page load — a leaked posts_join would corrupt every
-	 * query on the page, which is a far worse bug than the one being fixed
-	 * here.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_join
-	 */
-	public function test_filter_sort_join_left_joins_postmeta_for_the_scoped_query_only() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-		$query->shouldReceive( 'set' )->never();
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		global $wpdb;
-		$wpdb = new class() {
-			public $posts    = 'wp_posts';
-			public $postmeta = 'wp_postmeta';
-
-			/** @var array<int, array{query: string, args: array<int, mixed>}> */
-			public array $prepared_queries = array();
-
-			/**
-			 * @param string $query Prepared query template.
-			 * @param mixed  ...$args Bound parameters.
-			 * @return string
-			 */
-			public function prepare( $query, ...$args ) {
-				$this->prepared_queries[] = array(
-					'query' => $query,
-					'args'  => $args,
-				);
-				return $query;
-			}
-		};
-
-		$joined = $this->column->filter_sort_join( ' INNER JOIN wp_term_relationships ON ( wp_posts.ID = wp_term_relationships.object_id )', $query );
-
-		$this->assertStringContainsString( 'LEFT JOIN', $joined );
-		$this->assertStringContainsString( $wpdb->postmeta, $joined );
-		$this->assertStringNotContainsString( 'INNER JOIN wp_postmeta', $joined );
-		$this->assertCount( 1, $wpdb->prepared_queries, 'expected exactly one prepared LEFT JOIN fragment' );
-		$this->assertSame(
-			ArchiveMeta::META_ARCHIVE_DATE,
-			$wpdb->prepared_queries[0]['args'][0],
-			'the JOIN must match on the archive-date meta key'
-		);
-
-		// Scoping proof: a query the sort was never applied to must come
-		// back with $join completely unchanged.
-		$other_query = \Mockery::mock( 'WP_Query' );
-		$unchanged   = $this->column->filter_sort_join( ' original join', $other_query );
-		$this->assertSame( ' original join', $unchanged, 'the filter must be a no-op for any query other than the one scoped in handle_sort()' );
-	}
-
-	/**
-	 * filter_sort_orderby() sorts by the LEFT JOINed archive-date value via
-	 * `COALESCE( ..., 0 )`, so meta-less rows land at one end of the sort
-	 * instead of being excluded, and it respects the query's own `order`
-	 * query var instead of hardcoding a direction — the column header's
-	 * normal ASC/DESC toggle-on-click behavior still has to work.
-	 *
-	 * Same scoping proof as filter_sort_join(): a different \WP_Query
-	 * instance must get $orderby back unchanged.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
-	 */
-	public function test_filter_sort_orderby_coalesces_meta_less_rows_and_respects_query_order() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-		$query->shouldReceive( 'set' )->never();
-		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( 'asc' );
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		$orderby = $this->column->filter_sort_orderby( 'wp_posts.post_date DESC', $query );
-
-		$this->assertStringContainsString( 'COALESCE', $orderby );
-		$this->assertStringContainsString( 'ASC', $orderby );
-		$this->assertStringNotContainsString( 'meta_value_num', $orderby );
-
-		// Scoping proof: a query the sort was never applied to must come
-		// back with $orderby completely unchanged.
-		$other_query = \Mockery::mock( 'WP_Query' );
-		$unchanged   = $this->column->filter_sort_orderby( 'original orderby', $other_query );
-		$this->assertSame( 'original orderby', $unchanged, 'the filter must be a no-op for any query other than the one scoped in handle_sort()' );
-	}
-
-	/**
-	 * When the query's `order` var is neither 'ASC' nor 'DESC' (e.g. unset,
-	 * empty string), filter_sort_orderby() must default to DESC rather than
-	 * emitting an incomplete/invalid ORDER BY fragment.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
-	 */
-	public function test_filter_sort_orderby_defaults_to_desc_for_an_unrecognized_order_value() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-		$query->shouldReceive( 'set' )->never();
-		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( '' );
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		$orderby = $this->column->filter_sort_orderby( '', $query );
-
-		$this->assertStringContainsString( 'DESC', $orderby );
-	}
-
-	// -----------------------------------------------------------------------
-	// Exact-match pins (Phase 0a) — see docs/plans/0.4.0-refactor.md Step 0.
-	//
-	// The loose assertStringContainsString() checks above (LEFT JOIN,
-	// COALESCE, ASC, DESC) would still pass if a refactor restructured the
-	// clause or swapped LEFT for INNER while leaving the literal 'LEFT JOIN'
-	// elsewhere in the string. These pins assert the complete generated
-	// fragment byte for byte against the CURRENT implementation, so
-	// ArchiveColumnSortSql (the class this SQL is slated to move into) has
-	// an exact contract to reproduce rather than a fuzzy one.
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Exact-match pin for filter_sort_join()'s complete output for the
-	 * scoped query, including the wpdb double's prepare() returning its
-	 * template argument unchanged ('%s )') — that literal is part of the
-	 * pinned contract, not an artifact to clean up.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_join
-	 */
-	public function test_filter_sort_join_pins_the_exact_fragment_for_the_scoped_query() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-		$query->shouldReceive( 'set' )->never();
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		global $wpdb;
-		$wpdb = new class() {
-			public $posts    = 'wp_posts';
-			public $postmeta = 'wp_postmeta';
-
-			/** @var array<int, array{query: string, args: array<int, mixed>}> */
-			public array $prepared_queries = array();
-
-			/**
-			 * @param string $query Prepared query template.
-			 * @param mixed  ...$args Bound parameters.
-			 * @return string
-			 */
-			public function prepare( $query, ...$args ) {
-				$this->prepared_queries[] = array(
-					'query' => $query,
-					'args'  => $args,
-				);
-				return $query;
-			}
-		};
-
-		$joined = $this->column->filter_sort_join( ' INNER JOIN wp_term_relationships ON ( wp_posts.ID = wp_term_relationships.object_id )', $query );
-
-		$this->assertSame(
-			' INNER JOIN wp_term_relationships ON ( wp_posts.ID = wp_term_relationships.object_id )'
-			. ' LEFT JOIN wp_postmeta AS aps_archive_sort'
-			. ' ON ( aps_archive_sort.post_id = wp_posts.ID AND aps_archive_sort.meta_key = %s )',
-			$joined,
-			'the complete generated LEFT JOIN fragment must match byte for byte'
-		);
-	}
-
-	/**
-	 * Exact-match pin for filter_sort_orderby()'s complete output when the
-	 * query's `order` var is 'asc'.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
-	 */
-	public function test_filter_sort_orderby_pins_the_exact_output_for_asc() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-		$query->shouldReceive( 'set' )->never();
-		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( 'asc' );
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		$orderby = $this->column->filter_sort_orderby( 'wp_posts.post_date DESC', $query );
-
-		$this->assertSame( 'COALESCE( aps_archive_sort.meta_value + 0, 0 ) ASC', $orderby );
-	}
-
-	/**
-	 * Exact-match pin for filter_sort_orderby()'s complete output when the
-	 * query's `order` var is 'desc'.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
-	 */
-	public function test_filter_sort_orderby_pins_the_exact_output_for_desc() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-		$query->shouldReceive( 'set' )->never();
-		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( 'desc' );
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		$orderby = $this->column->filter_sort_orderby( 'wp_posts.post_date ASC', $query );
-
-		$this->assertSame( 'COALESCE( aps_archive_sort.meta_value + 0, 0 ) DESC', $orderby );
-	}
-
-	/**
-	 * Exact-match pin for filter_sort_orderby()'s complete output when the
-	 * query's `order` var is neither 'ASC' nor 'DESC' — proving the DESC
-	 * fallback produces the exact same fragment as an explicit 'desc'.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
-	 */
-	public function test_filter_sort_orderby_pins_the_exact_output_for_an_unrecognized_order_value() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
-		$query->shouldReceive( 'set' )->never();
-		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( 'banana' );
-
-		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
-		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
-
-		$this->column->handle_sort( $query );
-
-		$orderby = $this->column->filter_sort_orderby( '', $query );
-
-		$this->assertSame( 'COALESCE( aps_archive_sort.meta_value + 0, 0 ) DESC', $orderby );
-	}
-
-	/**
-	 * On a secondary query (is_main_query() === false), handle_sort()
-	 * returns without touching meta_key/orderby — only the main admin
-	 * list-table query is rewritten.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 */
-	public function test_handle_sort_does_not_rewrite_for_secondary_query() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->andReturn( false );
-		$query->shouldReceive( 'set' )->never();
-
-		$this->column->handle_sort( $query );
-
-		$this->addToAssertionCount( 1 );
-	}
-
-	/**
-	 * When the orderby query var isn't ours, handle_sort() leaves the
-	 * query alone — even when the main-query / admin gates pass.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 */
-	public function test_handle_sort_does_not_rewrite_for_unrelated_orderby() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->andReturn( true );
-		$query->shouldReceive( 'get' )->with( 'orderby' )->andReturn( 'date' );
-		$query->shouldReceive( 'set' )->never();
-
-		$this->column->handle_sort( $query );
-
-		$this->addToAssertionCount( 1 );
-	}
-
-	/**
-	 * Outside the admin (`is_admin()` false), handle_sort() returns without
-	 * consulting the query at all.
-	 *
-	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
-	 */
-	public function test_handle_sort_does_not_rewrite_outside_admin() {
-		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
-
-		$query = \Mockery::mock( 'WP_Query' );
-		$query->shouldReceive( 'is_main_query' )->never();
-		$query->shouldReceive( 'set' )->never();
-
-		$this->column->handle_sort( $query );
-
-		$this->addToAssertionCount( 1 );
 	}
 
 	// -----------------------------------------------------------------------

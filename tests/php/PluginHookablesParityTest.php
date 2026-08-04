@@ -74,7 +74,7 @@ class PluginHookablesParityTest extends TestCase {
 
 	/**
 	 * The hookable list under the canonical (admin + archive-meta-enabled,
-	 * no WP-CLI) composition is exactly 12 hookables today. This is a
+	 * no WP-CLI) composition is exactly 13 hookables today. This is a
 	 * parity snapshot — a delta here means something slipped into (or was
 	 * silently dropped from) the composition root.
 	 *
@@ -84,7 +84,7 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			12,
+			13,
 			$hookables,
 			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
@@ -123,18 +123,20 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Admin\PostEditorGuard::class,
 			ArchivedPostStatus\Settings\HookAdapter::class,
 			ArchivedPostStatus\Archive\ArchiveMetaListener::class,
-			// PostEditor, Notices, PostList, ArchiveColumn, and PluginScreen are
-			// the is_admin()-gated admin-only block. PostEditor and Notices
-			// moved here in the perf fix that gated them on is_admin() -- every
-			// hook either one registers only fires on an actual wp-admin page
-			// load, so hooking them on every request (front end, WP-CLI) was
-			// pure overhead. PostEditorGuard stays in the unconditional spine
-			// above -- its map_meta_cap filter runs on every capability check
-			// anywhere, not just inside wp-admin.
+			// PostEditor, Notices, PostList, ArchiveColumn, ArchiveColumnSort,
+			// and PluginScreen are the is_admin()-gated admin-only block.
+			// PostEditor and Notices moved here in the perf fix that gated
+			// them on is_admin() -- every hook either one registers only
+			// fires on an actual wp-admin page load, so hooking them on
+			// every request (front end, WP-CLI) was pure overhead.
+			// PostEditorGuard stays in the unconditional spine above -- its
+			// map_meta_cap filter runs on every capability check anywhere,
+			// not just inside wp-admin.
 			ArchivedPostStatus\Admin\PostEditor::class,
 			ArchivedPostStatus\Admin\Notices::class,
 			ArchivedPostStatus\Admin\PostList::class,
 			ArchivedPostStatus\Admin\ArchiveColumn::class,
+			ArchivedPostStatus\Admin\ArchiveColumnSort::class,
 			ArchivedPostStatus\Admin\PluginScreen::class,
 		);
 
