@@ -305,14 +305,6 @@ final class ArchiveColumn implements HookableInterface {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * Alias for the wp_postmeta row LEFT JOINed in filter_sort_join().
-	 * Prefixed so it cannot collide with a join core or another plugin added.
-	 *
-	 * @since 0.4.0
-	 */
-	private const SORT_JOIN_ALIAS = 'aps_archive_sort';
-
-	/**
 	 * The query handle_sort() opted into meta-aware sorting for. Compared by
 	 * identity inside the posts_join / posts_orderby filters so they are a
 	 * no-op for every other query on the page.
@@ -354,9 +346,6 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * LEFT JOIN wp_postmeta on the archive-date key.
 	 *
-	 * LEFT, not INNER, so posts with no archive-date row stay in the result set
-	 * for filter_sort_orderby() to sort rather than being excluded.
-	 *
 	 * Once registered this filter runs for every WP_Query on the page, so the
 	 * identity check against $this->sort_query is what keeps it from leaking
 	 * onto a secondary query in the same request.
@@ -364,6 +353,8 @@ final class ArchiveColumn implements HookableInterface {
 	 * @param string    $join  The current JOIN clause.
 	 * @param \WP_Query $query The query being filtered.
 	 * @return string
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- stateless SQL-fragment builder.
 	 */
 	public function filter_sort_join( string $join, \WP_Query $query ): string {
 		if ( $query !== $this->sort_query ) {
@@ -372,38 +363,28 @@ final class ArchiveColumn implements HookableInterface {
 
 		global $wpdb;
 
-		return $join
-			. ' LEFT JOIN ' . $wpdb->postmeta . ' AS ' . self::SORT_JOIN_ALIAS
-			. ' ON ( ' . self::SORT_JOIN_ALIAS . '.post_id = ' . $wpdb->posts . '.ID AND '
-			. self::SORT_JOIN_ALIAS . '.meta_key = '
-			. $wpdb->prepare( '%s )', ArchiveMeta::META_ARCHIVE_DATE );
+		return $join . ArchiveColumnSortSql::join( $wpdb );
 	}
 
 	/**
 	 * Order by the LEFT JOINed archive-date value.
 	 *
-	 * `COALESCE( …, 0 )` replaces the NULL the LEFT JOIN leaves on meta-less
-	 * rows so they sort to one end. `+ 0` numeric-casts the stored value the
-	 * way `meta_value_num` would, archive_date being a Unix timestamp. The
-	 * direction comes from the query's own `order` var so the column header's
-	 * toggle-on-click keeps working.
+	 * The direction comes from the query's own `order` var so the column
+	 * header's toggle-on-click keeps working.
 	 *
 	 * Scoped by identity like filter_sort_join().
 	 *
 	 * @param string    $orderby The current ORDER BY clause.
 	 * @param \WP_Query $query   The query being filtered.
 	 * @return string
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- stateless SQL-fragment builder.
 	 */
 	public function filter_sort_orderby( string $orderby, \WP_Query $query ): string {
 		if ( $query !== $this->sort_query ) {
 			return $orderby;
 		}
 
-		$order = strtoupper( (string) $query->get( 'order' ) );
-		if ( 'ASC' !== $order && 'DESC' !== $order ) {
-			$order = 'DESC';
-		}
-
-		return 'COALESCE( ' . self::SORT_JOIN_ALIAS . '.meta_value + 0, 0 ) ' . $order;
+		return ArchiveColumnSortSql::order_by( (string) $query->get( 'order' ) );
 	}
 }
