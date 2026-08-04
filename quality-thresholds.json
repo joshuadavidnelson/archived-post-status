@@ -1,0 +1,27 @@
+{
+  "_comment": "Single source of truth for coverage floors and code-metric ceilings. Read by jest.config.js, the CI coverage check and the PR report renderer, so a number changes in one place. Floors sit a few points below current values: enough slack for changes that legitimately add uncovered lines, tight enough that a real regression fails. The PR report shows the delta against the base branch, so a fractional dip is visible to a reviewer without failing the build.",
+  "coverage": {
+    "php": {
+      "lines": 90,
+      "methods": 90
+    },
+    "js": {
+      "statements": 95,
+      "branches": 90,
+      "functions": 95,
+      "lines": 95
+    }
+  },
+  "metrics": {
+    "_comment": "Only metrics listed in max are reported in the PR comment. Every one is a ceiling, so worse always means higher. Keys in gate fail CI; the rest annotate the comment.",
+    "max": {
+      "critical": 0,
+      "error": 0,
+      "avgCyclomaticComplexityByClass": 8,
+      "logicalLinesByMethod": 12,
+      "lackCohesionOfMethods": 3.5,
+      "avgEfferentCoupling": 4
+    },
+    "gate": [ "critical", "error" ]
+  }
+}

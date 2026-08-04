@@ -24,6 +24,7 @@ playwright.config.ts
 .wp-env.json
 .wp-env.override.json
 phpmd.xml
+quality-thresholds.json
 
 # Composer and npm files
 composer.json

@@ -40,6 +40,9 @@
     "phpunit:coverage": [
       "@php -dpcov.enabled=0 -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-text"
     ],
+"phpunit:coverage-clover": [
+  "@php -dpcov.enabled=0 -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-clover coverage/php-clover.xml"
+],
     "phpunit:coverage-html": [
       "@php -dpcov.enabled=0 -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-html coverage"
     ],
