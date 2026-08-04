@@ -94,9 +94,12 @@ final class Plugin {
 		}
 
 		if ( is_admin() ) {
+			$bulk_handler = new Admin\BulkActionHandler();
+
 			$hookables[] = new Admin\PostEditor();
 			$hookables[] = new Admin\Notices( new Admin\NoticeBuilder() );
-			$hookables[] = new Admin\PostList( new Admin\BulkActionHandler() );
+			$hookables[] = new Admin\PostList( $bulk_handler );
+			$hookables[] = new Admin\PostActionHandler( $bulk_handler );
 			$hookables[] = new Admin\ArchiveColumn();
 			$hookables[] = new Admin\ArchiveColumnSort();
 			$hookables[] = new Admin\PluginScreen();

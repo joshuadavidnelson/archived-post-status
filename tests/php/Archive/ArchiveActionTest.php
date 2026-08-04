@@ -66,7 +66,7 @@ class ArchiveActionTest extends TestCase {
 
 	/**
 	 * capability_function() returns the aps_current_user_can_* function name
-	 * used by PostList::handle_post_action() for variable-function dispatch.
+	 * used by PostActionHandler::handle_post_action() for variable-function dispatch.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveAction::capability_function
 	 */
@@ -165,16 +165,16 @@ class ArchiveActionTest extends TestCase {
 	// locked_message() / failure_message() / denied_message()
 	// -----------------------------------------------------------------------
 	//
-	// PostList::handle_post_action() is shared by both directions but its
+	// PostActionHandler::handle_post_action() is shared by both directions but its
 	// wp_die() copy used to be archive-only regardless of which action was
 	// running. These three accessors give each direction its own complete,
 	// independently translatable string — not a shared template assembled by
-	// concatenating a direction word into it — so PostList can select the
+	// concatenating a direction word into it — so PostActionHandler can select the
 	// right copy without ever building a sentence out of fragments.
 
 	/**
 	 * locked_message() names the archive action and carries the %s
-	 * placeholder PostList fills in with the locking user's display name.
+	 * placeholder PostActionHandler fills in with the locking user's display name.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveAction::locked_message
 	 */

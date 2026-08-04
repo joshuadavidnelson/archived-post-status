@@ -193,6 +193,7 @@ class PluginTest extends TestCase {
 	/**
 	 * The admin-only set — PostEditor (editor assets + classic-editor
 	 * button), Notices (admin_notices), PostList (post list table),
+	 * PostActionHandler (the single-post archive/unarchive admin actions),
 	 * ArchiveColumn (the archive metadata column), ArchiveColumnSort (the
 	 * column's meta-aware sorting), and PluginScreen (the deactivation
 	 * warning) — only matter on admin page loads. Gating them via
@@ -211,6 +212,7 @@ class PluginTest extends TestCase {
 		$this->assertContains( ArchivedPostStatus\Admin\PostEditor::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PostList::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\PostActionHandler::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
@@ -256,12 +258,61 @@ class PluginTest extends TestCase {
 	}
 
 	/**
+	 * `PostActionHandler` needs `BulkActionHandler::get_redirect_url()` for
+	 * its own redirect composition, so `Plugin::hookables()` must inject the
+	 * SAME `BulkActionHandler` instance into both `PostList` and
+	 * `PostActionHandler` — not merely an equivalent one. `assertSame`
+	 * (identity), not `assertInstanceOf` (type), is the only assertion that
+	 * actually pins that invariant; two separately-`new`'d instances would
+	 * pass an `assertInstanceOf`-only check while still being observably
+	 * different objects.
+	 *
+	 * Same reflection pattern as
+	 * {@see test_hookables_constructs_post_list_with_bulk_action_handler_dependency()}
+	 * above, applied to both hookables' private readonly properties.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::hookables
+	 */
+	public function test_hookables_construct_post_list_and_post_action_handler_with_the_same_bulk_action_handler_instance() {
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$hookables = $this->invoke_hookables();
+
+		$post_list           = null;
+		$post_action_handler = null;
+		foreach ( $hookables as $hookable ) {
+			if ( $hookable instanceof ArchivedPostStatus\Admin\PostList ) {
+				$post_list = $hookable;
+			}
+			if ( $hookable instanceof ArchivedPostStatus\Admin\PostActionHandler ) {
+				$post_action_handler = $hookable;
+			}
+		}
+
+		$this->assertNotNull( $post_list, 'PostList must appear in hookables() when is_admin is true' );
+		$this->assertNotNull( $post_action_handler, 'PostActionHandler must appear in hookables() when is_admin is true' );
+
+		$post_list_property = new ReflectionProperty( ArchivedPostStatus\Admin\PostList::class, 'bulk_handler' );
+		$post_list_property->setAccessible( true );
+
+		$post_action_handler_property = new ReflectionProperty( ArchivedPostStatus\Admin\PostActionHandler::class, 'bulk_handler' );
+		$post_action_handler_property->setAccessible( true );
+
+		$this->assertSame(
+			$post_list_property->getValue( $post_list ),
+			$post_action_handler_property->getValue( $post_action_handler ),
+			'PostList and PostActionHandler must share the exact same BulkActionHandler instance'
+		);
+	}
+
+	/**
 	 * Mirror: under a non-admin request (front-end page view, REST API
-	 * call, etc.), none of PostEditor, Notices, PostList, ArchiveColumn,
-	 * ArchiveColumnSort, or PluginScreen should appear. Every hook they
-	 * register only fires on an actual wp-admin page load, so composing
-	 * them anyway burns autoloader cycles and makes the dependency graph
-	 * less honest.
+	 * call, etc.), none of PostEditor, Notices, PostList,
+	 * PostActionHandler, ArchiveColumn, ArchiveColumnSort, or PluginScreen
+	 * should appear. Every hook they register only fires on an actual
+	 * wp-admin page load, so composing them anyway burns autoloader cycles
+	 * and makes the dependency graph less honest.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -274,6 +325,7 @@ class PluginTest extends TestCase {
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostEditor::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostList::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\PostActionHandler::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
