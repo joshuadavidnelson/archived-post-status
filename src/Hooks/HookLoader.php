@@ -13,7 +13,7 @@ use ArchivedPostStatus\Contracts\HookableInterface;
  *
  * Classes that call add_action()/add_filter() directly are doing so for hooks
  * that are conditional or short-lived rather than standing registrations —
- * ArchiveColumn's sort filters, BulkActionHandler and Registrar's bracketed
+ * ArchiveColumnSort's sort filters, BulkActionHandler and Registrar's bracketed
  * undo/status overrides, PostStatusGuard's recursion guard. Those are
  * deliberate exceptions, not gaps.
  *

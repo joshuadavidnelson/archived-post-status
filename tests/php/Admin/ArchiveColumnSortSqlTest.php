@@ -9,10 +9,9 @@
  * Direct unit coverage on the static join() / order_by() SQL-fragment
  * builders. Both are pure functions of their arguments, so these tests pass
  * an inline anonymous $wpdb double rather than manipulating the `global
- * $wpdb` or standing up a WP_Query — see
- * {@see ArchivedPostStatus\Tests\Admin\ArchiveColumnTest} for the
- * ArchiveColumn::filter_sort_join() / filter_sort_orderby() pins that prove
- * the delegation still produces byte-identical output.
+ * $wpdb` or standing up a WP_Query — see {@see ArchiveColumnSortTest} for the
+ * ArchiveColumnSort::filter_sort_join() / filter_sort_orderby() pins that
+ * prove the delegation still produces byte-identical output.
  */
 
 use ArchivedPostStatus\Admin\ArchiveColumnSortSql;

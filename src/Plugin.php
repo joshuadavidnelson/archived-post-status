@@ -98,6 +98,7 @@ final class Plugin {
 			$hookables[] = new Admin\Notices( new Admin\NoticeBuilder() );
 			$hookables[] = new Admin\PostList( new Admin\BulkActionHandler() );
 			$hookables[] = new Admin\ArchiveColumn();
+			$hookables[] = new Admin\ArchiveColumnSort();
 			$hookables[] = new Admin\PluginScreen();
 		}
 

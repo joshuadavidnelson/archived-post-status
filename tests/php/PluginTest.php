@@ -193,9 +193,10 @@ class PluginTest extends TestCase {
 	/**
 	 * The admin-only set — PostEditor (editor assets + classic-editor
 	 * button), Notices (admin_notices), PostList (post list table),
-	 * ArchiveColumn (the archive metadata column), and PluginScreen (the
-	 * deactivation warning) — only matter on admin page loads. Gating them
-	 * via is_admin() avoids hooking front-end/CLI requests with admin-only
+	 * ArchiveColumn (the archive metadata column), ArchiveColumnSort (the
+	 * column's meta-aware sorting), and PluginScreen (the deactivation
+	 * warning) — only matter on admin page loads. Gating them via
+	 * is_admin() avoids hooking front-end/CLI requests with admin-only
 	 * hooks (admin_enqueue_scripts, post_submitbox_start, admin_notices,
 	 * etc.) that would never fire there anyway.
 	 *
@@ -211,6 +212,7 @@ class PluginTest extends TestCase {
 		$this->assertContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 	}
 
@@ -255,10 +257,11 @@ class PluginTest extends TestCase {
 
 	/**
 	 * Mirror: under a non-admin request (front-end page view, REST API
-	 * call, etc.), none of PostEditor, Notices, PostList, ArchiveColumn, or
-	 * PluginScreen should appear. Every hook they register only fires on an
-	 * actual wp-admin page load, so composing them anyway burns autoloader
-	 * cycles and makes the dependency graph less honest.
+	 * call, etc.), none of PostEditor, Notices, PostList, ArchiveColumn,
+	 * ArchiveColumnSort, or PluginScreen should appear. Every hook they
+	 * register only fires on an actual wp-admin page load, so composing
+	 * them anyway burns autoloader cycles and makes the dependency graph
+	 * less honest.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -272,6 +275,7 @@ class PluginTest extends TestCase {
 		$this->assertNotContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 	}
 
