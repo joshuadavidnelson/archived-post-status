@@ -8,10 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Represents the metadata saved when a post is archived.
  *
- * A readonly value object that centralizes all knowledge about what gets stored
- * when a post is archived. In the original code, these meta key strings appear
- * scattered across multiple files.
- *
  * @since 0.4.0
  */
 final class ArchiveMeta {
@@ -69,8 +65,7 @@ final class ArchiveMeta {
 	/**
 	 * Create ArchiveMeta from stored post meta.
 	 *
-	 * Returns actual values from database. For legacy archives,
-	 * archive_date and archive_user will be 0.
+	 * Pre-0.4.0 archives wrote no date or user meta, so those read back as 0.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to read meta from.
@@ -80,7 +75,7 @@ final class ArchiveMeta {
 		$previous_status = get_post_meta( $post_id, self::META_PREVIOUS_STATUS, true );
 
 		if ( empty( $previous_status ) ) {
-			return null; // Post was never archived
+			return null;
 		}
 
 		$archive_date   = (int) get_post_meta( $post_id, self::META_ARCHIVE_DATE, true );
@@ -90,8 +85,8 @@ final class ArchiveMeta {
 
 		return new self(
 			$previous_status,
-			$archive_date, // 0 for legacy archives
-			$archive_user, // 0 for legacy archives
+			$archive_date,
+			$archive_user,
 			$comment_status ?: 'closed',
 			$ping_status ?: 'closed'
 		);
@@ -100,10 +95,10 @@ final class ArchiveMeta {
 	/**
 	 * Save this archive meta to post meta.
 	 *
-	 * update_post_meta() keeps the write idempotent: if a prior cycle left
-	 * stale rows behind (meta cleanup on unarchive is best-effort), a
-	 * re-archive overwrites them instead of appending duplicates that
-	 * get_post_meta( ..., true ) would resolve to the oldest row.
+	 * update_post_meta() rather than add_post_meta() keeps this idempotent:
+	 * unarchive meta cleanup is best-effort, so a re-archive must overwrite any
+	 * stale rows instead of appending duplicates that `get_post_meta( …, true )`
+	 * would then resolve to the oldest row.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to save meta to.

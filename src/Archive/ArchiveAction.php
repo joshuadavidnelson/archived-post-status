@@ -8,10 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * The two actions that can be performed on a post's archive status.
  *
- * A backed enum that eliminates magic strings 'archive' and 'unarchive'
- * that appear throughout the codebase in nonce keys, URL params, switch
- * statements, and query args.
- *
  * @since 0.4.0
  */
 enum ArchiveAction: string {
@@ -48,15 +44,13 @@ enum ArchiveAction: string {
 	}
 
 	/**
-	 * The message shown when this action is denied because another user
-	 * currently holds the post's edit lock. Carries one %s placeholder,
-	 * filled in by the caller (via sprintf()) with the locking user's
+	 * The message shown when this action is denied because another user holds
+	 * the post's edit lock. Carries one %s placeholder for the locking user's
 	 * display name.
 	 *
-	 * Archive and Unarchive each get their own complete, independently
-	 * translatable string rather than a shared template assembled by
-	 * concatenating a direction word into it — concatenation breaks
-	 * translations that need to reorder or inflect around the verb.
+	 * Each case gets its own complete string rather than one template with the
+	 * verb concatenated in — concatenation breaks translations that need to
+	 * reorder or inflect around the verb.
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -102,15 +96,9 @@ enum ArchiveAction: string {
 	/**
 	 * Perform this action on a post by calling the appropriate public API function.
 	 *
-	 * Centralises the dispatch so callers (PostList, CLI) never branch on
-	 * action type to decide which function to call.
-	 *
-	 * Return type mirrors `aps_archive_post()` / `aps_unarchive_post()`
-	 * (and, in turn, `ArchiveOperation::perform()` / `UnarchiveOperation::perform()`):
-	 * `\WP_Post|bool`, not `\WP_Post|false`. Both functions pass the
-	 * `aps_pre_archive_post` / `aps_pre_unarchive_post` filter's return value
-	 * through when it is non-null, and that filter is documented as
-	 * `bool|null` — so a site-registered `true` must be a legal return here.
+	 * Returns `\WP_Post|bool` rather than `\WP_Post|false` because the
+	 * `aps_pre_archive_post` / `aps_pre_unarchive_post` filters pass any
+	 * non-null return straight through, and a site-registered `true` is legal.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to act on.

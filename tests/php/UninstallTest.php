@@ -6,9 +6,9 @@
  * @package ArchivedPostStatus
  * @covers ::aps_uninstall_site
  *
- * Pins the 0.4.0 refactor contract that runs when a site administrator
- * deletes the plugin: removes the settings option, the version option,
- * and every `_aps_archive_meta_*` postmeta row.
+ * Pins what runs when a site administrator deletes the plugin: removal of the
+ * settings option, the version option, and every `_aps_archive_meta_*`
+ * postmeta row.
  *
  * Implementation notes
  *

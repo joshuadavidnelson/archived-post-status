@@ -6,20 +6,15 @@ use Yoast\PHPUnitPolyfills\TestCases\TestCase as BaseTestCase;
  * Project base test case. Sets up / tears down WP_Mock and exposes a small
  * surface of fixture helpers.
  *
- * Note:
- *   This class previously bundled stubs for plugin-owned functions
- *   (aps_is_supported_post_type, aps_current_user_can_archive,
- *   aps_get_archive_post_link, _aps_nonce_key, etc.). Those were retired
- *   because they let tests pass when the SUT itself regressed in the
- *   stubbed function. The remaining helpers are deliberately scoped to
- *   things that live at the WordPress boundary (WP_Post fixture, the
- *   `current_user_can` + `get_post_types` + `wp_update_post` cluster).
+ * The helpers here are deliberately scoped to the WordPress boundary (WP_Post
+ * fixture, the `current_user_can` + `get_post_types` + `wp_update_post`
+ * cluster). Stubs for plugin-owned `aps_*` functions do not belong here: they
+ * let a test pass while the SUT regresses inside the stubbed function.
  *
- *   New tests should stub WP functions inline in the test body so the
- *   intent stays visible at the call site. Stubbing aps_* / _aps_*
- *   functions in tests is a smell — register the upstream filter the
- *   real function consumes, or assert on the SUT's observable output
- *   end-to-end instead.
+ * New tests should stub WP functions inline in the test body so the intent
+ * stays visible at the call site. To exercise `aps_*` behavior, register the
+ * upstream filter the real function consumes, or assert on the SUT's
+ * observable output end-to-end.
  */
 class TestCase extends BaseTestCase {
 

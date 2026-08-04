@@ -9,8 +9,7 @@
  * Direct unit coverage on the static `RowActionPolicy::for_post()` helper.
  * The cross-product parity is pinned in
  * {@see RowActionPolicyParitySnapshotTest}; this file targets the three
- * branches the 0.4.0 refactor plan called out as coverage holes on
- * `PostList::row_actions()`:
+ * hard-to-reach branches of `PostList::row_actions()`:
  *
  *   1. archivable status + cannot archive → no `archive` entry.
  *   2. archive status + cannot unarchive  → no `unarchive` entry; edit/view kept.
@@ -93,7 +92,7 @@ class RowActionPolicyTest extends TestCase {
 	}
 
 	/**
-	 * Coverage hole #1 (from the 0.4.0 refactor plan): publish status + cannot archive.
+	 * Coverage hole #1: publish status + cannot archive.
 	 * The archive branch is gated on capability, so the actions array comes
 	 * back unchanged — no `archive` entry, no `unarchive` entry, original
 	 * `edit`/`view`/`inline` keys all preserved.

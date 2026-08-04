@@ -2,10 +2,8 @@
 /**
  * ArchiveCommand validation/execution tests.
  *
- * Absorbs the archive-flow scenarios that previously lived in CLITest under
- * the `test_handle_action_*` names. Each test exercises the pipeline via the
- * public Command::run() entry point — no reflection. No WP_CLI static stub
- * is needed (those concerns live in CommandRunnerTest).
+ * Each test exercises the pipeline via the public Command::run() entry point.
+ * The WP_CLI output surface is covered in CommandRunnerTest.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
@@ -279,7 +277,7 @@ namespace {
 		}
 
 		/**
-		 * §2.6: a post locked for editing by another user must be rejected
+		 * a post locked for editing by another user must be rejected
 		 * with a clear CliResult error rather than being archived out from
 		 * under the editing user. Mirrors the admin bulk-action path's
 		 * wp_check_post_lock() gate.

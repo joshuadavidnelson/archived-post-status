@@ -6,13 +6,9 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\NoticeBuilder
  *
- * the 0.4.0 refactor extracted `NoticeBuilder` from
- * `Admin\Notices`. The reflection-based `parse_ids()` data-provider from
- * `NoticesTest` moves here — `parse_ids()` is now a public method, no
- * reflection required. The two build_* methods and the `build_notices()`
- * orchestration also get direct unit tests here, separate from the
- * `Notices::display_notices()` HTML-render path tests that stay in
- * `NoticesTest`.
+ * Direct unit coverage on `parse_ids()`, the two `build_*` methods, and the
+ * `build_notices()` orchestration — separate from the
+ * `Notices::display_notices()` HTML-render tests in `NoticesTest`.
  */
 
 /**
@@ -48,7 +44,7 @@ class NoticeBuilderTest extends TestCase {
 	// and others don't. Both shapes flow through here.
 	//
 	// Moved from `NoticesTest::test_parse_ids_normalizes_inputs_to_int_array`
-	// in the 0.4.0 refactor `parse_ids()` is now public on
+	// `parse_ids()` is public on
 	// `NoticeBuilder`, so the test no longer needs ReflectionMethod.
 
 	/**

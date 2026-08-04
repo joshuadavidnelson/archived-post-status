@@ -17,10 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Validation pipeline for the unarchive command.
  *
- * Order matches the historical CLI::handle_action sequence:
- * supported-post-type → capability → lock check → not-in-archive. There is
- * no already-archived short-circuit on this path (the inverse condition is
- * checked at the end).
+ * Gate order: supported-post-type → capability → lock → not-in-archive.
  *
  * @since 0.4.0
  */
@@ -49,8 +46,7 @@ final class UnarchiveCommand extends Command {
 	 * @param array<string, mixed> $assoc_args Associative CLI flags (--status, --defer-term-counting).
 	 * @return CliResult|null Error result, or null if validation passes.
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	protected function validate( int $post_id, array $assoc_args ): ?CliResult {
 		$pt_error = $this->ensure_supported_post_type( $post_id );

@@ -26,9 +26,7 @@ final class Loader {
 
 	/**
 	 * Whether {@see register()} has already pushed this loader onto the SPL
-	 * autoload stack. Guards against double-registration if a caller invokes
-	 * `register()` twice (which would otherwise stack two copies of the
-	 * same `load_class` callable, wasting cycles on every autoload event).
+	 * autoload stack.
 	 */
 	private bool $registered = false;
 
@@ -38,22 +36,15 @@ final class Loader {
 	/**
 	 * Register a namespace prefix with a base directory.
 	 *
-	 * Private because the only legitimate caller is {@see init()} — the
-	 * loader is configured once at plugin bootstrap with a fixed mapping
-	 * (`ArchivedPostStatus` → `src/`). External code has no reason to
-	 * extend the namespace table at runtime.
-	 *
-	 * Tests that need a test-only namespace mapping reach in via reflection;
-	 * see {@see LoaderTest::add_namespace_via_reflection()}.
+	 * Private because {@see init()} is the only legitimate caller — the loader
+	 * is configured once at bootstrap with a fixed mapping.
 	 *
 	 * @since 0.4.0
 	 * @param string $prefix   The namespace prefix.
 	 * @param string $base_dir The base directory for the namespace prefix.
 	 *
-	 * @SuppressWarnings("PHPMD.UnusedPrivateMethod") -- called by {@see init()};
-	 * PHPMD's reachability analysis can't see the static `$loader->add_namespace()`
-	 * call site through `self`-typed instance dispatch on this readonly-array
-	 * pattern.
+	 * @SuppressWarnings("PHPMD.UnusedPrivateMethod") -- called by {@see init()},
+	 * which PHPMD's reachability analysis cannot see.
 	 */
 	private function add_namespace( string $prefix, string $base_dir ): void {
 		$prefix   = trim( $prefix, '\\' ) . '\\';
@@ -65,9 +56,8 @@ final class Loader {
 	/**
 	 * Register this loader with the SPL autoloader stack.
 	 *
-	 * Idempotent: a second call is a no-op so that accidental
-	 * double-bootstrapping doesn't stack two identical callbacks on the
-	 * SPL stack (each autoload event would then run `load_class` twice).
+	 * Idempotent, so accidental double-bootstrapping does not stack two
+	 * identical callbacks and run `load_class` twice per autoload event.
 	 *
 	 * @since 0.4.0
 	 */

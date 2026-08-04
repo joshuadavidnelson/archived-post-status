@@ -11,9 +11,6 @@ use ArchivedPostStatus\Hooks\HookDescriptor;
 /**
  * Registers the 'archive' post status and its admin display behavior.
  *
- * These two concerns are inseparable - both exist to present the archive status
- * in WordPress's admin UI.
- *
  * @since 0.4.0
  */
 final class PostStatus implements HookableInterface {
@@ -24,9 +21,7 @@ final class PostStatus implements HookableInterface {
 	 * @since 0.4.0
 	 * @return HookDescriptor[]
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
-	 * are named-constructor factories for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -41,9 +36,7 @@ final class PostStatus implements HookableInterface {
 	 * @since 0.4.0
 	 * @return void
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor; the static call is the
-	 * documented public surface, not a service-locator pull.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function register_status(): void {
 		register_post_status( PostStatusValue::resolved_slug(), $this->status_args() );
@@ -52,13 +45,8 @@ final class PostStatus implements HookableInterface {
 	/**
 	 * Build the args array for register_post_status().
 	 *
-	 * Each arg is filterable so site owners can override defaults.
-	 *
-	 * The `label` arg is passed through unescaped by design (§1.6):
-	 * register_post_status() 'label' is consumed by WP core, which is
-	 * responsible for escaping it at whatever output site eventually
-	 * renders it — the same way core treats its own built-in status
-	 * labels. Escaping here would double-escape once core applies its own.
+	 * `label` is passed through unescaped: core escapes status labels at its
+	 * own output sites, so escaping here would double-escape.
 	 *
 	 * @since 0.4.0
 	 * @return array<string, mixed> Args ready for register_post_status().
@@ -67,17 +55,10 @@ final class PostStatus implements HookableInterface {
 		/**
 		 * Filter the `public` register_post_status() arg for the archived status.
 		 *
-		 * Per WP core, `public` controls whether posts of this status are shown
-		 * on the front end of the site (it also influences the default of
-		 * `publicly_queryable`). `public` and `private` are **independent**
-		 * register_post_status() flags — they are not opposites; a status may
-		 * legitimately be `public=false, private=false` (internal) or even
-		 * `public=true, private=true` per WP core's contract.
-		 *
-		 * The default `! is_admin() && aps_current_user_can_view()` is a 0.4.0
-		 * refinement: the status does not claim front-end-public registration on
-		 * the admin side, where the `public` flag is not what gates admin
-		 * visibility.
+		 * `public` and `private` are independent core flags, not opposites — a
+		 * status may legitimately be both false, or both true. Here the
+		 * `is_admin()` term keeps the status from claiming front-end-public
+		 * registration in admin, where `public` is not what gates visibility.
 		 *
 		 * @since 0.1.0 Defaulted to `false`.
 		 * @since 0.3.0 Defaulted to `aps_current_user_can_view()`.
@@ -91,14 +72,9 @@ final class PostStatus implements HookableInterface {
 		/**
 		 * Filter the `private` register_post_status() arg for the archived status.
 		 *
-		 * Pre 0.4.0 this was hardcoded to `true` which caused the status to be treated as private
-		 * however we need it to be false in admin contexts to support not showing up in the main
-		 * "All" admin list and to allow the "Archived" status filter to work.
-		 *
-		 * The `is_admin()` split in `public`/`private` toggles front-end
-		 * visibility: the status is private on the front end (gated by the
-		 * view capability), while in admin both flags stay false so the
-		 * "All" list exclusion and the "Archived" filter work.
+		 * Private on the front end (gated by the view capability), false in
+		 * admin so the "All" list exclusion and the "Archived" status filter
+		 * both work. Pre-0.4.0 this was hardcoded `true`, which broke both.
 		 *
 		 * @since 0.3.0 Defaulted to `true`.
 		 * @since 0.4.0 Changed default to `! is_admin()`.
@@ -157,11 +133,9 @@ final class PostStatus implements HookableInterface {
 
 		return array(
 			'label'                     => aps_archived_label_string(),
-			// Not a real register_post_status() arg — core ignores it. Kept
-			// deliberately as advisory metadata: it declares the plugin's
-			// supported-type mapping on the status object itself, where
-			// third parties can introspect it via get_post_status_object().
-			// Do not remove.
+			// Not a real register_post_status() arg — core ignores it. Kept so
+			// third parties can introspect the supported-type mapping via
+			// get_post_status_object(). Do not remove.
 			'post_type'                 => aps_get_supported_post_types(),
 			'public'                    => $public,
 			'private'                   => $private,
@@ -186,9 +160,7 @@ final class PostStatus implements HookableInterface {
 	 * @param \WP_Post              $post        The post object.
 	 * @return array<string, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor consulted by every consumer
-	 * that compares against `$post->post_status`.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function display_post_states( array $post_states, \WP_Post $post ): array {
 		$slug = PostStatusValue::resolved_slug();
@@ -202,9 +174,8 @@ final class PostStatus implements HookableInterface {
 		return array_merge(
 			$post_states,
 			array(
-				// esc_html() here because this IS the output site: core's
-				// _post_states() concatenates every post state directly
-				// into raw HTML with no escaping of its own (§1.6).
+				// core's _post_states() concatenates states into raw HTML
+				// with no escaping of its own.
 				$slug => esc_html( aps_archived_label_string() ),
 			)
 		);

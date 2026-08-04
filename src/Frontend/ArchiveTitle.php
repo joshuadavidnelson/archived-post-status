@@ -28,9 +28,7 @@ final class ArchiveTitle implements HookableInterface {
 	 * @since 0.4.0
 	 * @return HookDescriptor[]
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::filter() is a
-	 * named-constructor factory for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -46,29 +44,22 @@ final class ArchiveTitle implements HookableInterface {
 	 *
 	 * @return string
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function filter_title( $title, $post_id = null ) {
 
-		// Cheapest possible bail-out first — this runs on EVERY the_title()
-		// call on a page, and is_admin() is a resolved boolean flag with no
-		// DB/cache lookup at all, unlike resolving $post_id/$post below. Only
-		// the frontend ever needs the label, so admin requests never even
-		// reach the post lookup.
+		// First, because this runs on every the_title() call on a page and
+		// is_admin() costs nothing next to the post lookup below.
 		if ( is_admin() ) {
 			return $title;
 		}
 
-		// Get the post id.
 		if ( ! $post_id ) {
 			$post_id = get_the_ID();
 		}
 
-		// Get the post object.
 		$post = get_post( $post_id );
 
-		// Only filter archived posts.
 		if ( ! isset( $post->post_status ) || PostStatusValue::resolved_slug() !== $post->post_status ) {
 			return $title;
 		}
@@ -97,7 +88,6 @@ final class ArchiveTitle implements HookableInterface {
 		 */
 		$before = (bool) apply_filters( 'aps_title_label_before', true, $post_id );
 
-		// Set the separator.
 		$sep = ( true === $before ) ? ': ' : ' - ';
 
 		/**
@@ -113,17 +103,13 @@ final class ArchiveTitle implements HookableInterface {
 		 */
 		$sep = (string) apply_filters( 'aps_title_separator', $sep, $post_id );
 
-		// Add label to title.
 		if ( ! empty( $label ) ) {
 
-			// Sanitize the strings. esc_html is correct here: the label and
-			// separator are concatenated into $title which is itself returned
-			// to a text-context `the_title` filter consumer (theme output uses
-			// the_title()/get_the_title()). esc_attr would over-escape ampersands,
-			// quotes, etc. that should render as literal characters in body text.
+			// esc_html, not esc_attr: `the_title` consumers render in body
+			// text, where esc_attr would over-escape ampersands and quotes
+			// that should appear as literal characters.
 			$safe_strings = array_filter( array_map( 'esc_html', array( $label, $sep ) ) );
 
-			// Add the strings to the title.
 			$title = $before ? implode( '', $safe_strings ) . $title : $title . implode( '', array_reverse( $safe_strings ) );
 		}
 

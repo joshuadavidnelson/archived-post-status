@@ -9,7 +9,7 @@
  *
  * Covers the listener that persists archive meta via aps_archived_post and
  * removes it via aps_unarchived_post — verifies the hook descriptor shape
- * (both at accepted_args=3 after §1.2 #7) plus the save/delete branches.
+ * (both at accepted_args=3) plus the save/delete branches.
  *
  * The listener composes ArchiveMeta directly. Rather than mocking that
  * dependency, the tests assert against the meta writes/reads it dispatches
@@ -47,7 +47,7 @@ class ArchiveMetaListenerTest extends TestCase {
 
 	/**
 	 * hooks() returns two action descriptors — both at accepted_args=3
-	 * after §1.2 #7. The 3rd arg is the WP_Post object now part of the
+	 *. The 3rd arg is the WP_Post object now part of the
 	 * locked public API for 0.4.0.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveMetaListener::hooks
@@ -67,7 +67,7 @@ class ArchiveMetaListenerTest extends TestCase {
 	/**
 	 * The two hook names are `aps_archived_post` and `aps_unarchived_post` —
 	 * verify by name so a rename in the listener cannot silently drift from
-	 * the public API surface in §2 of the plan.
+	 * the public API surface.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveMetaListener::hooks
 	 */

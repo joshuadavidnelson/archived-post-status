@@ -8,13 +8,12 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Reads and writes plugin settings stored in wp_options.
  *
- * All settings live under a single option key as an associative array.
- * Default values are defined in defaults() and merged on every read,
- * so new settings added in future versions have safe fallbacks immediately.
+ * All settings live under a single option key as an associative array, merged
+ * with defaults() on every read so a setting added in a future version has a
+ * safe fallback immediately.
  *
- * This class has no knowledge of WordPress filters or the plugin's behavior.
- * It is a plain data store. The Bridge class is responsible for bridging
- * stored values into the plugin's filter system.
+ * A plain data store with no knowledge of WordPress filters —
+ * {@see HookAdapter} bridges stored values into the plugin's filter system.
  *
  * @since 0.4.0
  */
@@ -45,36 +44,24 @@ final class Store {
 	/**
 	 * Update a single setting value.
 	 *
-	 * Ordering matters: `update_option` fires FIRST so its
-	 * cache-flush hooks (`update_option_aps_settings`, etc.) wired in
-	 * {@see HookAdapter::hooks()} run against the freshly persisted value.
-	 * Only after the option is committed do we prime the in-memory cache —
-	 * otherwise the cache-flush callback would clear the cache we just
-	 * populated, and the next `get()` would re-read from the DB.
-	 *
-	 * Net effect: a `get()` called immediately after `update()` returns the
-	 * new value without a second `get_option()` round-trip.
+	 * Persist before priming the cache. `update_option()` synchronously fires
+	 * the cache-flush hook wired in {@see HookAdapter::hooks()}, so priming
+	 * first would just have the cache cleared out from under it and send the
+	 * next `get()` back to the database.
 	 */
 	public static function update( string $key, mixed $value ): void {
 		$settings         = self::all();
 		$settings[ $key ] = $value;
 
-		// 1. Persist first — the cache-flush hook on `update_option_aps_settings`
-		//    fires synchronously here and clears self::$cache.
 		update_option( self::OPTION_KEY, $settings );
 
-		// 2. Now prime the cache with the just-written value so the next
-		//    get()/all() serves it without another get_option() call.
 		self::$cache = $settings;
 	}
 
 	/**
 	 * Replace all settings at once (reserved for a future settings UI; unused today).
 	 *
-	 * Ordering matches {@see self::update()}: `update_option()` fires
-	 * first so the cache-flush hooks wired in {@see HookAdapter::hooks()}
-	 * run against the persisted value, then the cache is primed — so a
-	 * `get()` right after `save()` skips a redundant `get_option()` call.
+	 * Write-then-prime ordering, for the reason given on {@see self::update()}.
 	 *
 	 * @param array<string, mixed> $settings
 	 */
@@ -113,13 +100,10 @@ final class Store {
 	/**
 	 * Clear the in-memory cache.
 	 *
-	 * Wired to update_option_aps_settings, add_option_aps_settings, and
-	 * delete_option_aps_settings via HookAdapter so that external code that
-	 * writes the option directly (without going through update()/save()/delete())
-	 * still produces correct reads on the next call to all()/get(). Also wired
-	 * to `switch_blog` — on multisite, switch_to_blog() does not otherwise
-	 * clear this static cache, so without that hook a request that switches
-	 * sites would keep serving the previous site's settings.
+	 * Wired by {@see HookAdapter} to the option-write hooks, so external code
+	 * that writes the option directly still reads correctly, and to
+	 * `switch_blog`, so a multisite request that switches sites does not keep
+	 * serving the previous site's settings.
 	 *
 	 * @since 0.4.0
 	 */
@@ -130,10 +114,10 @@ final class Store {
 	/**
 	 * Default values for all settings.
 	 *
-	 * Every setting key that Bridge maps to a filter must have a
-	 * default here. The default should match the filter's own default
-	 * so that enabling the settings system without configuring anything
-	 * produces identical behavior to running without it.
+	 * Every setting key {@see HookAdapter} maps to a filter needs a default
+	 * here, matching that filter's own default — so enabling the settings
+	 * system without configuring anything behaves identically to running
+	 * without it.
 	 *
 	 * @return array<string, mixed>
 	 */

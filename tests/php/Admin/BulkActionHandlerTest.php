@@ -187,7 +187,7 @@ class BulkActionHandlerTest extends TestCase {
 	/**
 	 * Archive bulk action — per-item capability denial buckets the post
 	 * into `denied` and continues the batch. The legacy
-	 * mid-batch wp_die() was removed in the 0.4.0 refactor.
+	 * mid-batch wp_die() was removed.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_denied
@@ -404,7 +404,7 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	/**
-	 * §2.3 regression: the undo-path remove_filter() call must target the
+	 * Regression: the undo-path remove_filter() call must target the
 	 * exact same priority (`PHP_INT_MAX`) the add_filter() call registered
 	 * at — mismatched priorities mean WordPress's remove_filter() silently
 	 * no-ops and the override callback stays registered past this request.
@@ -450,7 +450,7 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	/**
-	 * §2.3 regression: before the fix, remove_filter() ran unconditionally
+	 * Regression: before the fix, remove_filter() ran unconditionally
 	 * at the bottom of bulk_unarchive() even when add_filter() never fired
 	 * (the non-undo path) — which would have silently removed any
 	 * third-party registration of the same callback on the same hook and
@@ -672,7 +672,7 @@ class BulkActionHandlerTest extends TestCase {
 	/**
 	 * Unarchive bulk action — per-item capability denial buckets into
 	 * `denied` and continues the batch. The legacy mid-batch
-	 * wp_die() was removed in the 0.4.0 refactor.
+	 * wp_die() was removed.
 	 *
 	 * @covers ArchivedPostStatus\Admin\BulkActionHandler::handle
 	 * @covers ArchivedPostStatus\Admin\BulkActionResult::record_denied
@@ -713,7 +713,7 @@ class BulkActionHandlerTest extends TestCase {
 	}
 
 	/**
-	 * §2.6 regression: process_unarchive_post() must check wp_check_post_lock()
+	 * Regression: process_unarchive_post() must check wp_check_post_lock()
 	 * exactly like its process_archive_post() sibling — a post locked by
 	 * another user is bucketed as `locked` and skipped, not unarchived out
 	 * from under the editing user.

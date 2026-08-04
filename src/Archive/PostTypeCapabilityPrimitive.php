@@ -10,16 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * literal capability name when the type is unregistered or its cap map is
  * incomplete.
  *
- * Shared by {@see ArchiveCapability::default_capability()},
- * {@see ViewCapability::author_owns_and_can_edit()}, and
- * {@see \ArchivedPostStatus\Admin\PostEditorGuard::deny_editing_archived()} —
- * all three need this exact lookup (get_post_type_object()->cap->{name},
- * falling back to the literal {name}) for a different capability name
- * ('edit_posts', 'edit_others_posts', and 'edit_post' respectively). The
- * mechanics — and the reason for the fallback — are identical regardless of
- * which capability is being resolved or what the caller does with the
- * result, so one method serves all three instead of three near-identical
- * private copies.
+ * Shared by ArchiveCapability, ViewCapability, and PostEditorGuard.
  *
  * @since 0.4.0
  */

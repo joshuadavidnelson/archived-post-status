@@ -51,16 +51,12 @@ final class Plugin {
 		 */
 		do_action( 'aps_init' );
 
-		// check for upgrades.
 		$this->upgrade_check();
 
-		// No load_plugin_textdomain() call: WordPress has loaded translations
-		// just in time since 4.6, using the plugin slug and the Domain Path
-		// header, so an explicit call adds nothing. Calling it here — on
-		// plugins_loaded, before init — is also what trips WP 6.7+'s
-		// "translation loading was triggered too early" notice.
+		// No load_plugin_textdomain() call: WP loads translations just in time
+		// since 4.6, and calling it here — on plugins_loaded, before init —
+		// trips WP 6.7+'s "translation loading was triggered too early" notice.
 
-		// Load all hookables and register their hooks.
 		( new HookLoader() )->add_all( $this->hookables() )->run();
 
 		/**
@@ -74,18 +70,12 @@ final class Plugin {
 	/**
 	 * Build the list of hookable classes.
 	 *
-	 * This is the authoritative list of everything the plugin registers
-	 * with WordPress. To add a new feature, add a new line here.
+	 * The authoritative list of everything the plugin registers with WordPress.
 	 *
-	 * `PostEditor` and `Notices` live in the `is_admin()` branch alongside
-	 * `PostList` / `ArchiveColumn` / `PluginScreen`: every hook each of them
-	 * registers — `admin_enqueue_scripts`, `post_submitbox_start` (PostEditor),
-	 * `admin_notices` (Notices) — only ever fires on an actual wp-admin page
-	 * load, never on the front end or in a WP-CLI request, so instantiating
-	 * and hooking them on every request was pure overhead outside admin.
-	 * `PostEditorGuard` stays unconditional: its `map_meta_cap` filter runs
-	 * on every capability check anywhere (front end, REST, CLI), not just
-	 * inside wp-admin.
+	 * Everything in the `is_admin()` branch registers hooks that only fire on a
+	 * wp-admin page load. `PostEditorGuard` stays unconditional because its
+	 * `map_meta_cap` filter runs on every capability check anywhere — front
+	 * end, REST, CLI.
 	 *
 	 * @return Contracts\HookableInterface[]
 	 */
@@ -126,22 +116,10 @@ final class Plugin {
 	 * Run upgrade routines when the stored version differs from current.
 	 * Only runs on admin page loads.
 	 *
-	 * Atomicity invariant (0.4.0):
-	 *   Each disjoint state — fresh install, in-place upgrade, no-op —
-	 *   executes ONE branch with a self-contained write sequence. The
-	 *   previous-version marker is only written as part of the upgrade
-	 *   branch, never as a standalone write that could be observed without
-	 *   the matching version bump. A reader who sees
-	 *   `archived_post_status_version === $this->version` is guaranteed
-	 *   that `archived_post_status_previous_version` already reflects the
-	 *   upgrade source (or never existed, on a first install). No
-	 *   "half-upgraded" observable state.
-	 *
-	 *   `add_option` is used for the first-install path so a concurrent
-	 *   request that raced ahead and already created the option does not
-	 *   get overwritten — `add_option` no-ops if the option already exists,
-	 *   while `update_option` would clobber. The upgrade branch uses
-	 *   `update_option` because by definition the option exists.
+	 * Each state — fresh install, upgrade, no-op — takes exactly one branch
+	 * with a self-contained write sequence, so there is no observable
+	 * half-upgraded state: anyone who sees the current version stored is
+	 * guaranteed the previous-version marker is already correct.
 	 */
 	private function upgrade_check(): void {
 		if ( ! is_admin() ) {
@@ -150,12 +128,11 @@ final class Plugin {
 
 		$stored = get_option( 'archived_post_status_version', false );
 
-		// Option absent: either a fresh install or an upgrade from a
-		// pre-0.4.0 release (which never wrote any options). Archived
-		// content is the only evidence that distinguishes the two — record
-		// the marker while it is still reliable, since a fresh install can
-		// accumulate archived posts of its own later. add_option is the
-		// race-safe creator (no-op if a concurrent request beat us to it).
+		// Option absent means a fresh install or an upgrade from pre-0.4.0,
+		// which never wrote options. Existing archived content is the only
+		// thing that distinguishes the two, and only right now — a fresh
+		// install accumulates archived posts of its own later. add_option
+		// no-ops if a concurrent request already created the option.
 		if ( false === $stored ) {
 			if ( $this->has_pre_040_content() ) {
 				update_option( 'archived_post_status_previous_version', 'pre-0.4.0', false );
@@ -165,27 +142,23 @@ final class Plugin {
 			return;
 		}
 
-		// Upgrade: stored version differs from current. Record the previous
-		// version, then swap to the new one. Both writes belong to the same
-		// logical transition.
+		// Both writes belong to the same logical transition.
 		if ( $stored !== $this->version ) {
 			update_option( 'archived_post_status_previous_version', $stored, false );
 			update_option( 'archived_post_status_version', $this->version, false );
 		}
-
-		// No-op: stored version matches current. No writes required.
 	}
 
 	/**
 	 * Whether any pre-0.4.0 archived content exists.
 	 *
-	 * Runs at most once per site lifetime (only while the version option is
-	 * absent). A direct query is required: this runs on plugins_loaded,
-	 * before the archived status is registered, and WP_Query drops
-	 * unregistered statuses from its WHERE clause. The literal 'archive'
-	 * string — not the filterable slug — is the correct probe: pre-0.4.0
-	 * releases hardcoded it into every write regardless of the
-	 * aps_post_status_slug filter.
+	 * Runs at most once per site lifetime, while the version option is absent.
+	 *
+	 * A direct query is required: this runs on plugins_loaded, before the
+	 * archived status is registered, and WP_Query drops unregistered statuses
+	 * from its WHERE clause. The literal 'archive' — not the filterable slug —
+	 * is the correct probe, since pre-0.4.0 releases hardcoded it into every
+	 * write regardless of `aps_post_status_slug`.
 	 *
 	 * @since 0.4.0
 	 * @return bool

@@ -34,10 +34,8 @@ class PostEditorTest extends TestCase {
 		$this->post_editor = new ArchivedPostStatus\Admin\PostEditor();
 	}
 
-	// the prior `test_hooks_returns_hookable_descriptors` smoke
-	// test was deleted — `assertIsArray`/`assertNotEmpty` doesn't pin any
-	// behavior. The composition surface is now covered end-to-end by
-	// `PluginTest::test_hookables_always_registers_*` which asserts the
+	// The composition surface is covered by
+	// `PluginTest::test_hookables_always_registers_*`, which asserts the
 	// PostEditor instance actually appears in Plugin::hookables().
 
 	/**
@@ -155,7 +153,7 @@ class PostEditorTest extends TestCase {
 	}
 
 	/**
-	 * §2.5 regression: the post-type gate must be checked BEFORE the
+	 * Regression: the post-type gate must be checked BEFORE the
 	 * capability check — mirroring RowActionPolicy::for_post() and
 	 * ArchivePostLink::build(), both of which reject an unsupported post
 	 * type without ever consulting the archive capability. Prior to the
@@ -184,11 +182,8 @@ class PostEditorTest extends TestCase {
 		$this->assertSame( '', $output );
 	}
 
-	// NOTE (0.4.0 §1.1): test_load_post_screen() was deleted from this file.
-	// load_post_screen() no longer exists on PostEditor — the
-	// archived-post access-enforcement responsibility moved to
-	// Admin\PostEditorGuard::enforce_read_only(). The scenario is now
-	// covered in tests/php/Admin/PostEditorGuardTest.php.
+	// Archived-post access enforcement lives on PostEditorGuard; see
+	// tests/php/Admin/PostEditorGuardTest.php.
 
 	/**
 	 * enqueue_scripts() registers the 'aps-block-editor' handle with
@@ -288,7 +283,7 @@ class PostEditorTest extends TestCase {
 	}
 
 	/**
-	 * §2.5 regression: enqueue_scripts() bails for a post type the plugin
+	 * Regression: enqueue_scripts() bails for a post type the plugin
 	 * does not support — assets/js/block-editor.js's docblock already
 	 * documents "the server side (Admin\PostEditor) enqueues this for
 	 * supported post types" as the contract; prior to the fix nothing

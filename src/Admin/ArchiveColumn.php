@@ -16,11 +16,8 @@ use ArchivedPostStatus\Status\ArchiveLabel;
  * Adds an "Archived" column to the post list table.
  *
  * The column appears only when viewing the archived post status filter,
- * showing archived date, user, and previous status for each row.
- * Supports sorting by archived date via post meta query.
- *
- * Separated from PostList because column display and action handling
- * are independent concerns that change for different reasons.
+ * showing archived date, user, and previous status for each row, and supports
+ * sorting by archived date.
  *
  * @since 0.4.0
  */
@@ -30,19 +27,14 @@ final class ArchiveColumn implements HookableInterface {
 	private const COLUMN_KEY = 'aps_archived';
 
 	/**
-	 * Label of the Archived column header. Exposed so callers (and tests)
-	 * have a single source of truth instead of duplicating the copy.
+	 * Label of the Archived column header.
 	 *
-	 * Returns the label unescaped — see {@see ArchiveLabel::value()}.
-	 * Callers must escape for their own output context; see add_column()
-	 * and render_archive_cell() below.
+	 * Returns the label unescaped; callers escape for their own output context.
 	 *
 	 * @since 0.4.0
 	 * @return string
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchiveLabel::value()}
-	 * is the canonical filterable label accessor; every "Archived" label
-	 * consumer routes through it rather than duplicating the copy.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable label accessor.
 	 */
 	public static function column_label(): string {
 		return ArchiveLabel::value();
@@ -50,8 +42,7 @@ final class ArchiveColumn implements HookableInterface {
 
 	/**
 	 * Attribution label used when a post was archived without a user context
-	 * (anonymous WP-CLI, cron). Exposed so callers (and tests) have a single
-	 * source of truth instead of duplicating the copy.
+	 * (anonymous WP-CLI, cron).
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -62,9 +53,7 @@ final class ArchiveColumn implements HookableInterface {
 	}
 
 	/**
-	 * Attribution label used when the archiving user record no longer
-	 * exists. Exposed so callers (and tests) have a single source of truth
-	 * instead of duplicating the copy.
+	 * Attribution label used when the archiving user record no longer exists.
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -75,9 +64,7 @@ final class ArchiveColumn implements HookableInterface {
 	}
 
 	/**
-	 * Format template for the fully-attributed cell (`%1$s` is the display
-	 * name). Exposed so callers (and tests) have a single source of truth
-	 * instead of duplicating the copy.
+	 * Format template for the fully-attributed cell (`%1$s` is the display name).
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -91,9 +78,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * @since 0.4.0
 	 * @return array<int, HookDescriptor>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
-	 * are named-constructor factories for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -106,15 +91,10 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * Register the per-post-type column hooks once custom post types exist.
 	 *
-	 * `hooks()` runs on `plugins_loaded`, before third-party custom post
-	 * types register — conventionally on `init` at the default priority
-	 * 10. Enumerating `aps_get_supported_post_types()` directly inside
-	 * `hooks()` would therefore permanently miss any custom post type on
-	 * every request. See `PostList::register_post_type_hooks()` for the
-	 * full rationale behind deferring to `wp_loaded` specifically (it
-	 * postdates every `init` priority, not just the conventional one) and
-	 * for going through `HookLoader::register()` rather than calling
-	 * add_action()/add_filter() directly — both apply here unchanged.
+	 * `hooks()` runs on `plugins_loaded`, before custom post types register on
+	 * `init`, so enumerating supported post types there would permanently miss
+	 * them. `wp_loaded` postdates every `init` priority, not just the
+	 * conventional 10.
 	 *
 	 * @since 0.4.0
 	 * @return void
@@ -129,11 +109,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * @since 0.4.0
 	 * @return array<int, HookDescriptor>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
-	 * are named-constructor factories for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
-	 * Same rationale as hooks() above — this is the same construction moved to a
-	 * second, deferred call site, not a new pattern.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	private function post_type_hooks(): array {
 		$descriptors = array();
@@ -171,22 +147,18 @@ final class ArchiveColumn implements HookableInterface {
 	 * @param array<string, string> $columns Column header map (column key => label).
 	 * @return array<string, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function add_column( array $columns ): array {
 		if ( ! in_array( PostStatusValue::resolved_slug(), (array) get_query_var( 'post_status' ), true ) ) {
 			return $columns;
 		}
 
-		// The Archived column replaces core's Date column here: its
-		// "Published"/"Last Modified" labels are misleading for archived
-		// rows, and the archive date is the one that matters in this view.
+		// Replaces core's Date column: its "Published"/"Last Modified" labels
+		// are misleading for archived rows.
 		unset( $columns['date'] );
 
-		// esc_html() here — not in column_label() — because this is the
-		// actual output site: core's WP_List_Table::print_column_headers()
-		// echoes each header value as raw HTML with no escaping of its own.
+		// core's print_column_headers() echoes header values as raw HTML.
 		$columns[ self::COLUMN_KEY ] = esc_html( self::column_label() );
 
 		return $columns;
@@ -198,8 +170,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * @param array<string, string> $columns Sortable column map (column key => orderby key).
 	 * @return array<string, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function register_sortable( array $columns ): array {
 		if ( ! in_array( PostStatusValue::resolved_slug(), (array) get_query_var( 'post_status' ), true ) ) {
@@ -218,26 +189,18 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * Prime the user cache for the whole page of rows in one query.
 	 *
-	 * Without this, {@see resolve_archive_agent_name()}'s `get_userdata()`
-	 * call runs once per row outside core's own author-cache priming (core
-	 * only primes `post_author`, not this plugin's separate archive-user
-	 * meta) — a 20-row archived list adds ~20 uncached user lookups. Reading
-	 * the archive-user ids off the already-primed post-meta cache and
-	 * warming them all with one `cache_users()` call, before any row
-	 * renders, turns that into a single query for the whole page.
-	 *
-	 * Scoped identically to {@see add_column()} / {@see register_sortable()}
-	 * — the archived-by cell (and its get_userdata() call) only ever
-	 * renders on the admin archived-list main query, so priming anywhere
-	 * else would spend a cache_users() query for no reader.
+	 * Core primes the author cache but not this plugin's separate archive-user
+	 * meta, so without this {@see resolve_archive_agent_name()}'s
+	 * `get_userdata()` runs one uncached lookup per row. Scoped to the admin
+	 * archived-list main query — the only place the archived-by cell renders —
+	 * so no other request pays for a cache_users() call with no reader.
 	 *
 	 * @since 0.4.0
 	 * @param array<int, \WP_Post> $posts The posts about to be rendered.
 	 * @param \WP_Query            $query The query that produced them.
 	 * @return array<int, \WP_Post>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function prime_archive_user_cache( array $posts, \WP_Query $query ): array {
 		if ( ! is_admin() || ! $query->is_main_query() ) {
@@ -270,17 +233,10 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * Render the cell content for each row — WP filter callback.
 	 *
-	 * Thin adapter that gates on the column key and delegates the actual
-	 * HTML build to {@see render_archive_cell()}. Keeps registration (this
-	 * callback) and per-row rendering (the helper) at distinct levels of
-	 * abstraction.
-	 *
 	 * @param string $column_name The current column key.
 	 * @param int    $post_id     The current post ID.
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchiveMeta::for_post()} is a
-	 * named-constructor factory for the ArchiveMeta value object; static access is
-	 * the canonical WP convention for value-object hydration in hook callbacks.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical value-object factory.
 	 */
 	public function render_cell( string $column_name, int $post_id ): void {
 		if ( self::COLUMN_KEY !== $column_name ) {
@@ -289,7 +245,7 @@ final class ArchiveColumn implements HookableInterface {
 
 		$meta = ArchiveMeta::for_post( $post_id );
 		if ( null === $meta ) {
-			return; // Not archived
+			return;
 		}
 
 		$this->render_archive_cell( $meta );
@@ -298,35 +254,21 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * Render the per-row HTML for an archived post's metadata.
 	 *
-	 * Three observable states based on the stored {@see ArchiveMeta} value object:
+	 * Three observable states:
 	 *
-	 *   1. archive_date === 0  (true legacy)
-	 *      Post archived in a pre-0.4.0 version before archive metadata
-	 *      existed. No date, no user — render bare "Archived".
-	 *
-	 *   2. archive_date > 0 && archive_user === 0  (system context)
-	 *      Post archived in 0.4.0+ via anonymous WP-CLI, cron, or a
-	 *      server-side aps_archive_post() call where get_current_user_id()
-	 *      returned 0. We know WHEN; there is no user to attribute.
-	 *      Render "Archived by system" + the date. Distinct from case 1.
-	 *
-	 *   3. archive_date > 0 && archive_user > 0  (fully attributed)
-	 *      Render "Archived by NAME" + the date.
-	 *
-	 * Kept out of `render_cell()` so the WP-filter adapter stays terse and
-	 * the HTML-build path is independently testable. The archive_user check
-	 * is an early return, so the legacy-case + system-case branches read
-	 * top-to-bottom.
+	 *   1. No archive_date — pre-0.4.0 archive, written before archive metadata
+	 *      existed. Nothing to show beyond a bare "Archived".
+	 *   2. Date but no user — archived where get_current_user_id() returned 0
+	 *      (anonymous WP-CLI, cron, server-side call). "Archived by system".
+	 *   3. Both — "Archived by NAME".
 	 */
 	private function render_archive_cell( ArchiveMeta $meta ): void {
-		// Case 1: true legacy — no archive_date means pre-0.4.0 metadata
-		// was never written. Nothing to show beyond the plain label.
 		if ( ! $meta->archive_date ) {
 			echo '<span>' . esc_html( self::column_label() ) . '</span>';
 			return;
 		}
 
-		// Format date and time like WordPress core date column.
+		// Matches the format of core's Date column.
 		$date_format = get_option( 'date_format' ) . ' \a\t ' . get_option( 'time_format' );
 		$date_time   = wp_date( $date_format, $meta->archive_date );
 
@@ -345,26 +287,14 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * Resolve a display-ready name for the archiver of a post.
 	 *
-	 * Case 2 (anonymous / system context, archive_user === 0) returns the
-	 * localised "system" string. Case 3 (fully attributed) returns the
-	 * user's display_name, falling back to a localised "Unknown" if the
-	 * user record was deleted between archiving and now.
-	 *
-	 * Both cases are early returns, so the case-2 and case-3 paths each read
-	 * as a single linear flow.
-	 *
 	 * @param int $archive_user Archive user id (0 for anonymous / system context).
 	 */
 	private function resolve_archive_agent_name( int $archive_user ): string {
-		// Case 2: system-context archive — archive_date is known but
-		// archive_user is 0 because get_current_user_id() returned 0
-		// (anonymous WP-CLI / cron / server-side aps_archive_post() call).
 		if ( ! $archive_user ) {
 			return self::system_attribution_label();
 		}
 
-		// Case 3: fully attributed. Fall back to "Unknown" if the
-		// user record was deleted between archiving and now.
+		// "Unknown" covers a user record deleted since archiving.
 		$user = get_userdata( $archive_user );
 
 		return $user ? $user->display_name : self::unknown_attribution_label();
@@ -376,19 +306,16 @@ final class ArchiveColumn implements HookableInterface {
 
 	/**
 	 * Alias for the wp_postmeta row LEFT JOINed in filter_sort_join().
-	 * Prefixed and specific enough that it cannot collide with a join core
-	 * or another plugin has already added under its own alias.
+	 * Prefixed so it cannot collide with a join core or another plugin added.
 	 *
 	 * @since 0.4.0
 	 */
 	private const SORT_JOIN_ALIAS = 'aps_archive_sort';
 
 	/**
-	 * The query handle_sort() opted into meta-aware sorting for. Set right
-	 * before the posts_join / posts_orderby filters are added below and
-	 * checked by identity inside them, so those filters are a guaranteed
-	 * no-op for every other query on the page — see handle_sort() for the
-	 * full rationale.
+	 * The query handle_sort() opted into meta-aware sorting for. Compared by
+	 * identity inside the posts_join / posts_orderby filters so they are a
+	 * no-op for every other query on the page.
 	 *
 	 * @since 0.4.0
 	 * @var \WP_Query|null
@@ -398,25 +325,14 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * Apply meta-aware ordering when sorting by the Archived column.
 	 *
-	 * Only acts on admin list-table queries that are explicitly ordering
-	 * by our column key.
+	 * Do not replace this with `$query->set( 'meta_key', ... )`. That routes
+	 * ordering through WP_Query's meta_query machinery, whose JOIN + WHERE only
+	 * matches posts that have a row for the key — silently dropping every post
+	 * that doesn't. Pre-0.4.0 archives wrote no archive postmeta at all, so
+	 * clicking the column header would make that content vanish with no error.
 	 *
-	 * A naive `$query->set( 'meta_key', ... )` here hands ordering off to
-	 * WP_Query's meta_query machinery, which builds a JOIN + WHERE that
-	 * only matches posts that HAVE a postmeta row for that key — silently
-	 * dropping every post that doesn't. That population is not
-	 * hypothetical: posts archived under pre-0.4.0 releases wrote no
-	 * archive postmeta at all (see ArchiveMeta::for_post()'s legacy
-	 * branch), and Plugin::has_pre_040_content() exists specifically
-	 * because that population is expected to be there after an upgrade.
-	 * Clicking the Archived column header would make that content vanish
-	 * from the list with no error and no explanation.
-	 *
-	 * Instead this LEFT JOINs the meta table and orders with COALESCE so
-	 * meta-less rows sort to one end rather than disappearing — see
-	 * filter_sort_join() / filter_sort_orderby() for the JOIN/ORDER BY
-	 * themselves and exactly how they are scoped to this one query so they
-	 * cannot leak onto any other query on the page.
+	 * The LEFT JOIN in filter_sort_join() plus the COALESCE in
+	 * filter_sort_orderby() sort meta-less rows to one end instead.
 	 *
 	 * @param \WP_Query $query The current query object.
 	 */
@@ -438,18 +354,12 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * LEFT JOIN wp_postmeta on the archive-date key.
 	 *
-	 * A LEFT JOIN — instead of the INNER-JOIN-like WHERE that
-	 * `$query->set( 'meta_key', ... )` would have produced — keeps every
-	 * post in the result set regardless of whether it has an archive-date
-	 * row; filter_sort_orderby() then sorts the meta-less rows instead of
-	 * excluding them.
+	 * LEFT, not INNER, so posts with no archive-date row stay in the result set
+	 * for filter_sort_orderby() to sort rather than being excluded.
 	 *
-	 * Scoped to the one query handle_sort() opted in: this filter runs for
-	 * every WP_Query on the page once registered, but it only ever
-	 * modifies $join when $query is identical to $this->sort_query — the
-	 * exact object handle_sort() was called with. Any other query gets
-	 * $join back untouched, so this cannot leak onto e.g. a later
-	 * secondary query on the same admin page load.
+	 * Once registered this filter runs for every WP_Query on the page, so the
+	 * identity check against $this->sort_query is what keeps it from leaking
+	 * onto a secondary query in the same request.
 	 *
 	 * @param string    $join  The current JOIN clause.
 	 * @param \WP_Query $query The query being filtered.
@@ -472,16 +382,13 @@ final class ArchiveColumn implements HookableInterface {
 	/**
 	 * Order by the LEFT JOINed archive-date value.
 	 *
-	 * `COALESCE( ..., 0 )` gives meta-less rows a value to sort by instead
-	 * of the NULL a plain LEFT JOIN would leave them with, so they land at
-	 * one end of the list instead of being excluded. `+ 0` numeric-casts
-	 * the stored value the way `meta_value_num` did, since archive_date is
-	 * a Unix timestamp integer (see ArchiveMeta::META_ARCHIVE_DATE).
-	 * Direction comes from the query's own `order` var rather than a
-	 * hardcoded ASC/DESC, so the column header's normal toggle-on-click
-	 * behavior keeps working.
+	 * `COALESCE( …, 0 )` replaces the NULL the LEFT JOIN leaves on meta-less
+	 * rows so they sort to one end. `+ 0` numeric-casts the stored value the
+	 * way `meta_value_num` would, archive_date being a Unix timestamp. The
+	 * direction comes from the query's own `order` var so the column header's
+	 * toggle-on-click keeps working.
 	 *
-	 * Scoped identically to filter_sort_join() — see its docblock.
+	 * Scoped by identity like filter_sort_join().
 	 *
 	 * @param string    $orderby The current ORDER BY clause.
 	 * @param \WP_Query $query   The query being filtered.

@@ -11,41 +11,26 @@ use ArchivedPostStatus\Archive\ArchiveAction;
 /**
  * Handle the bulk archive/unarchive actions on the post list table.
  *
- * Plain service injected into PostList. Receives post ids + sendback URL
- * from the WordPress `handle_bulk_actions-edit-{type}` filter and returns
- * the redirect URL the post-list refresh should use. Owns the bulk
- * dispatch + capability gates + persist + redirect-URL composition;
- * PostList retains the value-returning filter callbacks (`query_vars`,
- * `bulk_actions`, `row_actions`) and the single-post `post_action_*`
- * handlers.
+ * Injected into PostList. Receives post ids and the sendback URL from
+ * `handle_bulk_actions-edit-{type}` and returns the redirect URL for the
+ * post-list refresh.
  *
- * Dispatch routes through `ArchiveAction` exclusively — `$action->perform()`
- * and `$action->capability_function()` are the single sources of truth
- * for action dispatch and per-action capability resolution, so no call
- * site branches on action type.
- *
- * Per-item failures (capability denied, post-not-found, wrong status) are
- * accumulated into a {@see BulkActionResult} via the reason-bucketed
- * `record_*` API and surfaced through the redirect URL for
- * {@see NoticeBuilder} to render. The loop continues on every per-item
- * failure — only the outer cap gate at {@see handle()} entry is permitted
- * to abort the batch (fail-closed by default).
+ * Per-item failures are bucketed by reason into a {@see BulkActionResult} and
+ * surfaced through the redirect URL for {@see NoticeBuilder} to render. The
+ * loop continues on every per-item failure; only the outer gate at
+ * {@see handle()} entry aborts the batch.
  *
  * @since 0.4.0
  */
 final class BulkActionHandler {
 
 	/**
-	 * Query args stripped from the sendback URL before the result counts
-	 * are appended. Single source of truth used by both the bulk-handler
-	 * entry point ({@see handle()}) and the per-post-action redirect-URL
-	 * builder ({@see get_redirect_url()}) so the two paths never drift.
+	 * Query args stripped from the sendback URL before the result counts are
+	 * appended. Shared by {@see handle()} and {@see get_redirect_url()} so the
+	 * two paths cannot drift.
 	 *
-	 * Any new counter or id-list arg must be added here AND to
-	 * {@see PostList::query_vars()} (so WordPress recognizes it as a query
-	 * var on the subsequent edit.php load) AND to
-	 * {@see PostList::removable_query_args()} (so WordPress strips it back
-	 * out of the visible URL once the notice built from it has rendered).
+	 * Any new counter or id-list arg must also be added to
+	 * {@see PostList::query_vars()} and {@see PostList::removable_query_args()}.
 	 *
 	 * @var string[]
 	 */
@@ -63,23 +48,8 @@ final class BulkActionHandler {
 	/**
 	 * Handle the bulk action filter callback.
 	 *
-	 * Entry point for `handle_bulk_actions-edit-{type}` — receives the
-	 * sendback URL, the action key, and the selected post ids; returns the
-	 * (possibly rewritten) sendback URL with the result counters appended.
-	 *
-	 * Fails closed: if the outer cap gate denies, the sendback comes back
-	 * unchanged and no per-id work runs. Per-id failures inside the loop
-	 * are bucketed via {@see BulkActionResult} and the loop continues —
-	 * no mid-batch wp_die().
-	 *
-	 * $post_ids is normalized (absint + drop non-numeric/zero junk)
-	 * immediately after the emptiness guard, before any per-id dispatch:
-	 * WordPress core's `ids=` fallback path on `wp-admin/edit.php` (used
-	 * when JS is disabled) populates it via a bare `explode( ',', … )` with
-	 * no `intval`, unlike the `post[]` checkbox path. Without normalization
-	 * a non-numeric entry would reach the strictly int-typed
-	 * {@see process_archive_post()} / {@see process_unarchive_post()} and
-	 * throw, killing the whole batch.
+	 * Entry point for `handle_bulk_actions-edit-{type}`: returns the sendback
+	 * URL with the result counters appended.
 	 *
 	 * @since 0.4.0
 	 * @param string            $sendback The redirect URL.
@@ -89,24 +59,17 @@ final class BulkActionHandler {
 	 *                                    are not guaranteed to be int.
 	 * @return string
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchiveAction::from()} is the
-	 * PHP enum hydration entry point (backed-enum value -> case lookup); the static
-	 * call is the language-mandated form, not a service-locator pull.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- backed-enum hydration.
 	 */
 	public function handle( string $sendback, string $doaction, array $post_ids ): string {
-		// Early validation
 		if ( empty( $post_ids ) ) {
 			return $sendback;
 		}
 
-		// WordPress core's `ids=` fallback path (wp-admin/edit.php, used when
-		// JS is disabled) populates $post_ids via a bare
-		// `explode( ',', $_REQUEST['ids'] )` — no intval — unlike the
-		// `post[]` checkbox path, which does map to ints. Normalize here so
-		// the strictly int-typed process_archive_post() /
-		// process_unarchive_post() below never see non-numeric junk.
-		// absint() coerces non-numeric strings to 0, and array_filter() drops
-		// the zeros — 0 is never a valid post id anyway.
+		// Core's JS-disabled `ids=` fallback on edit.php populates $post_ids
+		// with a bare `explode( ',', … )` — no intval, unlike the `post[]`
+		// checkbox path. Without this, non-numeric junk reaches the int-typed
+		// per-id processors below and throws, killing the whole batch.
 		$post_ids = array_filter( array_map( 'absint', $post_ids ) );
 
 		if ( empty( $post_ids ) ) {
@@ -119,10 +82,9 @@ final class BulkActionHandler {
 			return $sendback; // Not our action
 		}
 
-		// No screen-level capability pre-gate: capabilities are ownership-
-		// aware (a post's own author may act on it), so the only correct
-		// gate is the per-post check inside each loop below, which
-		// fail-closes item-by-item into the 'denied' notice bucket.
+		// No screen-level capability pre-gate: capabilities are ownership-aware
+		// (a post's own author may act on it), so the per-post check inside
+		// each loop below is the only correct gate.
 		$sendback = remove_query_arg( self::STRIPPED_QUERY_ARGS, $sendback );
 
 		return match ( $action ) {
@@ -133,10 +95,6 @@ final class BulkActionHandler {
 
 	/**
 	 * Handle archive bulk action.
-	 *
-	 * Continues the loop on every per-item failure; per-id bucketing happens
-	 * in {@see process_archive_post()}. The outer loop only iterates and
-	 * defers the result-aggregation policy to the helper.
 	 *
 	 * @since 0.4.0
 	 * @param array<int, int> $post_ids Array of post IDs.
@@ -157,21 +115,10 @@ final class BulkActionHandler {
 	/**
 	 * Handle unarchive bulk action.
 	 *
-	 * Continues the loop on every per-item failure (SRP-correct
-	 * scoping — capability checks happen here, not in
-	 * {@see NoticeBuilder}). Bucketed counts flow through
-	 * {@see BulkActionResult} to the redirect URL.
-	 *
-	 * The undo override is registered at priority `PHP_INT_MAX` — the
-	 * priority reserved for the plugin's own overrides on
-	 * `aps_unarchive_post_status` (see the filter's docblock in
-	 * {@see \ArchivedPostStatus\Archive\UnarchiveOperation::dispatch_update()})
-	 * — rather than the default 10, so a third-party site that happens to
-	 * have registered this same callback on that hook at priority 10 for
-	 * its own reasons is never touched. The `remove_filter()` call is
-	 * gated behind the identical `$is_undo` condition as the `add_filter()`
-	 * call above it, so this class only ever removes a registration it
-	 * added in this request.
+	 * The undo override registers at `PHP_INT_MAX` — the priority reserved for
+	 * the plugin's own overrides on `aps_unarchive_post_status` — so a site
+	 * that registered the same callback at the default priority for its own
+	 * reasons is never touched by the paired `remove_filter()`.
 	 *
 	 * @since 0.4.0
 	 * @param array<int, int> $post_ids Array of post IDs.
@@ -202,15 +149,9 @@ final class BulkActionHandler {
 	/**
 	 * Per-id processor for the archive path.
 	 *
-	 * Kept out of the `foreach` body in {@see bulk_archive()} so the outer
-	 * loop is a clean iterate + dispatch + collect pipeline. Each guard
-	 * records a bucket on $result and returns; the success path records the
-	 * count + id at the bottom.
-	 *
 	 * @since 0.4.0
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchivableStatuses::includes()}
-	 * is the canonical archivable-statuses lookup.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical archivable-statuses lookup.
 	 */
 	private function process_archive_post( int $post_id, ArchiveAction $action, BulkActionResult $result ): void {
 		$cap = $action->capability_function();
@@ -238,10 +179,9 @@ final class BulkActionHandler {
 		}
 
 		if ( ! $action->perform( $post_id ) ) {
-			// Persist failure — bucket as wrong_status (closest fit;
-			// the post existed and the cap passed but the underlying
-			// status transition was rejected by wp_update_post or by
-			// the aps_pre_archive_post filter).
+			// The post existed and the cap passed, so the transition was
+			// rejected by wp_update_post or the aps_pre_archive_post filter.
+			// wrong_status is the closest bucket.
 			$result->record_wrong_status( $post_id );
 			return;
 		}
@@ -252,13 +192,9 @@ final class BulkActionHandler {
 	/**
 	 * Per-id processor for the unarchive path.
 	 *
-	 * Kept out of the `foreach` body in {@see bulk_unarchive()}, mirroring
-	 * the archive path. Unarchive has one fewer guard than archive (no
-	 * status pre-check) because {@see UnarchiveOperation::perform()}
-	 * already returns false for missing posts / non-archive-status posts /
-	 * persist failures. The lock check, however, now mirrors
-	 * {@see process_archive_post()} exactly: a post another user is
-	 * editing is skipped and bucketed as `locked`, on both directions.
+	 * One guard fewer than the archive path: no status pre-check, because
+	 * {@see \ArchivedPostStatus\Archive\UnarchiveOperation::perform()} already
+	 * returns false for missing posts, non-archived posts, and persist failures.
 	 *
 	 * @since 0.4.0
 	 */
@@ -276,11 +212,8 @@ final class BulkActionHandler {
 		}
 
 		if ( ! $action->perform( $post_id ) ) {
-			// aps_unarchive_post() returns false when the post is
-			// missing, not in 'archive' status, or wp_update_post
-			// rejected the change. We can't disambiguate without a
-			// second DB hit, so bucket as wrong_status — the most
-			// common cause in the wild.
+			// Missing post, not archived, or a rejected write — indistinguishable
+			// without a second DB hit, so bucket as the most common cause.
 			$result->record_wrong_status( $post_id );
 			return;
 		}
@@ -295,10 +228,7 @@ final class BulkActionHandler {
 	 * @param string $post_type The post type.
 	 * @return string
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostListUrlBuilder::for_post_type()}
-	 * is a pure-functional URL builder (hybrid pattern — static helper for
-	 * stateless URL construction, DI for Hookables). The static call is the
-	 * documented public surface.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- pure-functional URL builder.
 	 */
 	public function get_redirect_url( string $post_type ): string {
 		$sendback = wp_get_referer();

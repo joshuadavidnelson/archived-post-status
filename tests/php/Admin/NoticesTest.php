@@ -5,19 +5,6 @@
  * @since 0.4.0
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\Notices
- *
- * Merge note (0.4.0 §1.1):
- *   This file consumes the meaningful scenarios from the old
- *   AdminNoticesTest.php (which has been deleted). Specifically:
- *     - `test_register_hooks` was folded into the stronger
- *       `test_hooks_registers_admin_notices_action` below.
- *     - `test_notices_without_query_vars` and `test_notices_wrong_screen_base`
- *       were brought over because they assert observable behavior
- *       (wp_admin_notice must NOT fire).
- *   The remaining tests in AdminNoticesTest were `assertTrue(true)`
- *   smoke checks whose archive/unarchive scenarios are already covered
- *   here by the `test_archive_notice_includes_undo_link_*` tests, which
- *   assert on rendered output. Dropped without loss.
  */
 
 /**
@@ -50,10 +37,6 @@ class NoticesTest extends TestCase {
 	 * action, pinned in full: hook name, callback, priority, and accepted
 	 * args.
 	 *
-	 * Merged from AdminNoticesTest::test_register_hooks — that version checked
-	 * hook name and type, whereas the previous test_hooks_returns_hookable_descriptors
-	 * only checked that descriptors existed. Keeping the stronger assertions.
-	 *
 	 * @covers ArchivedPostStatus\Admin\Notices::hooks
 	 */
 	public function test_hooks_registers_admin_notices_action() {
@@ -72,10 +55,6 @@ class NoticesTest extends TestCase {
 	/**
 	 * display_notices() short-circuits silently on screens that are not the
 	 * `edit` base (e.g. dashboard, plugins) — wp_admin_notice must NEVER fire.
-	 *
-	 * Migrated from AdminNoticesTest::test_notices_wrong_screen_base; the
-	 * `never()` expectation makes this a real behavior test rather than
-	 * an assertTrue(true) smoke check.
 	 *
 	 * @covers ArchivedPostStatus\Admin\Notices::display_notices
 	 */
@@ -138,8 +117,6 @@ class NoticesTest extends TestCase {
 	/**
 	 * display_notices() does not emit a notice when no query vars are set
 	 * (no archived/unarchived/locked counters).
-	 *
-	 * Migrated from AdminNoticesTest::test_notices_without_query_vars.
 	 *
 	 * @covers ArchivedPostStatus\Admin\Notices::display_notices
 	 */
@@ -441,13 +418,8 @@ class NoticesTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// parse_ids() — moved to NoticeBuilderTest
+	// parse_ids() — covered in NoticeBuilderTest
 	// -----------------------------------------------------------------------
-	//
-	// the 0.4.0 refactor extracted parse_ids() onto
-	// the new NoticeBuilder class as a public method. The reflection-based
-	// data-provider that used to live here is now in NoticeBuilderTest, no
-	// longer reflection-based.
 
 	// -----------------------------------------------------------------------
 	// allowed-base list (should_show_notices())
@@ -536,7 +508,7 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
-	 * Redirect-contract pin: both
+	 * Both
 	 * {@see ArchivedPostStatus\Admin\BulkActionHandler::get_redirect_url} and
 	 * {@see ArchivedPostStatus\Admin\PostEditorGuard::redirect_to_list} send
 	 * the user to a URL whose admin screen has base `edit`, so `edit` must
@@ -623,14 +595,9 @@ class NoticesTest extends TestCase {
 	}
 
 	/**
-	 * Coverage pin : `get_current_post_type()` reads the
-	 * `$_GET['post_type']` request variable when the global `$post_type`
-	 * is not set. the 0.4.0 refactor plan flags this branch as a
-	 * coverage hole; pinning it here also keeps the working coverage
-	 * above baseline.
-	 *
-	 * The post_type from $_GET is `sanitize_key`-d before being trusted
-	 * by the builder; this test exercises the sanitize_key fallback.
+	 * `get_current_post_type()` reads `$_GET['post_type']` when the global
+	 * `$post_type` is not set, running it through `sanitize_key` before the
+	 * builder trusts it.
 	 *
 	 * @covers ArchivedPostStatus\Admin\Notices::display_notices
 	 */

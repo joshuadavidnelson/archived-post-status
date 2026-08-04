@@ -8,10 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Describes a single WordPress hook registration.
  *
- * A readonly value object representing either an add_action() or add_filter()
- * call. Named constructors make intent clearer at the call site than passing
- * a type string manually.
- *
  * @since 0.4.0
  */
 final class HookDescriptor {
@@ -22,14 +18,10 @@ final class HookDescriptor {
 	/**
 	 * @param string                     $type          'action' or 'filter' — use TYPE_ACTION / TYPE_FILTER.
 	 * @param string                     $hook          The WordPress hook name.
-	 * @param array<int|string, mixed>|string|object $callback The callback to register. Constrained to the
-	 *                                                  union of PHP-allowed property types that cover every
-	 *                                                  `callable` shape (string function name, [$obj, 'method'],
-	 *                                                  ['Class', 'method'], `Closure`, or any invokable object).
-	 *                                                  Factories declare `callable` at the parameter boundary
-	 *                                                  for the compile-time check; the property declares the
-	 *                                                  union directly because PHP disallows `callable` on
-	 *                                                  properties.
+	 * @param array<int|string, mixed>|string|object $callback The callback to register. Declared as a union
+	 *                                                  covering every `callable` shape because PHP disallows
+	 *                                                  `callable` on properties; the factories below take
+	 *                                                  `callable` so the check still happens at the boundary.
 	 * @param int                        $priority      Hook priority. Default 10.
 	 * @param int                        $accepted_args Number of arguments the callback accepts. Default 1.
 	 */

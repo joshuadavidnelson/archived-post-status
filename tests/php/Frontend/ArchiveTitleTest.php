@@ -198,7 +198,7 @@ class ArchiveTitleTest extends TestCase {
 	/**
 	 * Test skips modification in admin context
 	 *
-	 * §4 perf fix: is_admin() is checked before any post resolution, since
+	 * Performance: is_admin() is checked before any post resolution, since
 	 * this filter runs on every the_title() call on a page — get_post()
 	 * must never be reached in admin context.
 	 *
@@ -431,7 +431,7 @@ class ArchiveTitleTest extends TestCase {
 	}
 
 	/**
-	 * §1.6 regression: a label containing an ampersand, supplied via a
+	 * Regression: a label containing an ampersand, supplied via a
 	 * site's `aps_archived_label_string` filter callback, must appear in
 	 * the rendered title escaped exactly once. Before the fix,
 	 * ArchiveLabel::value() escaped the filtered label with esc_attr() and

@@ -10,21 +10,10 @@ use ArchivedPostStatus\Archive\ArchiveAction;
 /**
  * Builds nonce-wrapped admin URLs that archive or unarchive a post.
  *
- * Holds the bodies of {@see aps_get_archive_post_link()} and
- * {@see aps_get_unarchive_post_link()}; the procedural facades in
- * `src/functions/functions.php` are one-line delegates to this class.
- *
- * The `$action` parameter is type-narrowed to {@see ArchiveAction} so the
- * slug-vs-action ambiguity that the procedural facade had to defend against
- * (validating an arbitrary string in `in_array( $action, ['archive', 'unarchive'], true )`)
- * is eliminated inside this method body — the enum is the only legal input.
- *
- * `build()` does not check the archive/unarchive capability — it only
- * decides whether a link is constructible (post exists, post type is
- * supported). Authorization is the caller's responsibility; a caller that
- * exposes the built URL to the current request (rendering it, localizing
- * it to a script) must gate on the matching `aps_current_user_can_*`
- * capability first.
+ * `build()` decides only whether a link is constructible (post exists, post
+ * type is supported) — it does not check the archive/unarchive capability.
+ * Any caller that exposes the built URL must gate on the matching
+ * `aps_current_user_can_*` capability first.
  *
  * @since 0.4.0
  */
@@ -33,9 +22,7 @@ final class ArchivePostLink {
 	/**
 	 * Build the un/archive admin link for a post.
 	 *
-	 * Modeled after the core `get_delete_post_link()` function. The
-	 * `aps_get_{$action}_post_link` filter (action-suffixed name preserved
-	 * verbatim from the procedural facade) lets sites mutate the final URL.
+	 * Modeled after core's `get_delete_post_link()`.
 	 *
 	 * @see https://developer.wordpress.org/reference/functions/get_delete_post_link/
 	 *

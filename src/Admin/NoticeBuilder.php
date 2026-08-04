@@ -8,52 +8,32 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Builds admin notice message strings for archive/unarchive operations.
  *
- * Pure value-builder: no WordPress hook registration, no HTML rendering.
- * Reads the bulk-result counters from the query vars (`archived`,
- * `unarchived`, `locked`, `denied`, `not_found`, `wrong_status`, `ids`)
- * and returns an array of formatted, translation-ready notice strings.
+ * Pure value-builder: no hook registration, no HTML rendering. Reads the
+ * bulk-result counters from the query vars and returns formatted,
+ * translation-ready notice strings.
  *
- * The redirect URL also carries a `skipped=N` aggregate — the sum of every
- * skip bucket, added by {@see BulkActionResult::apply_to_url()} — but this
- * builder does not read it and produces no aggregate line. Skips are
- * reported one notice per reason bucket ({@see BUCKET_NAMES}) only.
+ * The URL's `skipped=N` aggregate is not read here — skips are reported one
+ * notice per reason bucket ({@see BUCKET_NAMES}).
  *
- * Invariant: NoticeBuilder NEVER performs bucket determination via
- * capability checks. The bucketed `denied` count arrives pre-computed
- * from {@see BulkActionHandler} via the redirect URL; the builder only
- * formats. The remaining capability check inside the builder — the
- * edit-link gate on the single-post unarchive branch — routes through
- * the centralized `aps_current_user_can_edit()` helper (filterable via
- * `aps_default_edit_capability`) so every cap question the plugin asks
- * ("can this user view / archive / unarchive / edit") resolves through
- * one filter surface per action. No raw `current_user_can()` calls
- * remain in this class.
+ * Bucket determination never happens here: the `denied` count arrives
+ * pre-computed from {@see BulkActionHandler}. The one capability check in this
+ * class, the edit-link gate on single-post unarchive, routes through
+ * `aps_current_user_can_edit()` rather than a raw `current_user_can()`.
  *
  * @since 0.4.0
  */
 final class NoticeBuilder {
 
 	/**
-	 * Declaration order of the reason-skip buckets emitted by
-	 * {@see build_notices()}. Iterated to drive the dispatcher table in
-	 * {@see format_bucket_notice()}.
-	 *
-	 * The five near-identical sprintf+_n blocks live in a per-bucket
-	 * strategy rather than in `build_notices()`, so the orchestration reads
-	 * as a single loop. The string literals stay inline inside the
-	 * dispatcher (i18n scanners require literal arguments to `_n()`).
-	 *
-	 * Order matters — pinned by
-	 * `test_build_notices_emits_per_bucket_notices_for_phase_1_reason_buckets`.
+	 * The reason-skip buckets emitted by {@see build_notices()}, in render
+	 * order. Drives the dispatcher in {@see format_bucket_notice()}.
 	 *
 	 * @var string[]
 	 */
 	private const BUCKET_NAMES = array( 'locked', 'denied', 'not_found', 'wrong_status' );
 
 	/**
-	 * Label of the undo link appended to the archive success notice. Exposed
-	 * so callers (and tests) have a single source of truth instead of
-	 * duplicating the copy.
+	 * Label of the undo link appended to the archive success notice.
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -98,20 +78,14 @@ final class NoticeBuilder {
 	/**
 	 * Format a single per-bucket reason-skip notice.
 	 *
-	 * Strategy dispatcher for the five reason-bucket notice lines that
-	 * share a uniform shape: `_n(singular, plural, $count, 'archived-post-status')`
-	 * piped through `sprintf( …, number_format_i18n( $count ) )`. The
-	 * string literals are inline inside each `match` arm so the i18n
-	 * scanner (xgettext / WPCS WordPress.WP.I18n) can extract them.
+	 * The strings stay inline in each `match` arm because i18n scanners require
+	 * literal arguments to `_n()`.
 	 *
 	 * @since 0.4.0
 	 *
 	 * @param string $bucket Bucket name (must be one of {@see BUCKET_NAMES}).
 	 * @param int    $count  Non-zero post count for this bucket.
 	 * @return string The translation-ready notice line.
-	 *
-	 * Public (rather than private) so tests can pin the exact per-bucket
-	 * copy from one source instead of duplicating it.
 	 */
 	public function format_bucket_notice( string $bucket, int $count ): string {
 		$message = match ( $bucket ) {
@@ -127,8 +101,7 @@ final class NoticeBuilder {
 			'wrong_status' =>
 				/* translators: %s: Number of posts skipped because their status disqualifies them */
 				_n( '%s post skipped: its status is not eligible for this action.', '%s posts skipped: their status is not eligible for this action.', $count, 'archived-post-status' ),
-			// Defensive default — kept exhaustive for phpstan; this arm is
-			// unreachable because callers iterate {@see BUCKET_NAMES}.
+			// Unreachable — callers iterate BUCKET_NAMES. Present for phpstan.
 			default => '',
 		};
 
@@ -156,7 +129,6 @@ final class NoticeBuilder {
 			number_format_i18n( $count )
 		);
 
-		// Add undo link for both single and bulk operations
 		if ( ! empty( $ids ) ) {
 			$ids_string = implode( ',', array_map( 'absint', $ids ) );
 			$undo_url   = wp_nonce_url(
@@ -193,7 +165,6 @@ final class NoticeBuilder {
 			number_format_i18n( $count )
 		);
 
-		// Add edit link for single post unarchive
 		if ( 1 === count( $ids ) ) {
 			$post_id = absint( $ids[0] );
 			if ( aps_current_user_can_edit( $post_id ) ) {
@@ -215,13 +186,8 @@ final class NoticeBuilder {
 	/**
 	 * Parse IDs from query variable.
 	 *
-	 * Normalizes the `ids` query var into an int[] regardless of whether
-	 * WordPress hands us a CSV string, a real int array, or an array whose
-	 * first element is itself a CSV string. All non-numeric tokens are
-	 * dropped; the result is always `array<int, int>` with the absint
-	 * filter applied.
-	 *
-	 * Public so the builder can be tested directly without reflection.
+	 * WordPress may hand this a CSV string, a real int array, or an array whose
+	 * first element is itself a CSV string; all three normalize to int[].
 	 *
 	 * @since 0.4.0
 	 * @param mixed $ids The IDs from query variable.
@@ -232,19 +198,17 @@ final class NoticeBuilder {
 			return array();
 		}
 
-		// Handle string of comma-separated IDs
 		if ( is_string( $ids ) ) {
 			$ids = preg_replace( '/[^0-9,]/', '', $ids );
 			$ids = explode( ',', $ids );
 		}
 
-		// Handle array but check for comma-separated string in first element
+		// An array whose first element is itself a CSV string.
 		if ( is_array( $ids ) && isset( $ids[0] ) && is_string( $ids[0] ) && str_contains( $ids[0], ',' ) ) {
 			$ids_string = preg_replace( '/[^0-9,]/', '', $ids[0] );
 			$ids        = explode( ',', $ids_string );
 		}
 
-		// Ensure we have an array and sanitize
 		$ids = (array) $ids;
 		return array_filter( array_map( 'absint', $ids ) );
 	}

@@ -8,10 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Builds the public-facing permalink for an archived post.
  *
- * Holds the body of {@see aps_get_archived_post_link()}; the procedural
- * facade in `src/functions/functions.php` is a one-line delegate to this
- * class.
- *
  * @since 0.4.0
  */
 final class ArchivedPostLink {
@@ -35,18 +31,15 @@ final class ArchivedPostLink {
 	 */
 	public static function build( int|\WP_Post|null $post = null, array $query_args = array(), string $archived_link = '' ): string|false {
 
-		// make sure we have a valid post object.
 		$post = get_post( $post );
 		if ( ! $post ) {
 			return false;
 		}
 
-		// is the post status viewable?
 		if ( is_post_status_viewable( $post->post_status ) ) {
 			return get_permalink( $post );
 		}
 
-		// is the post type viewable?
 		$post_type_object = get_post_type_object( $post->post_type );
 		if ( ! $post_type_object
 			|| ! aps_is_supported_post_type( $post->post_type )

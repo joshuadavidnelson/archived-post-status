@@ -16,11 +16,8 @@ use WP_CLI\Utils;
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
- * WP-CLI adapter: registers the archive/unarchive commands and delegates
- * each invocation to the injected runner. Behavior lives in src/CLI/.
- * Composition is wired in Plugin::hookables().
- *
- * Public hook surface: `hooks()`, `cli()`, `archive()`, `unarchive()`.
+ * WP-CLI adapter: registers the archive/unarchive commands and delegates each
+ * invocation to the injected runner.
  *
  * @since 0.4.0
  */
@@ -35,9 +32,7 @@ final class Registrar implements HookableInterface {
 	/**
 	 * @return HookDescriptor[]
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action() is a
-	 * named-constructor factory for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array( HookDescriptor::action( 'cli_init', array( $this, 'cli' ) ) );
@@ -112,18 +107,11 @@ final class Registrar implements HookableInterface {
 			return;
 		}
 
-		// Bracket the override around the run, mirroring
-		// BulkActionHandler::bulk_unarchive()'s add_filter/remove_filter
-		// pairing. A standard WP-CLI invocation exits inside run(), so the
-		// cleanup matters only in contexts where run() returns — a runner
-		// with an overridden terminate(), or future embedded reuse.
-		//
-		// Registered at PHP_INT_MAX — the priority reserved for the
-		// plugin's own overrides on this hook (see the filter's docblock in
-		// UnarchiveOperation::dispatch_update()) — for the same reason the
-		// bulk-action Undo override uses it: a third party may have their
-		// own reasons to hook aps_unarchive_post_status at the default
-		// priority 10, and this override must never collide with theirs.
+		// PHP_INT_MAX is the priority reserved for the plugin's own overrides
+		// on this hook, so a site that hooks aps_unarchive_post_status at the
+		// default priority is never disturbed by the remove_filter() below.
+		// A standard WP-CLI invocation exits inside run(), so that cleanup only
+		// matters where run() returns — e.g. an overridden terminate().
 		$status_filter = static fn() => $new_status;
 
 		add_filter( 'aps_unarchive_post_status', $status_filter, PHP_INT_MAX );

@@ -6,19 +6,11 @@ namespace ArchivedPostStatus\Status;
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
- * The vocabulary used to identify the archived post status throughout the plugin.
+ * The archived post status slug.
  *
- * Replaces the bare-string literal `'archive'` (slug) that previously
- * appeared scattered across the codebase; call sites consume
- * `PostStatusValue::Slug->value` — or {@see self::resolved_slug()} where the
- * `aps_post_status_slug` filter must be honoured — in place of the literal.
- *
- * Deliberately narrow: only the status slug lives here. The label has its
- * own accessor, {@see \ArchivedPostStatus\Status\ArchiveLabel::value()},
- * since (unlike the slug) every consumer needs the `aps_archived_label_string`
- * filter applied too — there is no bare "default label" call site left to
- * absorb into an enum case. Other status-related vocabulary (query var
- * names, option keys, meta keys, hook names) lives with the consuming class.
+ * Only the slug lives here. The label has its own accessor,
+ * {@see ArchiveLabel::value()}, because every label consumer also needs the
+ * `aps_archived_label_string` filter applied.
  *
  * @since 0.4.0
  */
@@ -27,26 +19,20 @@ enum PostStatusValue: string {
 	/**
 	 * The default slug under which the archived post status is registered.
 	 *
-	 * Site authors can override the slug via the `aps_post_status_slug`
-	 * filter; the literal default is centralised here.
+	 * Overridable via the `aps_post_status_slug` filter.
 	 */
 	case Slug = 'archive';
 
 	/**
 	 * Filterable runtime accessor for the archived post status slug.
 	 *
-	 * Applies `aps_post_status_slug` once, with `self::Slug->value` as the
-	 * default. Every internal consumer that compares against
-	 * `$post->post_status` or calls `wp_update_post(['post_status' => ...])`
-	 * or `register_post_status()` routes through this method. Stable 0.3.x
-	 * applied the filter only at registration — this fixes that leak so
-	 * the configured slug is honoured at every internal site.
+	 * Every internal consumer routes through this. 0.3.x applied
+	 * `aps_post_status_slug` only at registration, so a configured slug was
+	 * ignored everywhere else.
 	 *
-	 * Falls back to `self::Slug->value` when the filter returns an
-	 * empty/falsy value — matching 0.3.12's `aps_post_status_slug()`
-	 * semantics. Without this, a misbehaving filter that returns `''`
-	 * would register a broken, empty-slug status and every internal
-	 * comparison against it would silently stop matching.
+	 * An empty filter return falls back to the default — matching 0.3.12
+	 * semantics, and without it a filter returning `''` would register a
+	 * broken status that no internal comparison could ever match.
 	 *
 	 * @since 0.4.0
 	 * @return string

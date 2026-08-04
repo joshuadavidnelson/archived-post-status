@@ -1,6 +1,6 @@
 <?php
 /**
- * REST API read-permission parity for archived content (§2.7).
+ * REST API read-permission parity for archived content.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus

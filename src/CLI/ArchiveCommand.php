@@ -19,10 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Validation pipeline for the archive command.
  *
- * Order is load-bearing and matches the historical CLI::handle_action
- * sequence: supported-post-type → already-archived → capability → lock
- * check → archivable-status (with --force bypass). The existing test suite
- * pins this ordering.
+ * Gate order is load-bearing: supported-post-type → already-archived →
+ * capability → lock → archivable-status (bypassed by --force).
  *
  * @since 0.4.0
  */
@@ -60,9 +58,7 @@ final class ArchiveCommand extends Command {
 	 * @param array<string, mixed> $assoc_args Associative CLI flags (--force, --defer-term-counting).
 	 * @return CliResult|null Error result, or null if validation passes.
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * and {@see ArchivableStatuses::includes()} are the canonical
-	 * vocabulary lookups.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical vocabulary lookups.
 	 */
 	protected function validate( int $post_id, array $assoc_args ): ?CliResult {
 		$pt_error = $this->ensure_supported_post_type( $post_id );
@@ -70,9 +66,8 @@ final class ArchiveCommand extends Command {
 			return $pt_error;
 		}
 
-		// Already-archived guard: short-circuits before any capability check
-		// so messages stay specific ("already archived" beats "no permission
-		// to archive" when the post is in fact already in the archive).
+		// Before the capability check, so an already-archived post reports that
+		// rather than a less specific "no permission to archive".
 		if ( PostStatusValue::resolved_slug() === get_post_status( $post_id ) ) {
 			return new CliResult( false, "Post {$post_id} is already archived." );
 		}

@@ -6,18 +6,9 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Status\PostStatus
  *
- * Migration note (0.4.0 §1.1):
- *   The ten `aps_status_arg_*` scenarios in this file were migrated from
- *   FunctionsTest::test_aps_status_arg_* and FunctionsTest::test_register_archive_post_status
- *   when `aps_register_archive_post_status()` was removed; the behavior now
- *   lives in `Status\PostStatus::register_status()` (which delegates to
- *   the private `status_args()`).
- *
- * Brittleness note :
- *   The original ten near-identical filter-pinning tests were collapsed into
- *   a single `@dataProvider` driven test. Each old test pinned all seven
- *   filters; only one differed per row. The new test asserts a single
- *   filter per data row — the matrix is now visible at the provider, and
+ * Brittleness note:
+ *   The `aps_status_arg_*` scenarios are `@dataProvider` driven, asserting a
+ *   single filter per data row — the matrix is visible at the provider, and
  *   the assertion fails only when the SUT's default for the named arg
  *   changes.
  */
@@ -68,8 +59,6 @@ class PostStatusTest extends TestCase {
 
 	/**
 	 * register_status() calls register_post_status('archive', ...).
-	 *
-	 * Migrated from FunctionsTest::test_register_archive_post_status.
 	 *
 	 * @covers ArchivedPostStatus\Status\PostStatus::register_status
 	 */
@@ -146,10 +135,6 @@ class PostStatusTest extends TestCase {
 	 * default for the filter named in the row — see status_arg_default_provider
 	 * for the matrix.
 	 *
-	 * Replaces 10 prior near-duplicate `test_status_arg_*` methods that each
-	 * pinned all 7 filters; the matrix is now visible at the provider, and
-	 * each row asserts precisely one fact.
-	 *
 	 * @dataProvider status_arg_default_provider
 	 *
 	 * @covers ArchivedPostStatus\Status\PostStatus::register_status
@@ -178,8 +163,6 @@ class PostStatusTest extends TestCase {
 	 * value back into the register_post_status() args — the only observable
 	 * is that the call completes without type error and the filters fired.
 	 *
-	 * Migrated from FunctionsTest::test_status_argument_filters_can_be_modified.
-	 *
 	 * @covers ArchivedPostStatus\Status\PostStatus::register_status
 	 */
 	public function test_status_argument_filters_can_be_modified() {
@@ -203,8 +186,6 @@ class PostStatusTest extends TestCase {
 	 * Non-boolean filter returns are coerced via the (bool)/(string) casts in
 	 * status_args(); the call must still succeed without type errors.
 	 *
-	 * Migrated from FunctionsTest::test_status_argument_filters_type_casting.
-	 *
 	 * @covers ArchivedPostStatus\Status\PostStatus::register_status
 	 */
 	public function test_status_argument_filters_type_casting() {
@@ -225,7 +206,7 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
-	 * §2.10: `dashicons` is not a real `register_post_status()` arg — core
+	 * `dashicons` is not a real `register_post_status()` arg — core
 	 * silently ignores it (see the arg list in
 	 * `vendor/php-stubs/wordpress-stubs/wordpress-stubs.php`). The
 	 * `aps_status_arg_dashicon` filter that fed it was removed entirely
@@ -272,7 +253,7 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
-	 * The `aps_post_status_slug` filter (restored in the 0.4.0 refactor
+	 * The `aps_post_status_slug` filter (restored
 	 * cleanup) lets sites that registered the status under a custom slug
 	 * under 0.3.x continue to do so. When the filter returns `'archived'`,
 	 * `register_post_status()` must receive `'archived'` (not the default
@@ -495,8 +476,8 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
-	 * The §1.3 multi-status array fix: a `post_status[]=publish&post_status[]=archive`
-	 * filter (an array containing 'archive') must still suppress the label.
+	 * A `post_status[]=publish&post_status[]=archive` filter — an array
+	 * containing 'archive' — must still suppress the label.
 	 *
 	 * @covers ArchivedPostStatus\Status\PostStatus::display_post_states
 	 */
@@ -519,15 +500,11 @@ class PostStatusTest extends TestCase {
 	}
 
 	/**
-	 * §1.6 regression (self-discovered consumer, found by grepping for
-	 * `aps_archived_label_string()` callers): display_post_states() feeds
-	 * the label straight into WP core's `_post_states()`, which
-	 * concatenates every post state directly into raw HTML with no
-	 * escaping of its own (`"<span class='post-state'>{$state}...`"`).
-	 * Before the fix this happened to look correct only because
-	 * ArchiveLabel::value() escaped with esc_attr() internally; once that
-	 * internal escaping is removed, display_post_states() must escape the
-	 * label itself.
+	 * Regression: display_post_states() feeds the label straight into core's
+	 * `_post_states()`, which concatenates every state into raw HTML with no
+	 * escaping of its own. This used to look correct only because
+	 * ArchiveLabel::value() applied esc_attr() internally; with that gone,
+	 * display_post_states() must escape the label itself.
 	 *
 	 * Distinguishable esc_attr()/esc_html() markers prove which function
 	 * actually produced the returned value.

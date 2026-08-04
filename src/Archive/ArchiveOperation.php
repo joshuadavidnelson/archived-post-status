@@ -10,18 +10,12 @@ use ArchivedPostStatus\Status\PostStatusValue;
 /**
  * Performs the archive transition for a post.
  *
- * Holds the body of {@see aps_archive_post()}; the procedural facade in
- * `src/functions/functions.php` is a one-line delegate to this class.
- *
- * Contract pin (C3):
- *   This class MUST NOT re-read the post between `wp_update_post` and the
- *   `aps_archived_post` action firing. The original `WP_Post` object captured
- *   at the top of {@see perform()} is the canonical "pre-archive snapshot"
- *   passed to listeners (notably {@see ArchiveMetaListener::save_meta()}),
- *   which rely on it to record `comment_status` / `ping_status` *before* the
- *   archive flow overwrites them with 'closed'. A re-read here would silently
- *   corrupt the meta snapshot — the previous-status restore on unarchive
- *   would then mirror the post-archive state, not the pre-archive state.
+ * Never re-read the post between `wp_update_post` and the `aps_archived_post`
+ * action. The `WP_Post` captured at the top of {@see perform()} is the
+ * pre-archive snapshot listeners depend on — notably
+ * {@see ArchiveMetaListener::save_meta()}, which records `comment_status` /
+ * `ping_status` before the archive flow overwrites them with 'closed'. A
+ * re-read would make unarchive restore the post-archive state instead.
  *
  * @since 0.4.0
  */
@@ -38,14 +32,11 @@ final class ArchiveOperation {
 	 * Whether this operation is currently writing its own status transition.
 	 *
 	 * {@see \ArchivedPostStatus\Status\PostStatusGuard::enforce_archive_state()}
-	 * consults this so the plugin's own archive write is never treated as an
-	 * out-of-band entry into the archived status. Without this guard, a site
-	 * using the `aps_archive_post_comment_status` / `aps_archive_post_ping_status`
-	 * filters below to keep comments or pings open would have that choice
-	 * silently reverted: `enforce_archive_state()` reacts to the `save_post`
-	 * hook, which `wp_update_post()` fires synchronously — inside the very
-	 * call this flag wraps — and would otherwise "correct" the freshly
-	 * filtered state back to closed/closed.
+	 * consults this so the plugin's own write is never treated as out-of-band.
+	 * That guard runs on `save_post`, which `wp_update_post()` fires
+	 * synchronously inside the call this flag wraps — without the flag it would
+	 * revert a site's `aps_archive_post_comment_status` /
+	 * `aps_archive_post_ping_status` choice straight back to closed/closed.
 	 *
 	 * @since 0.4.0
 	 * @return bool
@@ -74,9 +65,7 @@ final class ArchiveOperation {
 	 * @param int $post_id The post ID to archive.
 	 * @return \WP_Post|bool
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor; the wp_update_post call
-	 * threads the filtered slug end-to-end.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public static function perform( int $post_id ): \WP_Post|bool {
 
@@ -163,17 +152,10 @@ final class ArchiveOperation {
 		/**
 		 * Fires after a post is archived.
 		 *
-		 * Passes the original WP_Post object (before the status change) as a third
-		 * argument so listeners — such as ArchiveMetaListener — can capture
-		 * pre-archive state (comment_status, ping_status) without a separate read.
-		 * Existing callbacks registered with one or two accepted_args continue to
-		 * work unchanged.
-		 *
-		 * INVARIANT (C3): the `$post` argument MUST be the same object captured at
-		 * the top of `perform()` — never the result of a re-read after
-		 * `wp_update_post`. Introducing a re-read between the update and this
-		 * action will break listeners that rely on pre-archive
-		 * `comment_status` / `ping_status`.
+		 * `$post` is the pre-archive snapshot captured at the top of `perform()`,
+		 * so listeners can read `comment_status` / `ping_status` as they were
+		 * before archiving. It must never become a re-read after
+		 * `wp_update_post()`.
 		 *
 		 * @since 0.4.0
 		 * @param int      $post_id         Post ID.

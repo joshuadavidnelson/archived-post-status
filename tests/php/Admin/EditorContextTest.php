@@ -6,12 +6,10 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\EditorContext
  *
- * the 0.4.0 refactor extracted the classic-editor detection out of
- * the private `PostEditor::is_classic_editor()` method into the static
- * `Admin\EditorContext` helper and wrapped the result in the new
- * `aps_is_classic_editor` filter so other plugins can trip the flag.
+ * Classic-editor detection, and the `aps_is_classic_editor` filter that lets
+ * other plugins trip the flag.
  *
- * Four scenarios pinned per the plan's coverage list:
+ * Four scenarios:
  *
  *   (a) default detection true  — Classic Editor plugin active, no block
  *       editor screen.
