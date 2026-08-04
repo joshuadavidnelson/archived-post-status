@@ -1,0 +1,198 @@
+name: "PR Report"
+
+# Posts the metrics and coverage comment on a pull request.
+#
+# Split out of Integrate so the workflows that run the actual checks need no
+# write access to the pull request. This one is the mirror image: it runs no
+# project code and performs no checks, it only reads artifacts the check
+# workflows produced and renders them.
+#
+# Two consequences of the workflow_run trigger worth knowing:
+#
+#  1. GitHub always runs the copy of this file on the default branch, so
+#     edits here do nothing until they are merged to stable.
+#  2. It is a privileged trigger — the token can write to pull requests even
+#     for fork PRs, which is why the comment works there when a pull_request
+#     -triggered job's read-only token would not. In exchange this workflow
+#     must NEVER check out or execute pull request code. It checks out the
+#     default branch for its own scripts and treats every downloaded
+#     artifact as untrusted data.
+on:
+  workflow_run:
+    workflows: ["Integrate", "Unit Tests"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+# Both named workflows fire this one, so a push produces two runs. The gate
+# below makes the early one a no-op, and this keeps a near-simultaneous
+# finish from racing two comment posts.
+concurrency:
+  group: "pr-report-${{ github.event.workflow_run.head_sha }}"
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: "Check the CI workflows passed"
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    permissions:
+      actions: read
+      pull-requests: read
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+      pr_number: ${{ steps.check.outputs.pr_number }}
+      head_sha: ${{ steps.check.outputs.head_sha }}
+      base_sha: ${{ steps.check.outputs.base_sha }}
+      integrate_run_id: ${{ steps.check.outputs.integrate_run_id }}
+      unit_tests_run_id: ${{ steps.check.outputs.unit_tests_run_id }}
+    steps:
+      - name: "Require both CI workflows to be green"
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const REQUIRED = [ 'Integrate', 'Unit Tests' ];
+            const headSha = context.payload.workflow_run.head_sha;
+
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head_sha: headSha,
+                per_page: 100,
+              }
+            );
+
+            // Whichever workflow finishes first sees its sibling unfinished
+            // and stops here. That is the common path, not an error — the
+            // second one to finish does the reporting.
+            const ids = {};
+            for ( const name of REQUIRED ) {
+              const run = runs.find( ( candidate ) => candidate.name === name );
+
+              if ( ! run || 'completed' !== run.status || 'success' !== run.conclusion ) {
+                const state = ! run ? 'has not run' : `is ${ run.status }/${ run.conclusion }`;
+                core.info( `${ name } ${ state } — not reporting yet.` );
+                core.setOutput( 'ready', 'false' );
+                return;
+              }
+
+              ids[ name ] = run.id;
+            }
+
+            // Everything below comes from the event payload or the API.
+            // Nothing is read out of an artifact: a fork PR controls the
+            // workflow files it runs, so it controls artifact contents too,
+            // and none of that may reach a workflow output.
+            let prNumber = ( context.payload.workflow_run.pull_requests || [] )
+              .map( ( pr ) => pr.number )[ 0 ];
+
+            if ( ! prNumber ) {
+              // Empty for fork PRs, so fall back to the commit's PRs. Match
+              // on head SHA too: the endpoint also returns PRs that merely
+              // contain the commit, which are not the PR being reported on.
+              const { data: associated } =
+                await github.rest.repos.listPullRequestsAssociatedWithCommit( {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: headSha,
+                } );
+              prNumber = ( associated.find(
+                ( pr ) => 'open' === pr.state && pr.head.sha === headSha
+              ) || {} ).number;
+            }
+
+            if ( ! prNumber ) {
+              core.info( `No open pull request found for ${ headSha } — nothing to comment on.` );
+              core.setOutput( 'ready', 'false' );
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.get( {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            } );
+
+            // Concurrency is keyed on the head SHA, so runs for two pushes
+            // never cancel each other and a slow run for an older commit can
+            // finish last. Posting it would overwrite the sticky comment with
+            // stale numbers; the current head has its own run coming.
+            if ( pr.head.sha !== headSha ) {
+              core.info( `${ headSha } is no longer the head of #${ prNumber } — skipping a stale report.` );
+              core.setOutput( 'ready', 'false' );
+              return;
+            }
+
+            core.setOutput( 'ready', 'true' );
+            core.setOutput( 'pr_number', String( prNumber ) );
+            core.setOutput( 'head_sha', headSha );
+            core.setOutput( 'base_sha', pr.base.sha );
+            core.setOutput( 'integrate_run_id', String( ids[ 'Integrate' ] ) );
+            core.setOutput( 'unit_tests_run_id', String( ids[ 'Unit Tests' ] ) );
+
+  comment:
+    name: "Post the report"
+    runs-on: ubuntu-latest
+    needs: gate
+    if: needs.gate.outputs.ready == 'true'
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      # The default branch, explicitly — never the pull request's code.
+      - name: "Checkout"
+        uses: "actions/checkout@v7"
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: "Setup Node.js"
+        uses: "actions/setup-node@v5"
+        with:
+          node-version: '26'
+
+      # A missing artifact degrades the report to the sections it can build
+      # rather than failing the run.
+      - name: "Download metrics"
+        continue-on-error: true
+        uses: "actions/download-artifact@v4"
+        with:
+          name: phpmetrics-summary
+          path: reports
+          run-id: ${{ needs.gate.outputs.integrate_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Download coverage"
+        continue-on-error: true
+        uses: "actions/download-artifact@v4"
+        with:
+          name: pr-coverage
+          path: coverage
+          run-id: ${{ needs.gate.outputs.unit_tests_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Render the report"
+        run: node .github/scripts/render-pr-report.js
+        env:
+          HEAD_SUMMARY: reports/metrics-summary.json
+          BASE_SUMMARY: reports/base-summary.json
+          PHP_CLOVER: coverage/php-clover.xml
+          PHP_BASE_CLOVER: coverage/php-base-clover.xml
+          JS_SUMMARY: coverage/js-summary.json
+          JS_BASE_SUMMARY: coverage/js-base-summary.json
+          OUTPUT: reports/pr-report.md
+          HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
+          BASE_SHA: ${{ needs.gate.outputs.base_sha }}
+          # The artifact lives on the Integrate run, not on this one.
+          RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ needs.gate.outputs.integrate_run_id }}"
+
+      - name: "Post the report"
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: pr-report
+          number: ${{ needs.gate.outputs.pr_number }}
+          path: reports/pr-report.md

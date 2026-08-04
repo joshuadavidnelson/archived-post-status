@@ -56,6 +56,9 @@ jobs:
     - name: "Run PHPMD"
       run: "composer run phpmd"
 
+  # Computes and publishes metrics; it does not comment. The PR Report
+  # workflow reads this job's artifact and owns everything user-facing, so
+  # nothing here needs write access to the pull request.
   code-analysis:
     name: "Code Analysis & Metrics"
     runs-on: "ubuntu-latest"
@@ -63,7 +66,6 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: "read"
-      pull-requests: "write"
 
     steps:
     - name: "Checkout"
@@ -101,21 +103,10 @@ jobs:
       uses: "actions/upload-artifact@v4"
       with:
         name: phpmetrics-summary
-        path: reports/metrics-summary.json
+        path: |
+          reports/metrics-summary.json
+          reports/base-summary.json
         retention-days: 14
-
-    - name: "Render metrics comparison"
-      run: node .github/scripts/render-metrics-comment.js
-      env:
-        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-    - name: "Post metrics comparison"
-      uses: marocchino/sticky-pull-request-comment@v3
-      with:
-        header: code-metrics
-        path: reports/metrics-comment.md
 
   pot-freshness:
     name: "Translation template freshness"
