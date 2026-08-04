@@ -88,8 +88,13 @@ jobs:
   code-analysis:
     name: "Code Analysis & Metrics"
     runs-on: "ubuntu-latest"
+    # Deliberately no `if: always()`. A branch that still fails lint or static
+    # analysis will be pushed again anyway, so metrics computed now would just
+    # be thrown away — let the job skip and run once the branch is clean.
     needs: [syntax-check, code-quality]
-    if: always() && github.event_name == 'pull_request'
+    # These metrics exist to review a proposed change, so there is nothing to
+    # do on a push: no PR to comment on, and no baseline worth keeping.
+    if: github.event_name == 'pull_request'
     permissions:
       contents: "read"
       pull-requests: "write"
@@ -97,6 +102,15 @@ jobs:
     steps:
     - name: "Checkout"
       uses: "actions/checkout@v6"
+
+    # The base is analysed from source in this same job rather than pulled from
+    # a stored artifact, so the delta is a true base-vs-head comparison and is
+    # available on every PR, including the first one after this job changes.
+    - name: "Checkout base branch for comparison"
+      uses: "actions/checkout@v6"
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+        path: ".base"
 
     - name: "Install PHP"
       uses: "shivammathur/setup-php@v2"
@@ -113,17 +127,39 @@ jobs:
     - name: "Install dependencies"
       run: composer install
 
-    - name: "Check if quality checks passed"
-      id: quality-status
+    # PHPMetrics writes nothing, and still exits 0, when it cannot write the
+    # report — so both runs assert the file landed rather than trusting the
+    # exit status. Note `--quiet` is never used: it suppresses report writing
+    # altogether. `--composer=false` skips a packagist request on every run and
+    # leaves every metric in the summary report unchanged.
+    - name: "Generate metrics summary"
       run: |
-        if [[ "${{ needs.syntax-check.result }}" == "success" && "${{ needs.code-quality.result }}" == "success" ]]; then
-          echo "quality_passed=true" >> $GITHUB_OUTPUT
-        else
-          echo "quality_passed=false" >> $GITHUB_OUTPUT
-        fi
+        composer run phpmetrics-summary
+        test -s reports/metrics-summary.json || {
+          echo "::error::PHPMetrics produced no summary for the PR branch."
+          exit 1
+        }
 
-    - name: "Find existing code analysis comment"
-      if: always()
+    - name: "Generate metrics summary for the base branch"
+      run: |
+        php -d error_reporting='E_ALL & ~E_DEPRECATED' ./vendor/bin/phpmetrics \
+          --composer=false --report-summary-json=reports/base-summary.json .base/src/
+        test -s reports/base-summary.json || {
+          echo "::error::PHPMetrics produced no summary for the base branch."
+          exit 1
+        }
+
+    # ~1KB of flat JSON, attached under a stable name so it is easy to find on
+    # a run. Artifacts are scoped per run, so this is one small file per run,
+    # aged out well inside the window where the PR is still being reviewed.
+    - name: "Upload metrics summary"
+      uses: "actions/upload-artifact@v4"
+      with:
+        name: phpmetrics-summary
+        path: reports/metrics-summary.json
+        retention-days: 14
+
+    - name: "Find existing metrics comment"
       id: find-comment
       uses: peter-evans/find-comment@v3
       with:
@@ -131,81 +167,101 @@ jobs:
         comment-author: 'github-actions[bot]'
         body-includes: '📊 Code Metrics Report'
 
-    - name: "Update comment for failed quality checks"
-      if: steps.quality-status.outputs.quality_passed == 'false' && steps.find-comment.outputs.comment-id != ''
-      uses: peter-evans/create-or-update-comment@v4
-      with:
-        comment-id: ${{ steps.find-comment.outputs.comment-id }}
-        edit-mode: replace
-        body: |
-          ## 📊 Code Metrics Report
-
-          ⏳ Code analysis will be posted once quality checks pass.
-
-          **Current Status:** Quality checks failed - please fix issues and re-run checks.
-
-    - name: "Generate PHPMetrics Report"
-      if: steps.quality-status.outputs.quality_passed == 'true'
-      run: composer run phpmetrics
-
-    - name: "Parse metrics and create/update comment"
-      if: steps.quality-status.outputs.quality_passed == 'true'
+    - name: "Post metrics comparison"
       uses: actions/github-script@v7
       with:
         script: |
           const fs = require('fs');
 
-          let metricsContent = '## 📊 Code Metrics Report\\n\\n';
+          const read = (path) => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const head = read('reports/metrics-summary.json');
+          const base = read('reports/base-summary.json');
 
-          if (fs.existsSync('reports/metrics.json')) {
-            try {
-              const metrics = JSON.parse(fs.readFileSync('reports/metrics.json'));
+          // [section, key, label, lowerIsBetter]
+          const METRICS = [
+            ['LOC', 'linesOfCode', 'Lines of code', false],
+            ['LOC', 'logicalLinesOfCode', 'Logical lines of code', false],
+            ['LOC', 'logicalLinesByMethod', 'Logical lines per method', true],
+            ['OOP', 'classes', 'Classes', false],
+            ['OOP', 'methods', 'Methods', false],
+            ['OOP', 'lackCohesionOfMethods', 'Lack of cohesion of methods', true],
+            ['Complexity', 'avgCyclomaticComplexityByClass', 'Avg cyclomatic complexity / class', true],
+            ['Complexity', 'avgWeightedMethodCountByClass', 'Avg weighted method count / class', true],
+            ['Complexity', 'avgRelativeSystemComplexity', 'Avg relative system complexity', true],
+            ['Complexity', 'avgDifficulty', 'Avg difficulty', true],
+            ['Coupling', 'avgEfferentCoupling', 'Avg efferent coupling', true],
+            ['Coupling', 'avgInstability', 'Avg instability', true],
+            ['Bugs', 'avgBugsByClass', 'Avg bugs / class', true],
+            ['Bugs', 'avgDefectsByClass', 'Avg defects / class (Kan)', true],
+            ['Violations', 'critical', 'Violations: critical', true],
+            ['Violations', 'error', 'Violations: error', true],
+            ['Violations', 'warning', 'Violations: warning', true],
+          ];
 
-              metricsContent += `**✅ Quality Checks:** All passed\\n\\n`;
-              metricsContent += `**Complexity Metrics:**\\n`;
-              metricsContent += `- Average Complexity: ${metrics.averageComplexity || 'N/A'}\\n`;
-              metricsContent += `- Max Complexity: ${metrics.maxComplexity || 'N/A'}\\n\\n`;
-              metricsContent += `**Quality Metrics:**\\n`;
-              metricsContent += `- Maintainability Index: ${metrics.maintainabilityIndex || 'N/A'}\\n`;
-              metricsContent += `- Technical Debt: ${metrics.technicalDebt || 'N/A'}\\n\\n`;
-            } catch (e) {
-              metricsContent += `**✅ Quality Checks:** All passed\\n\\n`;
-              metricsContent += `**Metrics:** Report generated successfully (JSON parse error)\\n\\n`;
+          const value = (report, section, key) => {
+            const found = (report[section] || {})[key];
+            return typeof found === 'number' ? found : null;
+          };
+          const format = (n) =>
+            n === null ? 'n/a' : Number.isInteger(n) ? String(n) : n.toFixed(2);
+
+          const rows = [];
+          let regressions = 0;
+
+          for (const [section, key, label, lowerIsBetter] of METRICS) {
+            const before = value(base, section, key);
+            const after = value(head, section, key);
+            if (before === null && after === null) continue;
+
+            let delta = '—';
+            if (before !== null && after !== null) {
+              const change = Math.round((after - before) * 100) / 100;
+              if (change !== 0) {
+                const worse = lowerIsBetter && change > 0;
+                if (worse) regressions++;
+                delta = `${worse ? '⚠️ ' : ''}${change > 0 ? '+' : '-'}${format(Math.abs(change))}`;
+              }
             }
-          } else {
-            metricsContent += `**✅ Quality Checks:** All passed\\n\\n`;
-            metricsContent += `**Metrics:** Report generated successfully\\n\\n`;
+            rows.push(`| ${label} | ${format(before)} | ${format(after)} | ${delta} |`);
           }
 
-          metricsContent += `[📈 View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          const headSha = context.payload.pull_request.head.sha.slice(0, 7);
+          const baseSha = context.payload.pull_request.base.sha.slice(0, 7);
+          const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+          const body = [
+            '## 📊 Code Metrics Report',
+            '',
+            regressions === 0
+              ? '✅ No metric moved in the wrong direction.'
+              : `⚠️ ${regressions} metric${regressions === 1 ? '' : 's'} moved in the wrong direction.`,
+            '',
+            `\`${baseSha}\` (base) → \`${headSha}\` (PR)`,
+            '',
+            '| Metric | Base | PR | Δ |',
+            '| --- | ---: | ---: | ---: |',
+            ...rows,
+            '',
+            `<sub>PHPMetrics summary — the full JSON is attached to [this run](${runUrl}) as \`phpmetrics-summary\`.</sub>`,
+          ].join('\n');
 
           const commentId = '${{ steps.find-comment.outputs.comment-id }}';
 
           if (commentId) {
-            // Update existing comment
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              comment_id: commentId,
-              body: metricsContent
+              comment_id: Number(commentId),
+              body,
             });
           } else {
-            // Create new comment
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: metricsContent
+              body,
             });
           }
-
-    - name: "Upload PHPMetrics Report"
-      if: steps.quality-status.outputs.quality_passed == 'true'
-      uses: actions/upload-artifact@v4
-      with:
-        name: phpmetrics-report-${{ github.sha }}
-        path: reports/metrics/
-        retention-days: 30
 
   pot-freshness:
     name: "Translation template freshness"
