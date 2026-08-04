@@ -6,9 +6,7 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Status\PostStatusValue
  *
- * centralises the bare-string slug literal `'archive'` that the procedural
- * layer scattered across the codebase. Cases are pinned here so Step 3B's
- * literal-replacement work can lean on a stable enum surface.
+ * Pins the enum surface every consumer of the archived slug relies on.
  */
 
 use ArchivedPostStatus\Status\PostStatusValue;
@@ -88,7 +86,7 @@ class PostStatusValueTest extends TestCase {
 	}
 
 	/**
-	 * §2.12 regression: 0.3.12's `aps_post_status_slug()` fell back to the
+	 * Regression: 0.3.12's `aps_post_status_slug()` fell back to the
 	 * default whenever the filter returned an empty/falsy value (see
 	 * `git show stable:src/archived-post-status.php`). That fallback was
 	 * dropped when the filter was lifted into this method — a filter
@@ -108,7 +106,7 @@ class PostStatusValueTest extends TestCase {
 	}
 
 	/**
-	 * §2.12: the fallback uses PHP's `empty()` semantics (matching
+	 * The fallback uses PHP's `empty()` semantics (matching
 	 * 0.3.12), not a strict `'' === $slug` check — so a filter returning
 	 * literal `false` (cast to the empty string) also falls back to the
 	 * default rather than registering a status under a falsy non-string

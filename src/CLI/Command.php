@@ -16,13 +16,10 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Validate-then-execute template for WP-CLI commands.
  *
- * Each concrete subclass declares which ArchiveAction it performs and any
- * command-specific validation. The base owns the shared primitives
- * (capability gate, post-type gate, perform()), and the run()/execute()
- * invariants are `final` so subclasses cannot break the template's
- * contract. `--defer-term-counting` is handled one level up, in
- * {@see CommandRunner::run()}, which brackets the whole batch rather than
- * one perform() call at a time.
+ * Each subclass declares which ArchiveAction it performs and any
+ * command-specific validation; the base owns the shared gates.
+ * `--defer-term-counting` is handled one level up in
+ * {@see CommandRunner::run()}, which brackets the whole batch.
  *
  * @since 0.4.0
  */
@@ -55,9 +52,6 @@ abstract class Command {
 	/**
 	 * Run the command against a single post id: validate, then execute.
 	 *
-	 * Subclasses cannot override the validate-then-execute invariant; sibling
-	 * commands are the extension point.
-	 *
 	 * @param int                  $post_id    The post ID to process.
 	 * @param array<string, mixed> $assoc_args Associative CLI flags.
 	 * @return CliResult
@@ -75,12 +69,6 @@ abstract class Command {
 	 * Execute the action via the enum. Returns a success or error CliResult
 	 * shaped from the enum's past-tense verb.
 	 *
-	 * `--defer-term-counting` is no longer this method's concern — it used
-	 * to wrap wp_defer_term_counting() around this one perform() call, which
-	 * meant a multi-post batch deferred and re-enabled term counting once
-	 * per post instead of once per batch. {@see CommandRunner::run()} now
-	 * brackets the whole loop instead.
-	 *
 	 * @param int $post_id The post ID to process.
 	 * @return CliResult
 	 */
@@ -95,17 +83,13 @@ abstract class Command {
 	}
 
 	/**
-	 * Enforce the capability filter on the user-facing CLI surface so that
-	 * `aps_default_archive_capability` / `aps_default_unarchive_capability`
-	 * are respected for `wp --user=<id> post archive|unarchive`. The
-	 * template functions in src/functions/functions.php intentionally do not enforce
-	 * this so they remain usable from privileged contexts (e.g. cron).
+	 * Enforce the capability filters for `wp --user=<id> post archive|unarchive`.
+	 * The `aps_*` functions deliberately do not enforce them, so they stay
+	 * usable from privileged contexts like cron.
 	 *
-	 * The gate only fires when the CLI runs as an authenticated user
-	 * (typically via `--user=...`). Anonymous CLI (user 0) bypasses the
-	 * check, matching the convention of core `wp post update|delete|create`
-	 * — WP-CLI's default elevated server context is intentionally
-	 * privileged.
+	 * Anonymous CLI (user 0) bypasses the check, matching core `wp post
+	 * update|delete|create` — WP-CLI's default server context is privileged
+	 * by design.
 	 *
 	 * @param int $post_id The post ID being acted on.
 	 * @return CliResult|null Error result or null if the user is permitted.
@@ -129,8 +113,7 @@ abstract class Command {
 
 	/**
 	 * Pre-flight: reject posts whose post type is not registered for archive
-	 * support. Mirrors aps_is_supported_post_type() guard rails used across
-	 * the rest of the codebase.
+	 * support.
 	 *
 	 * @param int $post_id The post ID to check.
 	 * @return CliResult|null Error result or null if the type is supported.
@@ -147,16 +130,9 @@ abstract class Command {
 	/**
 	 * Reject a post that is currently locked for editing by another user.
 	 *
-	 * Mirrors the admin bulk-action path — {@see
-	 * \ArchivedPostStatus\Admin\BulkActionHandler::process_archive_post()}
-	 * and {@see \ArchivedPostStatus\Admin\BulkActionHandler::process_unarchive_post()}
-	 * both bucket a locked post as a skip reason rather than acting on it —
-	 * so the CLI and admin surfaces treat a lock the same way on both
-	 * directions. This is a deliberate departure from core's own
-	 * `wp post update` convention, which does not check post locks at all;
-	 * the maintainer's choice is to match this plugin's existing admin
-	 * behavior instead, since the admin paths already treat a lock as a
-	 * skip reason.
+	 * Deliberately stricter than core's `wp post update`, which does not check
+	 * post locks at all. Matching this plugin's admin bulk-action paths, which
+	 * already skip locked posts, was preferred over matching core.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id The post ID to check.

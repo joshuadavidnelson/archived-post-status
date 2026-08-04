@@ -170,7 +170,7 @@ class SlugFilterIntegrationTest extends TestCase {
 		// 'draft', comment/ping 'closed' — and all three pass through
 		// apply_filters unchanged, landing verbatim in the payload below.
 		//
-		// THE assertion: post_status is 'draft' — the inverse contract pin.
+		// The assertion: post_status is 'draft' — the inverse contract pin.
 		// The new status must NOT be the filtered archive slug ('archived');
 		// unarchiving leaves the archived state rather than re-writing it.
 		\WP_Mock::userFunction( 'wp_update_post' )

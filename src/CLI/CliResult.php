@@ -14,15 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Immutable success/error wrapper returned by Command::run().
  *
- * Replaces the legacy array('success'|'error', string) tuple shape that
- * predated 0.4.0. Constructed directly via the promoted constructor — the
- * earlier private constructor + named factories were ceremony that prevented
- * no real bug; PHP 8.1 promoted-constructor `public readonly` properties
- * carry the same immutability contract with less code.
- *
- * The class targets the project's PHP 8.1 floor: `readonly` is marked
- * per-property in the promoted constructor (the class-level `readonly`
- * keyword is PHP 8.2+ and is intentionally not used).
+ * `readonly` is marked per-property because the class-level keyword is PHP
+ * 8.2+ and this plugin's floor is 8.1.
  *
  * @since 0.4.0
  */

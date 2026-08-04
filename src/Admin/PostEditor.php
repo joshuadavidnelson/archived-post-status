@@ -23,9 +23,7 @@ final class PostEditor implements HookableInterface {
 	/**
 	 * @return array<int, HookDescriptor>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action() is a
-	 * named-constructor factory for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -37,11 +35,8 @@ final class PostEditor implements HookableInterface {
 	/**
 	 * Add the archive button to the classic editor submit box.
 	 *
-	 * Gates on post type before capability — mirrors the order
-	 * {@see \ArchivedPostStatus\Admin\RowActionPolicy::for_post()} and
-	 * {@see \ArchivedPostStatus\Admin\ArchivePostLink::build()} already use —
-	 * so the button never renders for a post type the plugin does not
-	 * support, regardless of what the capability check would return.
+	 * Gates on post type before capability, so the button never renders for an
+	 * unsupported post type regardless of the capability result.
 	 *
 	 * @since 0.4.0
 	 */
@@ -66,19 +61,13 @@ final class PostEditor implements HookableInterface {
 	/**
 	 * Enqueue block editor script on post editor screens.
 	 *
-	 * Skipped on the classic editor — the archive button is rendered via
-	 * post_submitbox_start instead. Also skipped for post types the plugin
-	 * does not support — assets/js/block-editor.js's own docblock already
-	 * documents "enqueues this for supported post types" as the contract;
-	 * this gate is what actually enforces it, mirroring
-	 * post_submitbox_archive_button()'s classic-editor gate.
+	 * Skipped on the classic editor, where post_submitbox_start renders the
+	 * button instead, and on unsupported post types.
 	 *
 	 * @since 0.4.0
 	 * @param string $hook The current admin page hook.
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see EditorContext::is_classic_editor()}
-	 * is a pure environment-introspection helper (hybrid pattern: static helper for
-	 * stateless value lookups, DI for Hookables).
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- pure environment-introspection helper.
 	 */
 	public function enqueue_scripts( string $hook ): void {
 		if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
@@ -94,9 +83,7 @@ final class PostEditor implements HookableInterface {
 			return;
 		}
 
-		// Handles matched to what assets/js/block-editor.js actually calls:
-		// wp.element.createElement, wp.plugins.registerPlugin,
-		// wp.editPost.PluginPostStatusInfo, wp.i18n.__.
+		// Dependencies match what assets/js/block-editor.js actually calls.
 		wp_enqueue_script(
 			'aps-block-editor',
 			ARCHIVED_POST_STATUS_URL . 'assets/js/block-editor.js',
@@ -114,11 +101,9 @@ final class PostEditor implements HookableInterface {
 		$cap         = ArchiveAction::Archive->capability_function();
 		$can_archive = $cap( $post_id );
 
-		// ArchivePostLink::build() no longer checks capability itself — a
+		// ArchivePostLink::build() does not check capability, so gate here: a
 		// user who cannot archive must not receive a working, nonce-signed
-		// archiveUrl in the localized script data, even though the block
-		// editor JS also checks canArchive before rendering. Mirrors the
-		// gate in post_submitbox_archive_button() for the classic editor.
+		// archiveUrl, even though the JS also checks canArchive before rendering.
 		wp_localize_script(
 			'aps-block-editor',
 			'archivedPostStatus',

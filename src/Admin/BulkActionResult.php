@@ -11,40 +11,25 @@ use ArchivedPostStatus\Archive\ArchiveAction;
  * Accumulates the results of a bulk archive/unarchive operation and
  * produces the redirect URL with appropriate query args.
  *
- * Separating count accumulation from URL construction keeps each concern
- * at a single level of abstraction and eliminates branching in PostList.
+ * Reason-bucketed counters (denied / not_found / wrong_status) let
+ * {@see BulkActionHandler} continue a batch on per-item failure instead of
+ * calling wp_die() mid-loop.
  *
- * Reason-bucketed counters (denied / not_found / wrong_status) exist so
- * {@see BulkActionHandler} can continue a batch on per-item failure rather
- * than calling wp_die() mid-loop. The
- * URL pipeline emits a `skipped=N` query arg whenever the total of the
- * skip buckets is non-zero.
- *
- * That arg is currently emitted but not displayed: {@see NoticeBuilder}
- * reads the individual buckets only and renders one notice per reason, with
- * no aggregate "skipped" line. Whether an aggregate notice should exist is
- * an open decision — until it is made, `skipped` is an accurate but unused
- * value in the URL.
+ * The `skipped=N` aggregate is emitted but never displayed — {@see NoticeBuilder}
+ * renders one notice per individual bucket. It stays in the URL pending a
+ * decision on whether an aggregate notice should exist.
  *
  * @since 0.4.0
  */
 final class BulkActionResult {
 
 	/**
-	 * Maximum number of ids folded into the redirect URL's `ids=` arg.
+	 * Maximum number of ids folded into the redirect URL's `ids=` arg. Beyond
+	 * this the list is omitted and the notice degrades to a plain count.
 	 *
-	 * Beyond this the id list is omitted entirely and the notice falls back
-	 * to reporting a plain count — a large bulk action (hundreds of posts)
-	 * would otherwise produce a comma-joined `ids=` value long enough to
-	 * risk practical URL-length limits (browsers, proxies, and some server
-	 * configs commonly cap request lines around 2000-8000 characters).
-	 *
-	 * 200 is chosen as a conservative headroom figure: post ids rarely
-	 * exceed 7 digits, so 200 comma-joined ids is at most ~1600 characters
-	 * for that one query arg, leaving ample room under even the tightest
-	 * common limit once the handful of other short query args on this
-	 * redirect (post_type, archived/unarchived, skipped, denied, …) are
-	 * accounted for.
+	 * Browsers, proxies, and servers commonly cap request lines at 2000-8000
+	 * characters. At 7 digits per id, 200 comma-joined ids is ~1600 characters,
+	 * leaving headroom for the other args under even the tightest of those.
 	 *
 	 * @since 0.4.0
 	 * @var int
@@ -80,15 +65,6 @@ final class BulkActionResult {
 	 * Record a post that was skipped because the current user lacks the
 	 * capability to perform the action on it.
 	 *
-	 * Per-item cap failures do not halt the batch via wp_die(); the outer
-	 * cap gate in {@see BulkActionHandler::handle()} remains the only
-	 * fail-closed exit.
-	 *
-	 * The $post_id parameter is part of the locked public signature and is
-	 * reserved for future per-id logging / structured audit output without
-	 * breaking the API contract — callers already pass the id at every
-	 * site, so adding it now keeps a single insertion point later.
-	 *
 	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- $post_id is part of
 	 * the locked public signature; reserved for future per-id logging.
 	 *
@@ -102,9 +78,6 @@ final class BulkActionResult {
 	/**
 	 * Record a post that was skipped because it does not exist (deleted
 	 * between bulk-select and dispatch) or is of an unsupported post type.
-	 *
-	 * The $post_id parameter is part of the locked public signature and is
-	 * reserved for future per-id logging without breaking the API contract.
 	 *
 	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- $post_id is part of
 	 * the locked public signature; reserved for future per-id logging.
@@ -121,11 +94,8 @@ final class BulkActionResult {
 	 * (e.g. already archived, or in a status that the
 	 * `aps_archivable_statuses` filter excludes).
 	 *
-	 * Distinct from {@see record_locked()} (post lock) and {@see record_denied()}
-	 * (capability) so the notice can explain the exact reason.
-	 *
-	 * The $post_id parameter is part of the locked public signature and is
-	 * reserved for future per-id logging without breaking the API contract.
+	 * Distinct from {@see record_locked()} and {@see record_denied()} so the
+	 * notice can explain the exact reason.
 	 *
 	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- $post_id is part of
 	 * the locked public signature; reserved for future per-id logging.
@@ -140,21 +110,13 @@ final class BulkActionResult {
 	/**
 	 * Apply result counts to a redirect URL as query args.
 	 *
-	 * Adds the action's query arg (e.g. 'archived=3'), and optional
-	 * 'locked', 'denied', 'not_found', 'wrong_status', and
-	 * 'ids' args when applicable. Also emits a single aggregate
-	 * `skipped=N` arg = sum of every skip bucket.
+	 * Adds the action's query arg (e.g. 'archived=3'), the non-zero skip
+	 * buckets, an aggregate `skipped=N`, and 'ids'.
 	 *
-	 * No notice is built from `skipped`: the notice layer reads the
-	 * individual buckets and renders one line per reason. The aggregate is
-	 * carried in the URL only, pending a decision on whether to display it.
-	 *
-	 * The 'ids' arg is omitted entirely once the successful-id count
-	 * exceeds {@see MAX_IDS_IN_URL} — {@see NoticeBuilder} already renders
-	 * a plain count-only notice whenever `ids` is absent (no undo/edit link
-	 * appended), so a capped batch degrades to a count-only success notice
-	 * rather than risking a URL-length-related redirect failure or
-	 * offering a truncated/broken undo link.
+	 * 'ids' is dropped once the count exceeds {@see MAX_IDS_IN_URL}.
+	 * {@see NoticeBuilder} already renders a count-only notice when `ids` is
+	 * absent, so a capped batch degrades to that rather than risking a
+	 * URL-length redirect failure or a truncated undo link.
 	 */
 	public function apply_to_url( string $url, ArchiveAction $action ): string {
 		$url = add_query_arg( $action->query_arg(), $this->count, $url );

@@ -12,19 +12,14 @@ use ArchivedPostStatus\Status\PostStatusValue;
 /**
  * Warns admins before they deactivate the plugin while archived content exists.
  *
- * Deactivating unregisters the archived post status, so any content in it
- * would fall back to WordPress's default handling for an unregistered
- * status. The JS reads the localized `archivedPostStatus.hasArchivedPosts`
- * flag to decide whether to prompt — on the Plugins screen's Deactivate
- * link, and on a Bulk Actions -> Deactivate submit that includes this
- * plugin.
+ * Deactivating unregisters the archived post status, leaving that content to
+ * WordPress's default handling for an unregistered status. The JS reads the
+ * localized `hasArchivedPosts` flag to decide whether to prompt.
  *
- * Network Admin's Plugins screen shares the same `admin_enqueue_scripts`
- * hook suffix, but a single site's `has_archived_posts()` query cannot
- * answer a network-wide question. There, `enqueue_scripts()` skips the
- * query entirely and localizes `archivedPostStatus.isNetworkAdmin` instead
- * — the JS always warns on that screen, with a generalized message,
- * independent of `hasArchivedPosts`.
+ * Network Admin shares the same hook suffix, but no single site's
+ * `has_archived_posts()` answer is meaningful network-wide. There the query is
+ * skipped and `isNetworkAdmin` localized instead, so the JS always warns with
+ * a generalized message.
  *
  * @since 0.4.0
  */
@@ -33,9 +28,7 @@ final class PluginScreen implements HookableInterface {
 	/**
 	 * @return array<int, HookDescriptor>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action() is a
-	 * named-constructor factory for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -75,9 +68,8 @@ final class PluginScreen implements HookableInterface {
 			'archivedPostStatus',
 			array(
 				'isNetworkAdmin'   => $is_network_admin,
-				// On Network Admin, one site can't speak for the network —
-				// skip the query and let the JS's unconditional, generalized
-				// warning take over instead (see has_archived_posts()).
+				// One site can't speak for the network; the JS warns
+				// unconditionally there instead.
 				'hasArchivedPosts' => $is_network_admin ? false : $this->has_archived_posts(),
 			)
 		);
@@ -85,16 +77,12 @@ final class PluginScreen implements HookableInterface {
 
 	/**
 	 * Cheap existence check for archived content across supported post types.
-	 *
-	 * Answers only for the current site — {@see enqueue_scripts()} never
-	 * calls this on Network Admin, where no single site's answer is
-	 * meaningful for the network as a whole.
+	 * Answers for the current site only.
 	 *
 	 * @since 0.4.0
 	 * @return bool
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	private function has_archived_posts(): bool {
 		$archived = get_posts(

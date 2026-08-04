@@ -6,11 +6,8 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\PostListUrlBuilder
  *
- * the 0.4.0 refactor centralized the edit.php + optional `post_type`
- * query-arg construction (previously duplicated in `PostEditorGuard` and
- * `BulkActionHandler`) into a static helper. These tests pin the four
- * observable cases: default post type, non-default post type, the
- * self_admin / admin URL fork, and the empty-string boundary.
+ * Pins the four observable cases: default post type, non-default post type,
+ * the self_admin / admin URL fork, and the empty-string boundary.
  */
 
 use ArchivedPostStatus\Admin\PostListUrlBuilder;

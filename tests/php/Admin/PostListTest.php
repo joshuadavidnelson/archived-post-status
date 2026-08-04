@@ -77,13 +77,11 @@ class PostListTest extends TestCase {
 		parent::tear_down();
 	}
 
-	// the prior `test_hooks_returns_hookable_descriptors` smoke
-	// test was deleted — `assertIsArray`/`assertNotEmpty` doesn't pin any
-	// behavior. The composition surface is now covered end-to-end by
+	// The composition surface is covered by
 	// `PluginTest::test_hookables_includes_admin_only_set_when_is_admin_is_true`.
-	// The replacement below asserts the *specific* hooks the SUT registers,
-	// pinning the integration to WordPress's filter/action names — those
-	// are load-bearing strings that a typo would silently break.
+	// The tests below assert the specific hooks the SUT registers, pinning the
+	// WordPress filter/action names — load-bearing strings a typo would
+	// silently break.
 
 	/**
 	 * hooks() returns the bundle of post-list-table integration hooks that
@@ -260,11 +258,9 @@ class PostListTest extends TestCase {
 	// removable_query_args
 	// -----------------------------------------------------------------------
 	//
-	// §2.4: none of the eight bulk-action notice query args were registered
-	// on WordPress's `removable_query_args` filter, so a stale notice (and
-	// a stale skip-reason bucket from a previous, unrelated action) would
-	// survive in the visible URL across page refreshes instead of being
-	// stripped by history.replaceState() after the notice renders once.
+	// Regression: with these eight args unregistered on `removable_query_args`,
+	// a stale notice (and a stale skip-reason bucket from a previous, unrelated
+	// action) survives in the visible URL across page refreshes.
 
 	/**
 	 * removable_query_args() must append the exact same eight names
@@ -715,9 +711,7 @@ class PostListTest extends TestCase {
 	// post_action_archive / post_action_unarchive
 	// -----------------------------------------------------------------------
 	//
-	// Migrated from the deleted PostListHandleActionTest.php in 0.4.0 — these
-	// exercise the single-post (non-bulk) action handlers, which remained on
-	// PostList after the bulk-action extraction. The handlers nonce-check,
+	// The single-post (non-bulk) action handlers: nonce-check,
 	// capability-gate, then dispatch through ArchiveAction::perform().
 
 	/**
@@ -727,7 +721,7 @@ class PostListTest extends TestCase {
 	 * with the action-specific nonce key (`archive-{id}`), then the
 	 * capability check.
 	 *
-	 * Regression (§2.1): a denied capability check used to return silently —
+	 * Regression: a denied capability check used to return silently —
 	 * the user clicks Archive, the page reloads, and nothing explains why.
 	 * It must now wp_die() with the archive-specific permission message.
 	 *
@@ -767,12 +761,10 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * post_action_archive's missing-post guard (the 0.4.0 refactor
-	 * cleanup): when get_post() returns null (post deleted between
-	 * row-action render and click), the handler now silently returns
-	 * BEFORE calling check_admin_referer(). This rejects bogus payloads
-	 * without surfacing a WP-core "Are you sure?" dialog from a missing
-	 * nonce.
+	 * post_action_archive's missing-post guard: when get_post() returns null
+	 * (post deleted between row-action render and click), the handler returns
+	 * silently BEFORE check_admin_referer(). This rejects bogus payloads
+	 * without surfacing a WP-core "Are you sure?" dialog from a missing nonce.
 	 *
 	 * @covers ArchivedPostStatus\Admin\PostList::post_action_archive
 	 */
@@ -794,7 +786,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * Unsupported post type guard (the 0.4.0 refactor):
+	 * Unsupported post type guard:
 	 * a post in an unsupported post type now silently returns BEFORE
 	 * check_admin_referer() fires. The original `wp_die('Invalid post
 	 * type')` branch became unreachable once the upstream supported-type
@@ -867,7 +859,7 @@ class PostListTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// wp_die() escaping (§1.7)
+	// wp_die() escaping
 	// -----------------------------------------------------------------------
 	//
 	// Three wp_die() calls in handle_post_action() used to pass translated
@@ -1161,7 +1153,7 @@ class PostListTest extends TestCase {
 
 	/**
 	 * Mirror of the archive nonce-key test above, for the unarchive
-	 * direction. Regression (§2.1): a denied capability check must
+	 * direction. Regression: a denied capability check must
 	 * wp_die() with the *unarchive*-specific permission message, not the
 	 * archive-only copy the shared handle_post_action() used to emit
 	 * regardless of direction.
@@ -1200,7 +1192,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * Direction-correct copy (§2.1): a locked post blocks unarchiving with
+	 * Direction-correct copy: a locked post blocks unarchiving with
 	 * "You cannot unarchive this item..." — not the archive-only wording the
 	 * shared handle_post_action() used to emit for both directions.
 	 *
@@ -1243,7 +1235,7 @@ class PostListTest extends TestCase {
 	}
 
 	/**
-	 * Direction-correct copy (§2.1): a persist failure on unarchive dies
+	 * Direction-correct copy: a persist failure on unarchive dies
 	 * with "Error in unarchiving this item." — not the archive-only
 	 * "Error in archiving this item." the shared handle_post_action() used
 	 * to emit for both directions.

@@ -15,16 +15,9 @@ use WP_CLI\Utils;
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 /**
- * Touches WP_CLI::success()/::warning() to report per-post outcomes.
- * {@see \ArchivedPostStatus\CLI\Registrar} is the other class that touches
- * WP_CLI::* — it calls WP_CLI::add_command() to register the commands this
- * runner executes.
- *
- * Owns: the iteration over post ids, the batch-wide term-counting deferral
- * and post-cache priming, progress-bar branching above the count limit,
- * per-post emit() of success/warning, exit-code aggregation, and the
- * terminating exit() call (wrapped in terminate() so tests can
- * subclass-and-override it).
+ * Owns the iteration over post ids, the batch-wide term-counting deferral and
+ * post-cache priming, progress-bar branching above the count limit, per-post
+ * success/warning output, exit-code aggregation, and the terminating exit().
  *
  * @since 0.4.0
  */
@@ -45,25 +38,16 @@ class CommandRunner {
 	 * results below the count limit (progress bar above it), and exit with
 	 * the aggregated status code.
 	 *
-	 * The status is accumulated across every item (`max()`), so a batch
-	 * exits non-zero if ANY item failed — independent of ordering and of
-	 * which output branch ran.
+	 * The status accumulates via `max()`, so a batch exits non-zero if any item
+	 * failed, regardless of ordering or which output branch ran.
 	 *
-	 * `--defer-term-counting` brackets the WHOLE loop, not each item: term
-	 * recounting is deferred once before the batch and flushed once after,
-	 * so a multi-post `wp post archive 1 2 3 --defer-term-counting` pays for
-	 * one recount instead of one per post. Previously this bracket lived
-	 * inside {@see Command::execute()}, wrapping a single perform() call —
-	 * called once per loop iteration here, that delivered none of the
-	 * advertised batching benefit. The try/finally guarantees term counting
-	 * is re-enabled even if an item throws, mirroring the invariant
-	 * {@see Command::execute()} used to document for its own (now removed)
-	 * per-item bracket.
+	 * `--defer-term-counting` brackets the whole loop rather than each item, so
+	 * a multi-post batch pays for one recount instead of one per post. The
+	 * try/finally re-enables term counting even if an item throws.
 	 *
-	 * Post ids are also primed into the post cache once, before the loop,
-	 * via `_prime_post_caches()` — a single query for the whole batch
-	 * instead of the one-uncached-`get_post()`-per-id that each command's
-	 * validation/capability/perform() chain would otherwise trigger.
+	 * `_prime_post_caches()` runs once before the loop: one query for the batch
+	 * instead of an uncached `get_post()` per id from each command's
+	 * validation/capability/perform chain.
 	 *
 	 * @param Command                $command    The command to run against each id.
 	 * @param array<int, string|int> $args       Post IDs passed positionally.
@@ -92,9 +76,8 @@ class CommandRunner {
 				$result = $command->run( $post_id, $assoc_args );
 
 				if ( $counting ) {
-					// The progress bar suppresses per-post output above the
-					// limit, but never the exit code: a failure anywhere in
-					// the batch still has to reach the caller.
+					// The progress bar suppresses per-post output but never the
+					// exit code — a failure still has to reach the caller.
 					$status = max( $status, $result->is_success ? 0 : 1 );
 					$progress->tick();
 					continue;
@@ -119,12 +102,8 @@ class CommandRunner {
 	 * Display success or warning based on the CliResult; return the per-post
 	 * exit code.
 	 *
-	 * The legacy spec called for a `match` expression on `$result->is_success`;
-	 * the WP_CLI API used in each branch (`success`/`warning`) returns void,
-	 * which is invalid as a match arm. We preserve the clean branching with
-	 * an if/else and keep the legacy behavior contract (`warning` lets the
-	 * run continue; `error` would terminate the process, which would break
-	 * the iteration above).
+	 * `warning`, not `error`: the latter terminates the process and would break
+	 * the iteration above.
 	 *
 	 * @param CliResult $result Outcome returned by Command::run().
 	 * @return int Exit status code (0 success, 1 error).
@@ -142,8 +121,8 @@ class CommandRunner {
 	/**
 	 * Terminate the CLI process with the given exit code.
 	 *
-	 * Extracted as `protected` so tests can subclass-and-override and capture
-	 * the code without `exit()` actually firing.
+	 * `protected` so tests can override it and capture the code without
+	 * `exit()` firing.
 	 *
 	 * @param int $code Exit status code.
 	 * @return void

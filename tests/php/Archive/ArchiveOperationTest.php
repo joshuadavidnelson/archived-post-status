@@ -18,7 +18,7 @@ class ArchiveOperationTest extends TestCase {
 	/**
 	 * Default-path: a publish-status post archives. The pre-archive WP_Post
 	 * snapshot is returned and the `aps_archived_post` action dispatches
-	 * with that same instance (C3 contract).
+	 * with that same instance.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveOperation::perform
 	 */
@@ -146,7 +146,7 @@ class ArchiveOperationTest extends TestCase {
 	}
 
 	/**
-	 * C3 invariant: the SUT must call `get_post()` exactly once — a re-read
+	 * The SUT must call `get_post()` exactly once — a re-read
 	 * between the update and the `aps_archived_post` action would defeat
 	 * the pre-archive snapshot contract.
 	 *

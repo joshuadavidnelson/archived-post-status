@@ -12,25 +12,15 @@ use ArchivedPostStatus\Status\PostStatusValue;
 /**
  * Resolves the archive / unarchive row-action policy for a post.
  *
- * Pure function of input — `PostList` shrinks to a thin WP-filter adapter
- * by delegating to this helper for the policy branches.
- *
- * Hybrid architecture pattern:
- *   - This class is STATIC; it has no state and no collaborators worth
- *     swapping. Pure functions of (post, actions, current user) only.
- *   - It calls into the other static helpers ({@see ViewCapability},
- *     {@see ArchiveCapability} via the `ArchiveAction::capability_function()`
- *     dispatch, {@see ArchivableStatuses}, {@see PostStatusValue}).
- *   - `PostList` does NOT pass it through its constructor — `PostList`
- *     calls `RowActionPolicy::for_post( $post, $actions )` at the use site.
+ * Pure function of (post, actions, current user); `PostList` calls it at the
+ * use site rather than taking it through the constructor.
  *
  * @since 0.4.0
  */
 final class RowActionPolicy {
 
 	/**
-	 * Label of the Archive row action. Exposed so callers (and tests) have a
-	 * single source of truth instead of duplicating the copy.
+	 * Label of the Archive row action.
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -41,8 +31,7 @@ final class RowActionPolicy {
 	}
 
 	/**
-	 * Label of the Unarchive row action. Exposed so callers (and tests) have
-	 * a single source of truth instead of duplicating the copy.
+	 * Label of the Unarchive row action.
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -71,9 +60,7 @@ final class RowActionPolicy {
 	 * @param array<string, string> $actions Incoming row-actions array from the WP filter.
 	 * @return array<string, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchivableStatuses::includes()}
-	 * and {@see PostStatusValue::resolved_slug()} are the canonical
-	 * vocabulary lookups.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical vocabulary lookups.
 	 */
 	public static function for_post( \WP_Post $post, array $actions ): array {
 		if ( ! aps_is_supported_post_type( $post->post_type ) ) {

@@ -172,7 +172,7 @@ namespace {
 		}
 
 		/**
-		 * §2.6: an unlocked post passes the shared lock-check primitive with
+		 * an unlocked post passes the shared lock-check primitive with
 		 * a null return, mirroring capability_check() / ensure_supported_post_type()'s
 		 * pass-through shape.
 		 *
@@ -185,7 +185,7 @@ namespace {
 		}
 
 		/**
-		 * §2.6: a post locked by another user returns an error CliResult
+		 * a post locked by another user returns an error CliResult
 		 * naming the post id, so both ArchiveCommand and UnarchiveCommand
 		 * get identical lock-rejection behavior from the shared base.
 		 *

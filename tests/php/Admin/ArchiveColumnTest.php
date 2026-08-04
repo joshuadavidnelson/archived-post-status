@@ -9,12 +9,12 @@
  *
  * Covers the five observable behaviors of ArchiveColumn:
  *   - add_column() adds the 'aps_archived' key only on the archive filter,
- *     handling both scalar and array `post_status` query vars (§1.3 #11)
+ *     handling both scalar and array `post_status` query vars
  *   - register_sortable() registers the column on the archive filter
  *   - render_cell() emits the right markup per archive-meta shape
  *   - handle_sort() rewrites the WP_Query orderby only when it should
  *   - prime_archive_user_cache() warms the user cache once per page instead
- *     of once per row (§4 perf fix)
+ *     of once per row
  *
  * Cell rendering tests dispatch through the real ArchiveMeta::for_post()
  * (mocking get_post_meta) rather than stubbing the static — the test
@@ -152,7 +152,7 @@ class ArchiveColumnTest extends TestCase {
 	}
 
 	/**
-	 * §1.6 regression: add_column() writes the column label directly into
+	 * Regression: add_column() writes the column label directly into
 	 * the `manage_..._posts_columns` filter's return value, which core's
 	 * WP_List_Table::print_column_headers() echoes as raw HTML with no
 	 * escaping of its own -- so add_column() itself must escape the label
@@ -369,7 +369,7 @@ class ArchiveColumnTest extends TestCase {
 	}
 
 	/**
-	 * §1.6 regression: the legacy-meta branch already wraps
+	 * Regression: the legacy-meta branch already wraps
 	 * `column_label()` in esc_html() (see render_archive_cell()), but
 	 * before the fix ArchiveLabel::value() ALSO escaped with esc_attr()
 	 * internally -- double-escaping the label. Distinguishable
@@ -616,7 +616,7 @@ class ArchiveColumnTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * §1.5 regression: a naive `$query->set( 'meta_key', ... )` hands
+	 * Regression: a naive `$query->set( 'meta_key', ... )` hands
 	 * ordering off to WP_Query's meta_query machinery, which builds a JOIN
 	 * + WHERE that only matches posts that HAVE a postmeta row for that
 	 * key — silently dropping every post that doesn't. That population is
@@ -643,7 +643,7 @@ class ArchiveColumnTest extends TestCase {
 		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
 
 		// The exclusionary `set( 'meta_key', ... )` / `set( 'orderby', 'meta_value_num' )`
-		// path from before the §1.5 fix must never run again.
+		// path must never run again — it drops meta-less rows entirely.
 		$query->shouldReceive( 'set' )->never();
 
 		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
@@ -853,7 +853,7 @@ class ArchiveColumnTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * §4 perf fix: on the admin archived-list main query, every row's
+	 * Performance: on the admin archived-list main query, every row's
 	 * archive-user id is collected and warmed with a single cache_users()
 	 * call — a duplicate id (two posts archived by the same user) proves
 	 * the call is deduped, not one cache_users() per row. The filter must

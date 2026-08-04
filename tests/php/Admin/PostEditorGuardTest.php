@@ -5,9 +5,6 @@
  * @since 0.4.0
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Admin\PostEditorGuard
- *
- * Migration note: the historical `PostEditor::load_post_screen()` method
- * was replaced by `Admin\PostEditorGuard::enforce_read_only()`.
  */
 
 /**

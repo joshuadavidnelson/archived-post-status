@@ -13,27 +13,20 @@ use ArchivedPostStatus\Status\PostStatusValue;
 /**
  * Controls access to the post editor for archived posts.
  *
- * `load-post.php` fires from wp-admin/admin.php for EVERY wp-admin/post.php
- * request, before post.php's own `switch ( $action )` runs — so this handler
- * sees trash, untrash, delete, unarchive, and every other post action, not
- * just the ones that render the editor. Two cases are handled when read-only
- * mode is active:
+ * `load-post.php` fires for EVERY wp-admin/post.php request, before post.php's
+ * own `switch ( $action )` runs, so this handler sees trash, untrash, delete,
+ * unarchive and everything else — not just the actions that render the editor.
+ * When read-only mode is active it handles two of them:
  *
- * 1. Redirect after save — WordPress redirects back to post.php with
- *    action=edit&message=1 after a successful save. For archived posts we
- *    send the editor to the list table instead of rendering the editor again.
+ * 1. `action=edit&message=1`, core's post-save redirect — sent to the list
+ *    table rather than back into the editor.
+ * 2. An empty action or `action=edit` without `message=1`, which would render
+ *    the editor for an archived post — stopped with wp_die().
  *
- * 2. Block direct edit access — an empty action (the bare edit screen) or
- *    action=edit without message=1 actually renders the editor for an
- *    archived post; that attempt is stopped with a wp_die().
- *
- * Every other action (unarchive, trash, untrash, delete, and anything else)
- * is left to proceed to core: `deny_editing_archived()`'s `map_meta_cap` deny
- * independently blocks a real save inside core's `edit_post()`, and
- * destructive actions gate on `delete_post`, which this plugin never touches.
- *
- * Separated from PostEditor so asset enqueuing and the classic editor button
- * are independent of access enforcement — they change for different reasons.
+ * Every other action proceeds to core. That is safe on its own:
+ * `deny_editing_archived()`'s map_meta_cap deny blocks a real save inside
+ * core's `edit_post()`, and destructive actions gate on `delete_post`, which
+ * this plugin never touches.
  *
  * @since 0.4.0
  */
@@ -42,9 +35,7 @@ final class PostEditorGuard implements HookableInterface {
 	/**
 	 * @return array<int, HookDescriptor>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action() is a
-	 * named-constructor factory for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -58,16 +49,15 @@ final class PostEditorGuard implements HookableInterface {
 	 * is active, so core drops its own edit affordances (row title link,
 	 * Edit and Quick Edit actions, editor screens) server-side.
 	 *
-	 * Core's map_meta_cap() reassigns $cap to the post type's own edit_post
-	 * primitive (e.g. edit_book) — not the literal 'edit_post' — before
-	 * firing this filter, whenever the post type's map_meta_cap is false
-	 * (WordPress's default for any capability_type other than post/page).
-	 * Matching against both keeps the deny effective for those types too,
-	 * instead of leaving them editable via a direct edit URL.
+	 * Whenever a post type sets `map_meta_cap => false` (core's default for any
+	 * capability_type other than post/page), core reassigns $cap to that type's
+	 * own primitive — `edit_book`, not the literal `edit_post` — before firing
+	 * this filter. Matching both is what keeps those types from staying
+	 * editable via a direct edit URL.
 	 *
-	 * Archive, unarchive, and author view capabilities resolve through
-	 * post type primitives — never `edit_post` — so this deny cannot lock
-	 * a post out of being unarchived or hidden from its own author.
+	 * Archive, unarchive, and author view capabilities resolve through post
+	 * type primitives rather than `edit_post`, so this deny cannot lock a post
+	 * out of being unarchived or hide it from its own author.
 	 *
 	 * @since 0.4.0
 	 * @param array<int, string> $caps    Primitive capabilities required.
@@ -76,19 +66,13 @@ final class PostEditorGuard implements HookableInterface {
 	 * @param array<int, mixed>  $args    Context arguments; [0] is the post ID.
 	 * @return array<int, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor; {@see PostTypeCapabilityPrimitive::resolve()}
-	 * is the shared post-type-primitive lookup used identically in
-	 * ArchiveCapability / ViewCapability, resolving 'edit_post' here (e.g.
-	 * edit_book for a `capability_type => 'book'` type with
-	 * `map_meta_cap => false`) instead of a private copy of the same lookup.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical slug and primitive lookups.
 	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- $user_id is fixed by the
 	 * map_meta_cap filter signature; the deny applies to every user identically.
 	 */
 	public function deny_editing_archived( array $caps, string $cap, int $user_id, array $args ): array {
-		// Cheapest possible bail-outs first — this runs on a very hot filter,
-		// and matching the cap requires knowing the post's type, so the post
-		// has to be resolved before $cap can be checked at all.
+		// Cheapest bail-outs first — this is a hot filter, and matching $cap
+		// needs the post's type, so the post must be resolved before that check.
 		if ( empty( $args[0] ) || ! aps_is_read_only() ) {
 			return $caps;
 		}
@@ -108,9 +92,7 @@ final class PostEditorGuard implements HookableInterface {
 	}
 
 	/**
-	 * The message shown when a direct edit attempt on an archived post is
-	 * blocked. Exposed so callers (and tests) have a single source of truth
-	 * instead of duplicating the copy.
+	 * The message shown when a direct edit attempt on an archived post is blocked.
 	 *
 	 * @since 0.4.0
 	 * @return string
@@ -125,8 +107,7 @@ final class PostEditorGuard implements HookableInterface {
 	 *
 	 * @since 0.4.0
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function enforce_read_only(): void {
 		if ( ! aps_is_read_only() ) {
@@ -140,25 +121,15 @@ final class PostEditorGuard implements HookableInterface {
 
 		$action = $this->request_action();
 
-		// Redirect to list table after saving as Archived (action=edit&message=1).
+		// Core's post-save redirect.
 		if ( 'edit' === $action && 1 === $this->request_message() ) {
 			$this->redirect_to_list( $post );
 		}
 
-		// `load-post.php` fires for EVERY post.php request — before post.php's
-		// own switch( $action ) runs — so this handler sees trash, untrash,
-		// delete, unarchive, and every other post action too, not just the
-		// ones that render the editor. Only an empty action (the bare
-		// edit screen) or action=edit without message=1 actually render the
-		// editor; every other action is left to proceed to core. This is safe
-		// standalone: deny_editing_archived()'s map_meta_cap deny independently
-		// blocks a real save inside core's edit_post(), and destructive
-		// actions gate on delete_post, which this plugin never touches.
 		if ( ! $this->renders_editor( $action ) ) {
 			return;
 		}
 
-		// Block any attempt to render the editor for an archived post.
 		wp_die(
 			esc_html( self::read_only_message() ),
 			esc_html__( 'WordPress &rsaquo; Error', 'archived-post-status' )
@@ -166,17 +137,13 @@ final class PostEditorGuard implements HookableInterface {
 	}
 
 	/**
-	 * The archived post this request targets, or null.
-	 *
-	 * Null covers all three uninteresting cases together — no post id on the
-	 * request, no such post, or a post that is not archived — so the caller
-	 * reads as a single guard rather than three.
+	 * The archived post this request targets, or null when there is no post id,
+	 * no such post, or the post is not archived.
 	 *
 	 * @since 0.4.0
 	 * @return \WP_Post|null
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	private function archived_post_in_request(): ?\WP_Post {
 		$post_id = absint( $_GET['post'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -237,10 +204,7 @@ final class PostEditorGuard implements HookableInterface {
 	 * @param \WP_Post $post The archived post.
 	 * @return never
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostListUrlBuilder::for_post_type()}
-	 * is a pure-functional URL builder (hybrid pattern — static helper for
-	 * stateless URL construction, DI for Hookables). The static call is the
-	 * documented public surface.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- pure-functional URL builder.
 	 */
 	private function redirect_to_list( \WP_Post $post ): never {
 		$url = PostListUrlBuilder::for_post_type( $post->post_type, true );

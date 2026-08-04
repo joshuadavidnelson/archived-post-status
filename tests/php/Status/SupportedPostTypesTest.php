@@ -110,7 +110,7 @@ class SupportedPostTypesTest extends TestCase {
 	}
 
 	/**
-	 * §4 perf fix: a second `all()` call in the same request must not
+	 * Performance: a second `all()` call in the same request must not
 	 * re-run get_post_types() or either filter — the result is memoized.
 	 * The `->once()` constraint on get_post_types() is the proof: if `all()`
 	 * recomputed on every call, the second invocation here would trip a
@@ -140,7 +140,7 @@ class SupportedPostTypesTest extends TestCase {
 	}
 
 	/**
-	 * §4 perf fix: reset() clears the memo so the next all() call
+	 * Performance: reset() clears the memo so the next all() call
 	 * recomputes from scratch. get_post_types() is constrained to `->twice()`
 	 * across the two all() calls (separated by a reset()) — if reset()
 	 * didn't actually clear the memo, the second all() call would return the

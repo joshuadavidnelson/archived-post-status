@@ -11,21 +11,13 @@ use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 use ArchivedPostStatus\Hooks\HookLoader;
 use ArchivedPostStatus\Status\PostStatusValue;
-// RowActionPolicy is in the same namespace — no `use` needed, but referenced
-// explicitly at the use site for IDE / search ergonomics.
 
 /**
  * All behavior related to the WordPress post list table screen (edit.php).
  *
- * Merges functionality from BulkEdit, RowActions, and the edit-screen.js enqueue
- * that was previously in Plugin.php. These all relate to the post list table
- * and change for the same reasons.
- *
- * Bulk-action dispatch lives in the injected `BulkActionHandler` service —
- * PostList owns the WordPress integration (knows which screen-specific hook
- * names to register) while the handler owns the per-post capability gates,
- * persist calls, and redirect URL composition. The handler also exposes
- * `get_redirect_url()` for the single-post `post_action_*` handlers.
+ * PostList owns the WordPress integration — which screen-specific hook names to
+ * register — while the injected `BulkActionHandler` owns the per-post
+ * capability gates, persist calls, and redirect URL composition.
  *
  * @since 0.4.0
  */
@@ -41,22 +33,17 @@ final class PostList implements HookableInterface {
 	/**
 	 * Return an array of HookDescriptor objects.
 	 *
-	 * Row actions are registered here unconditionally on WordPress's two
-	 * REAL row-actions hooks (`post_row_actions`, `page_row_actions` — see
-	 * `row_actions()`'s docblock) rather than per supported post type: core
-	 * fires exactly those two names for every post type, hierarchical or
-	 * not, so a per-type `"{$post_type}_row_actions"` registration would
-	 * only ever match the literal slugs `post`/`page` and never fire for
-	 * any other type. Because these two hooks don't depend on the
-	 * supported-post-types list, they need no deferral — unlike the
-	 * bulk-action hooks below, which do.
+	 * `post_row_actions` and `page_row_actions` are the only two row-actions
+	 * hooks core fires, and it fires them for every post type. A per-type
+	 * `"{$post_type}_row_actions"` registration would only ever match the
+	 * literal slugs `post`/`page`. Since neither depends on the
+	 * supported-post-types list, they need no deferral — the bulk-action hooks
+	 * below do.
 	 *
 	 * @since 0.4.0
 	 * @return HookDescriptor[]
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
-	 * are named-constructor factories for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -74,28 +61,15 @@ final class PostList implements HookableInterface {
 	/**
 	 * Register the per-post-type bulk-action hooks once custom post types exist.
 	 *
-	 * `hooks()` runs on `plugins_loaded` (see `aps_run_plugin()` in the
-	 * plugin bootstrap file), before third-party custom post types
-	 * register — conventionally on `init` at the default priority 10.
-	 * Enumerating `aps_get_supported_post_types()` directly inside
-	 * `hooks()` would therefore permanently miss any custom post type on
-	 * every request: core's own `post`/`page` exist by `plugins_loaded`,
-	 * but a plugin- or theme-registered type does not yet.
+	 * `hooks()` runs on `plugins_loaded`. Core's `post`/`page` exist by then but
+	 * plugin- and theme-registered types do not, so enumerating supported post
+	 * types there would permanently miss them.
 	 *
-	 * Deferred to `wp_loaded` rather than a late `init` priority: `init`
-	 * fires at every registered priority before `wp_loaded` fires at all,
-	 * so `wp_loaded` is the first point in the WordPress lifecycle
-	 * guaranteed to run after EVERY `init` callback — not just ones at or
-	 * below some priority number we'd otherwise have to guess. The
-	 * hooks built here (`bulk_actions-edit-{$screen}`,
-	 * `handle_bulk_actions-edit-{$screen}`) don't themselves fire until
-	 * the post-list admin screen renders, long after `wp_loaded`, so
-	 * nothing is lost by registering this late.
-	 *
-	 * Goes through `HookLoader::register()` (rather than add_action() /
-	 * add_filter() directly) so HookLoader remains the only class in the
-	 * codebase that calls those two functions, even for this second,
-	 * deferred registration pass.
+	 * `wp_loaded` rather than a late `init` priority: `init` fires at every
+	 * registered priority before `wp_loaded` fires at all, so it is the first
+	 * point guaranteed to follow every `init` callback rather than only those
+	 * below a priority number we'd have to guess. The hooks built here don't
+	 * fire until the list screen renders, so nothing is lost by waiting.
 	 *
 	 * @since 0.4.0
 	 * @return void
@@ -110,11 +84,7 @@ final class PostList implements HookableInterface {
 	 * @since 0.4.0
 	 * @return HookDescriptor[]
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action()/::filter()
-	 * are named-constructor factories for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
-	 * Same rationale as hooks() above — this is the same construction moved to a
-	 * second, deferred call site, not a new pattern.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	private function post_type_hooks(): array {
 		$hooks = array();
@@ -150,17 +120,12 @@ final class PostList implements HookableInterface {
 	}
 
 	/**
-	 * Register the bulk-action notice query args with WordPress's
-	 * `removable_query_args` filter so they're stripped from the visible
-	 * URL (via `history.replaceState()` in common.js) once the admin
-	 * notice built from them has rendered.
+	 * Strips the bulk-action notice args from the visible URL once the notice
+	 * has rendered.
 	 *
-	 * Must list the exact same eight names as {@see query_vars()} above and
-	 * {@see BulkActionHandler::STRIPPED_QUERY_ARGS} — every counter or
-	 * id-list arg the bulk-action plumbing round-trips through the
-	 * redirect URL needs to disappear from the address bar on the next
-	 * page load, or a stale skip-reason notice (or a stale `ids=`/undo
-	 * link) re-renders on every subsequent refresh of that URL.
+	 * Must list the same eight names as {@see query_vars()} and
+	 * {@see BulkActionHandler::STRIPPED_QUERY_ARGS}, or a stale skip-reason
+	 * notice or undo link re-renders on every refresh of that URL.
 	 *
 	 * @since 0.4.0
 	 * @param array<int, string> $args Existing removable query arg names.
@@ -186,8 +151,7 @@ final class PostList implements HookableInterface {
 	 * @param \WP_Post $post The row's post.
 	 * @return bool
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
 	 */
 	public function show_archived_row_checkbox( bool $show, \WP_Post $post ): bool {
 		if ( $show || PostStatusValue::resolved_slug() !== $post->post_status ) {
@@ -204,25 +168,20 @@ final class PostList implements HookableInterface {
 	 * @param array<string, string> $actions Bulk action map (action key => label).
 	 * @return array<string, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see ArchivableStatuses::all()}
-	 * and {@see PostStatusValue::resolved_slug()} are the canonical
-	 * vocabulary lookups.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical vocabulary lookups.
 	 */
 	public function bulk_actions( array $actions ): array {
-		// Multi-status filters (e.g. ?post_status[]=publish&post_status[]=archive)
-		// surface as an array; normalize to an array of strings for a uniform check.
+		// Multi-status filters (?post_status[]=publish&post_status[]=archive)
+		// arrive as an array; normalize so one check covers both shapes.
 		$post_status  = get_query_var( 'post_status', false );
 		$statuses     = $post_status ? (array) $post_status : array();
 		$archivable   = ArchivableStatuses::all();
 
-		// If it's the "All" view, or any selected status is archivable,
-		// then show the "Archive" bulk action.
+		// The "All" view, or any archivable status selected.
 		if ( empty( $statuses ) || array_intersect( $statuses, $archivable ) ) {
 			$actions[ ArchiveAction::Archive->value ] = __( 'Archive', 'archived-post-status' );
 		}
 
-		// If the "Archived" status is among the selected filters,
-		// then show the "Unarchive" bulk action.
 		if ( in_array( PostStatusValue::resolved_slug(), $statuses, true ) ) {
 			$actions[ ArchiveAction::Unarchive->value ] = __( 'Unarchive', 'archived-post-status' );
 		}
@@ -233,27 +192,16 @@ final class PostList implements HookableInterface {
 	/**
 	 * Add an Unarchive & Archive link to the post row actions.
 	 *
-	 * Registered in `hooks()` on both `post_row_actions` and
-	 * `page_row_actions` — the only two row-actions hooks WordPress core
-	 * actually fires (`WP_Posts_List_Table::handle_row_actions()`), for
-	 * every post type, hierarchical or not. This callback therefore has no
-	 * dependency on the supported-post-types list at registration time;
-	 * per-post-type filtering happens here, at call time, via
-	 * {@see RowActionPolicy::for_post()}'s `aps_is_supported_post_type()`
-	 * gate, which always sees the live list.
-	 *
-	 * The policy branches live in the pure-static
-	 * {@see RowActionPolicy::for_post()} helper; this filter callback is a
-	 * thin WP-adapter that forwards to it.
+	 * Registered unconditionally rather than per post type, so per-post-type
+	 * filtering happens at call time via {@see RowActionPolicy::for_post()}'s
+	 * `aps_is_supported_post_type()` gate, which always sees the live list.
 	 *
 	 * @since 0.4.0
 	 * @param array<string, string> $actions Current post row actions (action key => HTML link).
 	 * @param \WP_Post              $post    Post object.
 	 * @return array<string, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see RowActionPolicy::for_post()}
-	 * is a pure function of input (the hybrid pattern); the static call
-	 * is the documented public surface, not a service-locator pull.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- pure-function policy helper.
 	 */
 	public function row_actions( array $actions, \WP_Post $post ): array {
 		return RowActionPolicy::for_post( $post, $actions );
@@ -284,21 +232,10 @@ final class PostList implements HookableInterface {
 	/**
 	 * Handle individual post archive/unarchive actions.
 	 *
-	 * Ordering matters: post-id validation runs BEFORE
-	 * the nonce check. Rationale: `check_admin_referer()` fatal-errors on
-	 * a missing/invalid nonce, which leaks a real WordPress dialog to
-	 * the requester. By validating the post id first we can reject
-	 * obviously-bogus payloads (non-existent post, unsupported post type)
-	 * silently — and a subsequent nonce check on a valid request still
-	 * provides the CSRF guarantee.
-	 *
-	 * Shared by both `post_action_archive()` and `post_action_unarchive()`,
-	 * so every wp_die() message below is sourced from `$action` (via
-	 * {@see ArchiveAction::denied_message()}, {@see ArchiveAction::locked_message()},
-	 * {@see ArchiveAction::failure_message()}) rather than hardcoded, so each
-	 * direction reads correctly instead of always naming "archive". A denied
-	 * capability check now explains itself with wp_die() too, rather than
-	 * reloading the list table with no feedback at all.
+	 * Post-id validation deliberately runs before the nonce check:
+	 * `check_admin_referer()` fatal-errors on a bad nonce, leaking a WordPress
+	 * dialog to the requester, so obviously-bogus payloads are rejected
+	 * silently first. The nonce check still guards every valid request.
 	 *
 	 * @since 0.4.0
 	 * @param int           $post_id The post ID.
@@ -306,9 +243,6 @@ final class PostList implements HookableInterface {
 	 * @return void
 	 */
 	private function handle_post_action( int $post_id, ArchiveAction $action ): void {
-		// Pre-nonce validation. A non-numeric, missing, or
-		// unsupported-post-type id is rejected without ever reaching
-		// check_admin_referer().
 		if ( $post_id <= 0 ) {
 			return;
 		}

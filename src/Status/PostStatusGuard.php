@@ -15,19 +15,16 @@ use ArchivedPostStatus\Hooks\HookDescriptor;
  * Enforces correct archive state when a post enters or leaves the archived
  * status via direct wp_update_post() calls that bypass the public API.
  *
- * Entry: aps_archive_post() closes comments and pings as part of its
- * operation. If someone sets post_status = 'archive' directly — bypassing
- * the public API — this guard catches that on save_post and corrects the
- * state.
+ * Entry: a direct `post_status = 'archive'` write skips the comment/ping
+ * lockdown aps_archive_post() performs; save_post catches and corrects it.
  *
- * Exit: core's Bulk Edit (and any direct wp_update_post()) can move a post
- * out of the archived status without aps_unarchive_post() running; the
- * transition_post_status guard restores comment/ping from archive meta and
- * cleans the meta rows up.
+ * Exit: core's Bulk Edit (and any direct wp_update_post()) can move a post out
+ * of the archived status without aps_unarchive_post() running;
+ * transition_post_status restores comment/ping from archive meta and cleans
+ * the meta rows up.
  *
- * Note: meta persistence intentionally only fires through the public API
- * (via ArchiveMetaListener on the aps_archived_post hook). A direct
- * wp_update_post() call gets state enforced but not meta written.
+ * Meta persistence deliberately stays on the public API only (via
+ * ArchiveMetaListener). A direct write gets state enforced but no meta written.
  *
  * @since 0.4.0
  */
@@ -36,9 +33,7 @@ final class PostStatusGuard implements HookableInterface {
 	/**
 	 * @return array<int, HookDescriptor>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor::action() is a
-	 * named-constructor factory for the HookDescriptor value object; static
-	 * access is the WP convention for value-object construction in hook registration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
 		return array(
@@ -50,19 +45,15 @@ final class PostStatusGuard implements HookableInterface {
 	/**
 	 * Close comments and pings if a post was archived outside aps_archive_post().
 	 *
-	 * Uses remove_action/add_action around the corrective wp_update_post() call
-	 * to prevent this callback from triggering itself. The [$this, 'method']
-	 * callable is a stable reference WordPress can match — unlike __FUNCTION__
-	 * inside a closure, which always returns '{closure}'.
+	 * The corrective wp_update_post() is wrapped in remove_action/add_action so
+	 * it cannot re-enter this callback. The array callable is required: it is a
+	 * stable reference WP can match for removal.
 	 *
 	 * @since 0.4.0
 	 * @param int      $post_id The post ID.
 	 * @param \WP_Post $post    The post object.
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()}
-	 * is the canonical filterable slug accessor consulted by every consumer
-	 * that compares against `$post->post_status`; {@see ArchiveOperation::in_flight()}
-	 * is the canonical accessor for the plugin's own-write signal.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical slug and in-flight accessors.
 	 */
 	public function enforce_archive_state( int $post_id, \WP_Post $post ): void {
 		if ( ArchiveOperation::in_flight() ) {
@@ -98,26 +89,22 @@ final class PostStatusGuard implements HookableInterface {
 	 * Restore comment/ping state and clear archive meta when a post leaves
 	 * the archived status outside aps_unarchive_post().
 	 *
-	 * Without this, an out-of-band exit would leave the archived-era
-	 * comment/ping lockdown and the archive meta rows on a now-active post.
-	 * Meta presence — not current post-type support — is the authority:
-	 * type support can change after a post was archived, and stale meta
-	 * still needs cleanup. Legacy archives (no meta) exit as a silent no-op.
+	 * Without this, an out-of-band exit leaves the archived-era comment/ping
+	 * lockdown and the meta rows on a now-active post.
 	 *
-	 * The corrective wp_update_post() only touches comment/ping, so the
-	 * post status does not change again and this callback cannot re-enter
-	 * itself. A failed restore write leaves the meta rows in place so the
-	 * recorded state survives for a later exit or unarchive to retry.
+	 * Meta presence — not current post-type support — is the authority: type
+	 * support can change after a post was archived and stale meta still needs
+	 * cleanup. Legacy archives (no meta) are a silent no-op.
+	 *
+	 * A failed restore write leaves the meta in place so the recorded state
+	 * survives for a later exit or unarchive to retry.
 	 *
 	 * @since 0.4.0
 	 * @param string   $new_status New post status.
 	 * @param string   $old_status Post status before the transition.
 	 * @param \WP_Post $post       Post object, post-transition.
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostStatusValue::resolved_slug()},
-	 * {@see UnarchiveOperation::in_flight()}, and {@see ArchiveMeta::for_post()} are the
-	 * canonical accessors for the filterable slug, the plugin's own-write signal, and the
-	 * archive-meta value object respectively.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical slug, in-flight, and meta accessors.
 	 */
 	public function restore_state_on_exit( string $new_status, string $old_status, \WP_Post $post ): void {
 		$slug = PostStatusValue::resolved_slug();

@@ -2,22 +2,13 @@
 	/**
 	 * Warn before deactivating the plugin while archived content exists.
 	 *
-	 * The server side (Admin\PluginScreen) enqueues this on plugins.php only
-	 * and localizes `archivedPostStatus.hasArchivedPosts` +
-	 * `.isNetworkAdmin`. Deactivating unregisters the archived status,
-	 * hiding that content until the plugin is reactivated — the confirm
-	 * gives the user a chance to unarchive first.
+	 * The server side (Admin\PluginScreen) enqueues this on plugins.php and
+	 * localizes `archivedPostStatus.hasArchivedPosts` + `.isNetworkAdmin`.
+	 * Deactivating unregisters the archived status and hides that content, so
+	 * the confirm gives the user a chance to unarchive first.
 	 *
-	 * Two entry points trigger the same confirm: the plugin row's
-	 * individual Deactivate link, and the plugins list's Bulk Actions ->
-	 * Deactivate submit — the latter only when this plugin's row is among
-	 * the checked items.
-	 *
-	 * On Network Admin's Plugins screen a single site can't answer "does
-	 * archived content exist on this network?", so the server skips that
-	 * query and localizes `isNetworkAdmin` as `true` instead; there, this
-	 * always warns with a generalized message regardless of
-	 * `hasArchivedPosts`.
+	 * Two entry points trigger the same confirm: the row's Deactivate link and
+	 * the Bulk Actions -> Deactivate submit.
 	 *
 	 * @param {Document} doc     Document to query for the plugin row.
 	 * @param {Object}   globals Host globals: wp.i18n, archivedPostStatus, confirm.
@@ -55,9 +46,8 @@
 		/**
 		 * Whether this screen should confirm before deactivation at all.
 		 *
-		 * Network Admin has no per-site answer to "is there archived
-		 * content?", so it always warns; a single site warns only when the
-		 * localized existence check found archived content.
+		 * Network Admin has no per-site answer to "is there archived content?",
+		 * so it always warns.
 		 *
 		 * @return {boolean}
 		 */
@@ -81,12 +71,8 @@
 
 		deactivateLink.addEventListener( 'click', handler );
 
-		// Bulk Actions -> Deactivate submits the whole plugins list form
-		// rather than following the row's individual link, so it needs its
-		// own listener. Only fires the same confirm when this plugin's row
-		// checkbox is among the ones checked and the chosen bulk action is
-		// actually "Deactivate" — any other bulk action, or a submission
-		// that doesn't include this plugin, passes through untouched.
+		// Bulk Actions -> Deactivate submits the list form rather than
+		// following the row's link, so it needs its own listener.
 		const checkbox = row.querySelector( 'input[type="checkbox"]' );
 		const bulkForm = doc.getElementById( 'bulk-action-form' );
 
@@ -108,12 +94,10 @@
 	/**
 	 * Read the bulk action actually being submitted.
 	 *
-	 * The plugins list table always renders two bulk-action dropdowns
-	 * sharing one `#bulk-action-form` — `action` for the top tablenav,
-	 * `action2` for the bottom — each defaulting to `-1` until the user
-	 * picks something. This mirrors WordPress core's own bulk-action
-	 * precedence (`current_action()`): `action` wins whenever it isn't the
-	 * `-1` placeholder, otherwise `action2` decides.
+	 * The list table renders two dropdowns sharing one `#bulk-action-form` —
+	 * `action` (top) and `action2` (bottom) — each `-1` until the user picks.
+	 * Precedence matches core's `current_action()`: `action` wins unless it is
+	 * still the placeholder.
 	 *
 	 * @param {HTMLFormElement} form The plugins list bulk-action form.
 	 * @return {string} The selected bulk action, or `-1` when none is chosen.

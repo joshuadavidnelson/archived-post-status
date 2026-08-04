@@ -95,7 +95,7 @@ class HookAdapterTest extends TestCase {
 	 * actions on Store::flush_cache, each at the default priority with
 	 * zero accepted args (flush_cache() takes no parameters) — three for
 	 * direct option writes that bypass Store::update()/save()/delete(),
-	 * plus `switch_blog` (§2.9) so a multisite switch_to_blog() doesn't
+	 * plus `switch_blog` so a multisite switch_to_blog() doesn't
 	 * leave Store's static cache serving the previous site's settings.
 	 *
 	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks

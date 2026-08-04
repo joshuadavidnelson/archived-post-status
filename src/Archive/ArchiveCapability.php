@@ -8,20 +8,12 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Resolves whether the current user is permitted to archive / unarchive a post.
  *
- * Absorbs {@see aps_current_user_can_archive()} and
- * {@see aps_current_user_can_unarchive()}. Applies the
- * `aps_default_archive_capability` / `aps_default_unarchive_capability`
- * filters and routes through `current_user_can()`.
- *
  * @since 0.4.0
  */
 final class ArchiveCapability {
 
 	/**
 	 * Whether the current user can archive content.
-	 *
-	 * The canonical implementation behind `aps_current_user_can_archive()`,
-	 * which is a one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id Optional. The post ID to check against. Default 0.
@@ -50,9 +42,6 @@ final class ArchiveCapability {
 
 	/**
 	 * Whether the current user can unarchive content.
-	 *
-	 * The canonical implementation behind `aps_current_user_can_unarchive()`,
-	 * which is a one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id Optional. The post ID to check against. Default 0.
@@ -91,9 +80,7 @@ final class ArchiveCapability {
 	 * @param int $post_id The post ID to check against; 0 for screen-level checks.
 	 * @return string
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostTypeCapabilityPrimitive::resolve()}
-	 * is the shared post-type-primitive lookup used identically here and in
-	 * ViewCapability / PostEditorGuard.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- shared post-type-primitive lookup.
 	 */
 	private static function default_capability( int $post_id ): string {
 		if ( $post_id <= 0 ) {

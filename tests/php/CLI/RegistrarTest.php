@@ -2,17 +2,9 @@
 /**
  * CLI registration surface tests.
  *
- * Behavior lives in src/CLI/* (Command,
- * ArchiveCommand, UnarchiveCommand, CommandRunner). This file only tests
- * the WP-CLI registration surface that stays in src/CLI/Registrar.php —
- * `hooks()` returning the `cli_init` descriptor and `cli()` registering
- * the two commands with WP_CLI::add_command.
- *
- * The behavior tests that previously lived here (the eight
- * `test_handle_action_*` methods, reached via `\ReflectionMethod`) have
- * moved to tests/php/CLI/ArchiveCommandTest.php and
- * tests/php/CLI/UnarchiveCommandTest.php as direct calls into
- * `Command::run()`.
+ * Only the WP-CLI registration surface: `hooks()` returning the `cli_init`
+ * descriptor and `cli()` registering the two commands. Command behavior is
+ * covered in ArchiveCommandTest / UnarchiveCommandTest.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus

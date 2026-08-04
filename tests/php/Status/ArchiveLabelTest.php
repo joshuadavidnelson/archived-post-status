@@ -6,11 +6,8 @@
  * @package ArchivedPostStatus
  * @covers ArchivedPostStatus\Status\ArchiveLabel
  *
- * Mirrors the existing facade tests in
- * FunctionsTest::test_archived_label_string_* but exercises the lifted
- * implementation directly. Once Step 3B rewires the facade as a one-line
- * delegate, these tests will be the canonical pin and the facade-side tests
- * become a smoke test.
+ * The canonical pin for the label; `aps_archived_label_string()` delegates
+ * here, so FunctionsTest's coverage of the facade is a smoke test.
  */
 
 use ArchivedPostStatus\Status\ArchiveLabel;
@@ -86,7 +83,7 @@ class ArchiveLabelTest extends TestCase {
 	}
 
 	/**
-	 * §1.6 regression: value() must return the filtered label verbatim,
+	 * Regression: value() must return the filtered label verbatim,
 	 * unescaped. Escaping belongs at each consumer's own output site
 	 * (esc_html() for HTML text, esc_attr() for an attribute, or none at
 	 * all where core does its own escaping) — not here, where the method

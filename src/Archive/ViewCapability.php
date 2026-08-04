@@ -8,20 +8,12 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 /**
  * Resolves whether the current user is permitted to view archived content.
  *
- * Absorbs {@see aps_current_user_can_view()}. Applies the
- * `aps_default_read_capability` filter to the default capability
- * (`'read_private_posts'`) and routes the resolved capability through
- * `current_user_can()`.
- *
  * @since 0.4.0
  */
 final class ViewCapability {
 
 	/**
 	 * Whether the current user can view archived content.
-	 *
-	 * The canonical implementation behind `aps_current_user_can_view()`,
-	 * which is a one-line delegate to this method.
 	 *
 	 * @since 0.4.0
 	 * @param int $post_id Optional. The post ID to check against. Default 0.
@@ -60,9 +52,7 @@ final class ViewCapability {
 	 * @param int $post_id The post ID to check against; 0 disables the fallback.
 	 * @return bool
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- {@see PostTypeCapabilityPrimitive::resolve()}
-	 * is the shared post-type-primitive lookup used identically here and in
-	 * ArchiveCapability / PostEditorGuard.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- shared post-type-primitive lookup.
 	 */
 	private static function author_owns_and_can_edit( int $post_id ): bool {
 		if ( $post_id <= 0 ) {

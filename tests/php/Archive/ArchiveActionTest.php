@@ -124,7 +124,7 @@ class ArchiveActionTest extends TestCase {
 	}
 
 	/**
-	 * Regression (§1.1): `aps_archive_post()` returns `\WP_Post|bool` and,
+	 * Regression: `aps_archive_post()` returns `\WP_Post|bool` and,
 	 * per its own docblock, propagates the `aps_pre_archive_post` filter's
 	 * return value verbatim — including a bare `true`. `perform()`'s return
 	 * type must widen to accept that shape; a narrower `\WP_Post|false`
@@ -145,7 +145,7 @@ class ArchiveActionTest extends TestCase {
 	}
 
 	/**
-	 * Regression (§1.1): the Unarchive twin of the above. `aps_unarchive_post()`
+	 * Regression: the Unarchive twin of the above. `aps_unarchive_post()`
 	 * short-circuits on `aps_pre_unarchive_post` the same way.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveAction::perform
@@ -162,7 +162,7 @@ class ArchiveActionTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// locked_message() / failure_message() / denied_message() (§1.7 + §2.1)
+	// locked_message() / failure_message() / denied_message()
 	// -----------------------------------------------------------------------
 	//
 	// PostList::handle_post_action() is shared by both directions but its
@@ -215,8 +215,8 @@ class ArchiveActionTest extends TestCase {
 
 	/**
 	 * denied_message() names the archive action — the wp_die() shown when
-	 * the current user fails the capability check (§2.1: this branch used
-	 * to return silently with no explanation at all).
+	 * the current user fails the capability check. This branch used to return
+	 * silently with no explanation at all.
 	 *
 	 * @covers ArchivedPostStatus\Archive\ArchiveAction::denied_message
 	 */

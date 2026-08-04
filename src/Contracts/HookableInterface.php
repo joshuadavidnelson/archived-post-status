@@ -10,9 +10,9 @@ use ArchivedPostStatus\Hooks\HookDescriptor;
 /**
  * Any class that registers WordPress hooks must implement this interface.
  *
- * Classes implementing this interface declare their hooks as data rather than
- * registering them imperatively. A HookLoader reads these declarations and
- * performs the actual WordPress registration.
+ * Implementors declare their hooks as data rather than registering them
+ * imperatively; {@see \ArchivedPostStatus\Hooks\HookLoader} performs the
+ * WordPress registration.
  *
  * @since 0.4.0
  */

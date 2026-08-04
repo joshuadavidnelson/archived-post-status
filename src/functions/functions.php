@@ -2,17 +2,10 @@
 /**
  * Public `aps_*` global functions.
  *
- * Each function below is a one-line delegate to the corresponding static
- * class in `src/Status/`, `src/Archive/`, `src/Admin/`, or `src/Frontend/`.
- * The public signatures (BC contract) are preserved verbatim; the mechanics
- * live with the classes. The legacy `_aps_*` internal helpers were retired
- * (net-new in 0.4.0, no callers); `aps_is_excluded_post_type` lives in
- * the sibling `deprecated.php` file.
- *
- * `@SuppressWarnings("PHPMD.StaticAccess")` is applied per-delegate: each
- * function is, by design, a static call to the canonical class — that's the
- * whole point of the delegate, so the suppression is scoped to the delegate
- * sites rather than declared codebase-wide.
+ * Each function below is a one-line delegate to the corresponding class in
+ * `src/`. The public signatures are the BC contract and are preserved
+ * verbatim; the mechanics live with the classes. Deprecated functions live in
+ * the sibling `deprecated.php`.
  *
  * @since 0.3.9
  * @package ArchivedPostStatus
@@ -38,8 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * @since 0.3.9
  * @return string
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- delegate: the static
- * call to {@see ArchiveLabel::value()} is the entire point of the function.
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to {@see ArchiveLabel::value()}.
  */
 function aps_archived_label_string() {
 	return ArchiveLabel::value();
@@ -142,12 +134,9 @@ function aps_current_user_can_unarchive( $post_id = 0 ) {
 /**
  * Check that the current user can edit a post.
  *
- * Mirrors the other `aps_current_user_can_*` helpers so the "can this
- * user view / archive / unarchive / edit" question is answered through a
- * single filterable surface — `aps_default_edit_capability` — rather
- * than a raw `current_user_can( 'edit_post', $post_id )` call at the
- * consumer site (notably {@see \ArchivedPostStatus\Admin\NoticeBuilder}'s
- * edit-link gate).
+ * Mirrors the other `aps_current_user_can_*` helpers, so consumers ask through
+ * the filterable `aps_default_edit_capability` surface rather than calling
+ * `current_user_can( 'edit_post', … )` directly.
  *
  * @since 0.4.0
  * @param int $post_id
@@ -181,9 +170,7 @@ function aps_current_user_can_edit( $post_id = 0 ) {
  * @param string $action  Optional. The action. Default is 'archive'.
  * @return string|false URL used to perform the un/archive action, or false if the post does not exist or its post type is not supported.
  *
- * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
- * {@see ArchivePostLink::build()}; the {@see ArchiveAction::tryFrom()} call
- * is the documented public surface of the enum.
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to {@see ArchivePostLink::build()}.
  */
 function aps_get_archive_post_link( $post = 0, $context = 'display', $action = 'archive' ) {
 	$archive_action = ArchiveAction::tryFrom( (string) $action ) ?? ArchiveAction::Archive;
@@ -235,15 +222,6 @@ function aps_get_archived_post_link( $post = null, $query_args = array(), $archi
  *
  * Modeled after the core `wp_trash_post()` function.
  *
- * Contract pin (C3):
- *   The {@see ArchiveOperation::perform()} body MUST NOT re-read the post
- *   between `wp_update_post` and the `aps_archived_post` action firing.
- *   The original `WP_Post` object captured at the top of the operation is
- *   the canonical "pre-archive snapshot" passed to listeners (notably
- *   {@see \ArchivedPostStatus\Archive\ArchiveMetaListener::save_meta()}),
- *   which rely on it to record `comment_status` / `ping_status` *before*
- *   the archive flow overwrites them with 'closed'.
- *
  * @see https://developer.wordpress.org/reference/functions/wp_trash_post/
  *
  * @since 0.4.0
@@ -260,21 +238,9 @@ function aps_archive_post( $post_id = 0 ) {
 /**
  * Unarchive a post.
  *
- * Modeled after the core `wp_untrash_post()` function — `aps_unarchive_post`
- * mirrors WordPress core's `untrash_post` in both intent and lifecycle.
+ * Modeled after the core `wp_untrash_post()` function.
  *
- * INVARIANT (C4):
- *   Third-party listeners registered on the `aps_unarchived_post` action may
- *   alter post meta before the in-tree {@see \ArchivedPostStatus\Archive\ArchiveMetaListener::delete_meta()}
- *   listener fires. Action callbacks register at priority 10 by default and
- *   execute in registration order; consumers cannot rely on the archive-meta
- *   keys surviving the action dispatch unmodified. Meta cleanup performed by
- *   this plugin is therefore *best-effort by design* — the deletion call
- *   tolerates missing keys (already deleted by a third-party listener) and
- *   does not fail the unarchive operation.
- *
- *   The 3-arg signature on `aps_unarchived_post` (post_id, previous_status,
- *   pre-unarchive WP_Post) is locked public API for 0.4.0; do not change it.
+ * Archive-meta cleanup is best-effort — see {@see UnarchiveOperation} for why.
  *
  * @see https://developer.wordpress.org/reference/functions/wp_untrash_post/
  *
