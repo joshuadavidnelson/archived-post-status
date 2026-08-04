@@ -61,3 +61,8 @@ jobs:
 
     - name: "Run Jest tests with coverage thresholds"
       run: "npm run test:coverage"
+
+    - name: "Run workflow script tests"
+      # Separate config and suite from the shipped assets/js code above —
+      # sharing the job only to reuse the node_modules already installed.
+      run: "npm run test:workflows"
