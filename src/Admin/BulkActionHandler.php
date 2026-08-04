@@ -11,9 +11,9 @@ use ArchivedPostStatus\Archive\ArchiveAction;
 /**
  * Handle the bulk archive/unarchive actions on the post list table.
  *
- * Injected into PostList. Receives post ids and the sendback URL from
- * `handle_bulk_actions-edit-{type}` and returns the redirect URL for the
- * post-list refresh.
+ * Injected into both PostList and PostActionHandler. Receives post ids and
+ * the sendback URL from `handle_bulk_actions-edit-{type}` and returns the
+ * redirect URL for the post-list refresh.
  *
  * Per-item failures are bucketed by reason into a {@see BulkActionResult} and
  * surfaced through the redirect URL for {@see NoticeBuilder} to render. The
