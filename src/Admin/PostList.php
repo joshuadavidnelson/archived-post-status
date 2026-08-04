@@ -104,38 +104,29 @@ final class PostList implements HookableInterface {
 	 * @since 0.4.0
 	 * @param array<int, string> $vars Current query var names.
 	 * @return array<int, string>
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical query-arg-name source.
 	 */
 	public function query_vars( array $vars ): array {
-		$vars[] = 'archived';
-		$vars[] = 'unarchived';
-		$vars[] = 'ids';
-		// Skip-reason buckets emitted by BulkActionResult on the redirect URL.
-		// NoticeBuilder reads these to render per-reason "X skipped" lines.
-		$vars[] = 'locked';
-		$vars[] = 'denied';
-		$vars[] = 'not_found';
-		$vars[] = 'wrong_status';
-		$vars[] = 'skipped';
-		return $vars;
+		return array_merge( $vars, NoticeQueryArg::values() );
 	}
 
 	/**
 	 * Strips the bulk-action notice args from the visible URL once the notice
 	 * has rendered.
 	 *
-	 * Must list the same eight names as {@see query_vars()} and
-	 * {@see BulkActionHandler::STRIPPED_QUERY_ARGS}, or a stale skip-reason
-	 * notice or undo link re-renders on every refresh of that URL.
+	 * Shares its arg names with {@see query_vars()} via {@see NoticeQueryArg},
+	 * or a stale skip-reason notice or undo link re-renders on every refresh
+	 * of that URL.
 	 *
 	 * @since 0.4.0
 	 * @param array<int, string> $args Existing removable query arg names.
 	 * @return array<int, string>
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical query-arg-name source.
 	 */
 	public function removable_query_args( array $args ): array {
-		return array_merge(
-			$args,
-			array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' )
-		);
+		return array_merge( $args, NoticeQueryArg::values() );
 	}
 
 	/**
