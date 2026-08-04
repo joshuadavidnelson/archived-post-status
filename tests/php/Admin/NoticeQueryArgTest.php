@@ -40,9 +40,9 @@ class NoticeQueryArgTest extends TestCase {
 
 	/**
 	 * values() must return all eight strings in exactly this order — the
-	 * order PostList::query_vars(), PostList::removable_query_args(), and
-	 * BulkActionHandler previously kept in hand-sync — so a future case
-	 * addition can't silently half-land.
+	 * order PostList::query_vars() (also the removable_query_args filter
+	 * callback), and BulkActionHandler previously kept in hand-sync — so a
+	 * future case addition can't silently half-land.
 	 *
 	 * @covers ArchivedPostStatus\Admin\NoticeQueryArg::values
 	 */

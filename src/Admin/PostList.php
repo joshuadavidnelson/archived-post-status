@@ -52,7 +52,7 @@ final class PostList implements HookableInterface {
 			HookDescriptor::filter( 'post_row_actions', array( $this, 'row_actions' ), 10, 2 ),
 			HookDescriptor::filter( 'page_row_actions', array( $this, 'row_actions' ), 10, 2 ),
 			HookDescriptor::action( 'wp_loaded', array( $this, 'register_post_type_hooks' ) ),
-			HookDescriptor::filter( 'removable_query_args', array( $this, 'removable_query_args' ) ),
+			HookDescriptor::filter( 'removable_query_args', array( $this, 'query_vars' ) ),
 		);
 	}
 
@@ -99,6 +99,12 @@ final class PostList implements HookableInterface {
 	/**
 	 * Add custom query vars for archive feedback.
 	 *
+	 * Also serves as the `removable_query_args` callback (see hooks()):
+	 * `query_vars` registers the names so WordPress recognises them;
+	 * `removable_query_args` lists the names to strip from the URL once the
+	 * notice has rendered. The same eight names satisfy both, which is why
+	 * one method covers it.
+	 *
 	 * @since 0.4.0
 	 * @param array<int, string> $vars Current query var names.
 	 * @return array<int, string>
@@ -107,24 +113,6 @@ final class PostList implements HookableInterface {
 	 */
 	public function query_vars( array $vars ): array {
 		return array_merge( $vars, NoticeQueryArg::values() );
-	}
-
-	/**
-	 * Strips the bulk-action notice args from the visible URL once the notice
-	 * has rendered.
-	 *
-	 * Shares its arg names with {@see query_vars()} via {@see NoticeQueryArg},
-	 * or a stale skip-reason notice or undo link re-renders on every refresh
-	 * of that URL.
-	 *
-	 * @since 0.4.0
-	 * @param array<int, string> $args Existing removable query arg names.
-	 * @return array<int, string>
-	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical query-arg-name source.
-	 */
-	public function removable_query_args( array $args ): array {
-		return array_merge( $args, NoticeQueryArg::values() );
 	}
 
 	/**

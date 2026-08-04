@@ -152,9 +152,14 @@ class PostListTest extends TestCase {
 		$this->assertSame( 10, $hooks[4]->priority );
 		$this->assertSame( 1, $hooks[4]->accepted_args );
 
+		// removable_query_args binds to query_vars, not a same-named method
+		// of its own — the two filters need the same eight names for
+		// different reasons (see query_vars()'s docblock), so one callback
+		// satisfies both. This assertion is the only proof the filter is
+		// still wired at all.
 		$this->assertSame( 'filter', $hooks[5]->type );
 		$this->assertSame( 'removable_query_args', $hooks[5]->hook );
-		$this->assertSame( array( $this->post_list, 'removable_query_args' ), $hooks[5]->callback );
+		$this->assertSame( array( $this->post_list, 'query_vars' ), $hooks[5]->callback );
 		$this->assertSame( 10, $hooks[5]->priority );
 		$this->assertSame( 1, $hooks[5]->accepted_args );
 
@@ -246,6 +251,16 @@ class PostListTest extends TestCase {
 		$this->assertContains( 'skipped', $result );
 	}
 
+	// -----------------------------------------------------------------------
+	// query_vars / removable_query_args
+	// -----------------------------------------------------------------------
+	//
+	// Regression: with these eight args unregistered on `removable_query_args`,
+	// a stale notice (and a stale skip-reason bucket from a previous, unrelated
+	// action) survives in the visible URL across page refreshes. query_vars()
+	// is now that filter's callback too (see hooks()), so the exact-match pin
+	// below is what proves the guarantee holds for both.
+
 	/**
 	 * Exact-match pin (Phase 0c) — see docs/plans/0.4.0-refactor.md Step 0.
 	 *
@@ -263,63 +278,6 @@ class PostListTest extends TestCase {
 			array(
 				'p',
 				'page_id',
-				'archived',
-				'unarchived',
-				'ids',
-				'locked',
-				'denied',
-				'not_found',
-				'wrong_status',
-				'skipped',
-			),
-			$result
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// removable_query_args
-	// -----------------------------------------------------------------------
-	//
-	// Regression: with these eight args unregistered on `removable_query_args`,
-	// a stale notice (and a stale skip-reason bucket from a previous, unrelated
-	// action) survives in the visible URL across page refreshes.
-
-	/**
-	 * removable_query_args() must append the exact same eight names
-	 * query_vars() registers, on top of whatever WordPress core (or another
-	 * plugin) already contributed — never replacing the incoming array.
-	 *
-	 * @covers ArchivedPostStatus\Admin\PostList::removable_query_args
-	 */
-	public function test_removable_query_args_adds_all_eight_notice_query_args() {
-		$result = $this->post_list->removable_query_args( array( 'untrashed', 'deleted' ) );
-
-		// Pre-existing core/third-party entries survive untouched.
-		$this->assertContains( 'untrashed', $result );
-		$this->assertContains( 'deleted', $result );
-
-		foreach ( array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ) as $arg ) {
-			$this->assertContains( $arg, $result, "removable_query_args() must include '{$arg}'" );
-		}
-	}
-
-	/**
-	 * Exact-match pin (Phase 0c) — see docs/plans/0.4.0-refactor.md Step 0.
-	 *
-	 * removable_query_args() must append EXACTLY these eight names, in this
-	 * order, after whatever it was handed — never replacing the incoming
-	 * array. Same rationale as test_query_vars_pins_the_exact_resulting_array()
-	 * above: this is what makes the NoticeQueryArg migration mechanical.
-	 *
-	 * @covers ArchivedPostStatus\Admin\PostList::removable_query_args
-	 */
-	public function test_removable_query_args_pins_the_exact_resulting_array() {
-		$result = $this->post_list->removable_query_args( array( 'untrashed', 'deleted' ) );
-
-		$this->assertSame(
-			array(
-				'untrashed',
-				'deleted',
 				'archived',
 				'unarchived',
 				'ids',

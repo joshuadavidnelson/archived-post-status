@@ -11,8 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * by the undo link, and the four per-reason skip buckets.
  *
  * Single source of truth for names that previously had to be hand-copied,
- * identically, across {@see PostList::query_vars()},
- * {@see PostList::removable_query_args()}, {@see BulkActionHandler} (the
+ * identically, across {@see PostList::query_vars()} (also the
+ * `removable_query_args` filter callback), {@see BulkActionHandler} (the
  * args stripped before a fresh redirect), and {@see BulkActionResult}
  * (the args written onto it) — a human-maintained sync that this enum
  * removes the need for.
