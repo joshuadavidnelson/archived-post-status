@@ -254,6 +254,36 @@ class PostListTest extends TestCase {
 		$this->assertContains( 'skipped', $result );
 	}
 
+	/**
+	 * Exact-match pin (Phase 0c) — see docs/plans/0.4.0-refactor.md Step 0.
+	 *
+	 * query_vars() must append EXACTLY these eight names, in this order, on
+	 * top of whatever it was handed. This is the contract the upcoming
+	 * NoticeQueryArg enum migration must reproduce identically across all
+	 * five call sites that currently spell these names as string literals.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::query_vars
+	 */
+	public function test_query_vars_pins_the_exact_resulting_array() {
+		$result = $this->post_list->query_vars( array( 'p', 'page_id' ) );
+
+		$this->assertSame(
+			array(
+				'p',
+				'page_id',
+				'archived',
+				'unarchived',
+				'ids',
+				'locked',
+				'denied',
+				'not_found',
+				'wrong_status',
+				'skipped',
+			),
+			$result
+		);
+	}
+
 	// -----------------------------------------------------------------------
 	// removable_query_args
 	// -----------------------------------------------------------------------
@@ -279,6 +309,36 @@ class PostListTest extends TestCase {
 		foreach ( array( 'archived', 'unarchived', 'ids', 'locked', 'denied', 'not_found', 'wrong_status', 'skipped' ) as $arg ) {
 			$this->assertContains( $arg, $result, "removable_query_args() must include '{$arg}'" );
 		}
+	}
+
+	/**
+	 * Exact-match pin (Phase 0c) — see docs/plans/0.4.0-refactor.md Step 0.
+	 *
+	 * removable_query_args() must append EXACTLY these eight names, in this
+	 * order, after whatever it was handed — never replacing the incoming
+	 * array. Same rationale as test_query_vars_pins_the_exact_resulting_array()
+	 * above: this is what makes the NoticeQueryArg migration mechanical.
+	 *
+	 * @covers ArchivedPostStatus\Admin\PostList::removable_query_args
+	 */
+	public function test_removable_query_args_pins_the_exact_resulting_array() {
+		$result = $this->post_list->removable_query_args( array( 'untrashed', 'deleted' ) );
+
+		$this->assertSame(
+			array(
+				'untrashed',
+				'deleted',
+				'archived',
+				'unarchived',
+				'ids',
+				'locked',
+				'denied',
+				'not_found',
+				'wrong_status',
+				'skipped',
+			),
+			$result
+		);
 	}
 
 	// -----------------------------------------------------------------------

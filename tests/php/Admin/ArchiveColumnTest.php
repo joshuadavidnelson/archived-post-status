@@ -612,6 +612,283 @@ class ArchiveColumnTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
+	// Exact-match pins (Phase 0b) — see docs/plans/0.4.0-refactor.md Step 0.
+	//
+	// The tests above assert substrings, so a printf() -> return-string
+	// conversion (Step 3 of the refactor) could reorder the name/date spans
+	// or change whitespace / <br> placement and still pass every one of
+	// them. These pins assert the COMPLETE output string for each of the
+	// three render_archive_cell() states plus the deleted-user fallback and
+	// the XSS-escaping case, capturing the current bytes exactly as they
+	// are. The legacy no-date state is already exact-pinned above by
+	// test_render_cell_escapes_legacy_label_exactly_once() (assertSame on
+	// '<span>[[Archived]]</span>'), so it is not duplicated here.
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Exact-match pin for render_cell()'s complete output when both an
+	 * archive date and a resolvable user are present. WP_Mock's default
+	 * esc_html()/__() passthrough (unstubbed here) returns its input
+	 * unchanged, so the pinned string is exactly what production emits
+	 * today with no escaping transformation applied.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::render_cell
+	 */
+	public function test_render_cell_pins_the_exact_output_for_date_and_user() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( '7' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( 'open' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( 'closed' );
+
+		\WP_Mock::userFunction( 'get_option' )->andReturnUsing(
+			function ( $key ) {
+				return 'date_format' === $key ? 'F j, Y' : 'g:i a';
+			}
+		);
+		\WP_Mock::userFunction( 'wp_date' )
+			->andReturn( 'November 14, 2023 at 10:13 pm' );
+
+		$user                = new \stdClass();
+		$user->display_name = 'Alice Editor';
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 7 )
+			->andReturn( $user );
+
+		ob_start();
+		$this->column->render_cell( 'aps_archived', 42 );
+		$output = ob_get_clean();
+
+		$this->assertSame(
+			'<span>Archived by Alice Editor</span><br><span class="aps-archive-datetime">November 14, 2023 at 10:13 pm</span>',
+			$output
+		);
+	}
+
+	/**
+	 * Exact-match pin for render_cell()'s complete output for a
+	 * system-context archive (archive_date present, archive_user 0).
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::render_cell
+	 */
+	public function test_render_cell_pins_the_exact_output_for_date_and_system_context() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( '0' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( '' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( '' );
+
+		\WP_Mock::userFunction( 'get_option' )->andReturnUsing(
+			function ( $key ) {
+				return 'date_format' === $key ? 'F j, Y' : 'g:i a';
+			}
+		);
+		\WP_Mock::userFunction( 'wp_date' )
+			->andReturn( 'November 14, 2023 at 10:13 pm' );
+
+		\WP_Mock::userFunction( 'get_userdata' )->never();
+
+		ob_start();
+		$this->column->render_cell( 'aps_archived', 42 );
+		$output = ob_get_clean();
+
+		$this->assertSame(
+			'<span>Archived by system</span><br><span class="aps-archive-datetime">November 14, 2023 at 10:13 pm</span>',
+			$output
+		);
+	}
+
+	/**
+	 * Exact-match pin for render_cell()'s complete output when the
+	 * archiving user's account has since been deleted — the "Unknown"
+	 * fallback.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::render_cell
+	 */
+	public function test_render_cell_pins_the_exact_output_for_deleted_user_fallback() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( '7' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( 'open' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( 'closed' );
+
+		\WP_Mock::userFunction( 'get_option' )->andReturnUsing(
+			function ( $key ) {
+				return 'date_format' === $key ? 'F j, Y' : 'g:i a';
+			}
+		);
+		\WP_Mock::userFunction( 'wp_date' )
+			->andReturn( 'November 14, 2023 at 10:13 pm' );
+
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 7 )
+			->andReturn( false );
+
+		ob_start();
+		$this->column->render_cell( 'aps_archived', 42 );
+		$output = ob_get_clean();
+
+		$this->assertSame(
+			'<span>Archived by Unknown</span><br><span class="aps-archive-datetime">November 14, 2023 at 10:13 pm</span>',
+			$output
+		);
+	}
+
+	/**
+	 * Exact-match pin for render_cell()'s complete output when the
+	 * archiving user's display_name contains HTML. Overrides esc_html()
+	 * with a real htmlspecialchars() implementation (as the existing
+	 * substring-based regression test above does) so the pin proves the
+	 * exact escaped bytes, not merely that escaping happened somewhere.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::render_cell
+	 */
+	public function test_render_cell_pins_the_exact_output_for_the_xss_escaping_case() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( '13' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( '' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( '' );
+
+		\WP_Mock::userFunction( 'get_option' )->andReturn( 'F j, Y' );
+		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'November 14, 2023' );
+
+		\WP_Mock::userFunction( 'esc_html' )->andReturnUsing(
+			static fn( $s ) => htmlspecialchars( (string) $s, ENT_QUOTES, 'UTF-8' )
+		);
+
+		$user                = new \stdClass();
+		$user->display_name = '<script>alert(1)</script>';
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 13 )
+			->andReturn( $user );
+
+		ob_start();
+		$this->column->render_cell( 'aps_archived', 42 );
+		$output = ob_get_clean();
+
+		$this->assertSame(
+			'<span>Archived by &lt;script&gt;alert(1)&lt;/script&gt;</span><br><span class="aps-archive-datetime">November 14, 2023</span>',
+			$output
+		);
+	}
+
+	/**
+	 * Exact-match pin for the double esc_html() layer inside
+	 * render_archive_cell()'s populated branch: production wraps
+	 * esc_html() around BOTH the attribution_template() format string
+	 * itself AND each substituted value ($name, $date_time) separately
+	 * (see ArchiveColumn.php render_archive_cell(), the printf() call).
+	 * The refactor plan calls this double layer a "preserve exactly" item
+	 * for Step 3, which converts that printf() into a returned string.
+	 *
+	 * No test above can observe the format-string layer:
+	 * attribution_template() returns 'Archived by %1$s', which contains no
+	 * HTML metacharacters, so esc_html() applied to it is a no-op on the
+	 * actual bytes -- deleting that wrapper leaves every substring/exact
+	 * assertion elsewhere in this file unchanged. Stubbing esc_html() with
+	 * a distinguishable `[[...]]` marker (the same technique
+	 * test_render_cell_escapes_legacy_label_exactly_once() uses) is what
+	 * makes the format-string layer observable at all: it puts one pair of
+	 * marker brackets around the entire "Archived by %1$s" template, with
+	 * the name's own `[[...]]` marker landing at the `%1$s` position
+	 * inside those outer brackets, rather than at the edges of the
+	 * template. esc_attr() is also stubbed with a distinguishable
+	 * `((...))` marker and never appears in the expected output, so the
+	 * pin additionally proves esc_attr() is not used anywhere in this
+	 * path.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::render_cell
+	 */
+	public function test_render_cell_pins_both_esc_html_layers_around_the_attribution_template() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PREVIOUS_STATUS, true )
+			->andReturn( 'publish' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_DATE, true )
+			->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_ARCHIVE_USER, true )
+			->andReturn( '7' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_COMMENT_STATUS, true )
+			->andReturn( 'open' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, ArchiveMeta::META_PING_STATUS, true )
+			->andReturn( 'closed' );
+
+		\WP_Mock::userFunction( 'get_option' )->andReturnUsing(
+			function ( $key ) {
+				return 'date_format' === $key ? 'F j, Y' : 'g:i a';
+			}
+		);
+		\WP_Mock::userFunction( 'wp_date' )
+			->andReturn( 'November 14, 2023 at 10:13 pm' );
+
+		$user                = new \stdClass();
+		$user->display_name = 'Alice Editor';
+		\WP_Mock::userFunction( 'get_userdata' )
+			->with( 7 )
+			->andReturn( $user );
+
+		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing(
+			static fn( $s ) => "(({$s}))"
+		);
+		\WP_Mock::userFunction( 'esc_html' )->andReturnUsing(
+			static fn( $s ) => "[[{$s}]]"
+		);
+
+		ob_start();
+		$this->column->render_cell( 'aps_archived', 42 );
+		$output = ob_get_clean();
+
+		$this->assertSame(
+			'<span>[[Archived by [[Alice Editor]]]]</span><br><span class="aps-archive-datetime">[[November 14, 2023 at 10:13 pm]]</span>',
+			$output
+		);
+	}
+
+	// -----------------------------------------------------------------------
 	// handle_sort
 	// -----------------------------------------------------------------------
 
@@ -790,6 +1067,151 @@ class ArchiveColumnTest extends TestCase {
 		$orderby = $this->column->filter_sort_orderby( '', $query );
 
 		$this->assertStringContainsString( 'DESC', $orderby );
+	}
+
+	// -----------------------------------------------------------------------
+	// Exact-match pins (Phase 0a) — see docs/plans/0.4.0-refactor.md Step 0.
+	//
+	// The loose assertStringContainsString() checks above (LEFT JOIN,
+	// COALESCE, ASC, DESC) would still pass if a refactor restructured the
+	// clause or swapped LEFT for INNER while leaving the literal 'LEFT JOIN'
+	// elsewhere in the string. These pins assert the complete generated
+	// fragment byte for byte against the CURRENT implementation, so
+	// ArchiveColumnSortSql (the class this SQL is slated to move into) has
+	// an exact contract to reproduce rather than a fuzzy one.
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Exact-match pin for filter_sort_join()'s complete output for the
+	 * scoped query, including the wpdb double's prepare() returning its
+	 * template argument unchanged ('%s )') — that literal is part of the
+	 * pinned contract, not an artifact to clean up.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_join
+	 */
+	public function test_filter_sort_join_pins_the_exact_fragment_for_the_scoped_query() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
+		$query->shouldReceive( 'set' )->never();
+
+		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
+		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
+
+		$this->column->handle_sort( $query );
+
+		global $wpdb;
+		$wpdb = new class() {
+			public $posts    = 'wp_posts';
+			public $postmeta = 'wp_postmeta';
+
+			/** @var array<int, array{query: string, args: array<int, mixed>}> */
+			public array $prepared_queries = array();
+
+			/**
+			 * @param string $query Prepared query template.
+			 * @param mixed  ...$args Bound parameters.
+			 * @return string
+			 */
+			public function prepare( $query, ...$args ) {
+				$this->prepared_queries[] = array(
+					'query' => $query,
+					'args'  => $args,
+				);
+				return $query;
+			}
+		};
+
+		$joined = $this->column->filter_sort_join( ' INNER JOIN wp_term_relationships ON ( wp_posts.ID = wp_term_relationships.object_id )', $query );
+
+		$this->assertSame(
+			' INNER JOIN wp_term_relationships ON ( wp_posts.ID = wp_term_relationships.object_id )'
+			. ' LEFT JOIN wp_postmeta AS aps_archive_sort'
+			. ' ON ( aps_archive_sort.post_id = wp_posts.ID AND aps_archive_sort.meta_key = %s )',
+			$joined,
+			'the complete generated LEFT JOIN fragment must match byte for byte'
+		);
+	}
+
+	/**
+	 * Exact-match pin for filter_sort_orderby()'s complete output when the
+	 * query's `order` var is 'asc'.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
+	 */
+	public function test_filter_sort_orderby_pins_the_exact_output_for_asc() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
+		$query->shouldReceive( 'set' )->never();
+		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( 'asc' );
+
+		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
+		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
+
+		$this->column->handle_sort( $query );
+
+		$orderby = $this->column->filter_sort_orderby( 'wp_posts.post_date DESC', $query );
+
+		$this->assertSame( 'COALESCE( aps_archive_sort.meta_value + 0, 0 ) ASC', $orderby );
+	}
+
+	/**
+	 * Exact-match pin for filter_sort_orderby()'s complete output when the
+	 * query's `order` var is 'desc'.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::handle_sort
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
+	 */
+	public function test_filter_sort_orderby_pins_the_exact_output_for_desc() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
+		$query->shouldReceive( 'set' )->never();
+		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( 'desc' );
+
+		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
+		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
+
+		$this->column->handle_sort( $query );
+
+		$orderby = $this->column->filter_sort_orderby( 'wp_posts.post_date ASC', $query );
+
+		$this->assertSame( 'COALESCE( aps_archive_sort.meta_value + 0, 0 ) DESC', $orderby );
+	}
+
+	/**
+	 * Exact-match pin for filter_sort_orderby()'s complete output when the
+	 * query's `order` var is neither 'ASC' nor 'DESC' — proving the DESC
+	 * fallback produces the exact same fragment as an explicit 'desc'.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ArchiveColumn::filter_sort_orderby
+	 */
+	public function test_filter_sort_orderby_pins_the_exact_output_for_an_unrecognized_order_value() {
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+
+		$query = \Mockery::mock( 'WP_Query' );
+		$query->shouldReceive( 'is_main_query' )->once()->andReturn( true );
+		$query->shouldReceive( 'get' )->with( 'orderby' )->once()->andReturn( 'aps_archived' );
+		$query->shouldReceive( 'set' )->never();
+		$query->shouldReceive( 'get' )->with( 'order' )->once()->andReturn( 'banana' );
+
+		\WP_Mock::expectFilterAdded( 'posts_join', array( $this->column, 'filter_sort_join' ), 10, 2 );
+		\WP_Mock::expectFilterAdded( 'posts_orderby', array( $this->column, 'filter_sort_orderby' ), 10, 2 );
+
+		$this->column->handle_sort( $query );
+
+		$orderby = $this->column->filter_sort_orderby( '', $query );
+
+		$this->assertSame( 'COALESCE( aps_archive_sort.meta_value + 0, 0 ) DESC', $orderby );
 	}
 
 	/**

@@ -307,4 +307,62 @@ class BulkActionResultTest extends TestCase {
 		$this->assertArrayNotHasKey( 'ids', $captured, 'the ids arg must be omitted once the cap is exceeded' );
 		$this->assertSame( 201, $captured['archived'] ?? null, 'the plain success count must still be emitted' );
 	}
+
+	// -----------------------------------------------------------------------
+	// Exact-match pin (Phase 0c) — see docs/plans/0.4.0-refactor.md Step 0.
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Exact-match pin for apply_to_url() with EVERY bucket populated: a
+	 * success record, a locked skip, a denied skip, a not_found skip, and a
+	 * wrong_status skip. Pins both the exact ordered sequence of
+	 * (arg name, value) pairs handed to add_query_arg() — proving the call
+	 * order matches the source (action arg, skipped aggregate, locked,
+	 * denied, not_found, wrong_status, ids) — and the exact resulting URL
+	 * string built from those calls.
+	 *
+	 * This is the contract that makes the NoticeQueryArg migration safe:
+	 * apply_to_url() uses $action->query_arg() for the archived/unarchived
+	 * name and inline literals for the other six, and 'ids' is only
+	 * emitted when count( $this->ids ) <= MAX_IDS_IN_URL.
+	 *
+	 * @covers ArchivedPostStatus\Admin\BulkActionResult::apply_to_url
+	 */
+	public function test_apply_to_url_pins_the_exact_arg_names_and_url_with_every_bucket_populated() {
+		$result = new BulkActionResult();
+		$result->record( 1 );
+		$result->record( 2 );
+		$result->record_locked();
+		$result->record_denied( 10 );
+		$result->record_not_found( 20 );
+		$result->record_wrong_status( 30 );
+
+		$captured = array();
+		\WP_Mock::userFunction( 'add_query_arg' )
+			->andReturnUsing( function ( $key, $value, $url ) use ( &$captured ) {
+				$captured[] = array( $key, $value );
+				return $url . '&' . $key . '=' . $value;
+			} );
+
+		$final_url = $result->apply_to_url( 'http://example.test/wp-admin/edit.php', ArchiveAction::Archive );
+
+		$this->assertSame(
+			array(
+				array( 'archived', 2 ),
+				array( 'skipped', 4 ),
+				array( 'locked', 1 ),
+				array( 'denied', 1 ),
+				array( 'not_found', 1 ),
+				array( 'wrong_status', 1 ),
+				array( 'ids', '1,2' ),
+			),
+			$captured,
+			'add_query_arg() must be called with exactly these arg names, values, and order'
+		);
+
+		$this->assertSame(
+			'http://example.test/wp-admin/edit.php&archived=2&skipped=4&locked=1&denied=1&not_found=1&wrong_status=1&ids=1,2',
+			$final_url
+		);
+	}
 }
