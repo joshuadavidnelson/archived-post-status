@@ -23,30 +23,15 @@ jobs:
 
     steps:
     - name: "Checkout"
-      uses: "actions/checkout@v6"
+      uses: "actions/checkout@v7"
 
-    - name: "Set PHP version"
-      uses: "shivammathur/setup-php@v2"
+    - name: "Set up PHP and Composer"
+      uses: "./.github/actions/setup-php-composer"
       with:
         php-version: ${{ matrix.php-versions }}
         # Coverage is collected on the newest matrix leg only — the other
         # legs exist for runtime compatibility, not coverage duplication.
         coverage: ${{ matrix.php-versions == '8.4' && 'xdebug' || 'none' }}
-        tools: phpunit, phpunit-polyfills, composer:v2
-      env:
-        debug: true
-
-    - name: "Cache Composer dependencies"
-      uses: "actions/cache@v4"
-      with:
-        path: vendor
-        key: composer-${{ matrix.php-versions }}-${{ hashFiles('composer.lock') }}
-        restore-keys: |
-          composer-${{ matrix.php-versions }}-
-          composer-
-
-    - name: "Install dependencies"
-      run: "composer install"
 
     - name: "PHPUnit Tests"
       run: 'composer phpunit'
@@ -61,7 +46,7 @@ jobs:
 
     steps:
     - name: "Checkout"
-      uses: "actions/checkout@v6"
+      uses: "actions/checkout@v7"
 
     - name: "Setup Node.js"
       uses: "actions/setup-node@v5"
@@ -70,7 +55,9 @@ jobs:
         cache: 'npm'
 
     - name: "Install npm dependencies"
-      run: "npm install"
+      # ci, not install: it installs strictly from the lock file and fails
+      # loudly when package.json and the lock file have drifted apart.
+      run: "npm ci"
 
     - name: "Run Jest tests with coverage thresholds"
       run: "npm run test:coverage"

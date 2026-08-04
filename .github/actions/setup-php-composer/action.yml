@@ -1,0 +1,38 @@
+name: "Set up PHP and Composer"
+description: "Installs PHP, restores the Composer cache and installs dependencies."
+
+# Checkout is deliberately not part of this action: a local action cannot
+# run until the repository containing it has been checked out, so every
+# caller does its own checkout first.
+
+inputs:
+  php-version:
+    description: "PHP version to install."
+    required: true
+  coverage:
+    description: "Coverage driver. Only the job that collects coverage should set this."
+    required: false
+    default: "none"
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Install PHP"
+      uses: "shivammathur/setup-php@v2"
+      with:
+        php-version: ${{ inputs.php-version }}
+        coverage: ${{ inputs.coverage }}
+
+    - name: "Cache Composer dependencies"
+      uses: "actions/cache@v4"
+      with:
+        path: vendor
+        # composer.json pins config.platform.php to 8.1, so the resolved
+        # tree is identical whatever PHP the job runs — the matrix legs
+        # share one cache entry rather than writing four copies of it.
+        key: composer-${{ hashFiles('composer.lock') }}
+        restore-keys: composer-
+
+    - name: "Install Composer dependencies"
+      shell: bash
+      run: composer install --no-progress
