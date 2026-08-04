@@ -117,6 +117,8 @@ final class BulkActionResult {
 	 * {@see NoticeBuilder} already renders a count-only notice when `ids` is
 	 * absent, so a capped batch degrades to that rather than risking a
 	 * URL-length redirect failure or a truncated undo link.
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical query-arg-name source.
 	 */
 	public function apply_to_url( string $url, ArchiveAction $action ): string {
 		$url = add_query_arg( $action->query_arg(), $this->count, $url );
@@ -124,27 +126,27 @@ final class BulkActionResult {
 		$skipped = $this->skipped_count();
 
 		if ( $skipped ) {
-			$url = add_query_arg( 'skipped', $skipped, $url );
+			$url = add_query_arg( NoticeQueryArg::Skipped->value, $skipped, $url );
 		}
 
 		if ( $this->locked ) {
-			$url = add_query_arg( 'locked', $this->locked, $url );
+			$url = add_query_arg( NoticeQueryArg::Locked->value, $this->locked, $url );
 		}
 
 		if ( $this->denied ) {
-			$url = add_query_arg( 'denied', $this->denied, $url );
+			$url = add_query_arg( NoticeQueryArg::Denied->value, $this->denied, $url );
 		}
 
 		if ( $this->not_found ) {
-			$url = add_query_arg( 'not_found', $this->not_found, $url );
+			$url = add_query_arg( NoticeQueryArg::NotFound->value, $this->not_found, $url );
 		}
 
 		if ( $this->wrong_status ) {
-			$url = add_query_arg( 'wrong_status', $this->wrong_status, $url );
+			$url = add_query_arg( NoticeQueryArg::WrongStatus->value, $this->wrong_status, $url );
 		}
 
 		if ( $this->ids && count( $this->ids ) <= self::MAX_IDS_IN_URL ) {
-			$url = add_query_arg( 'ids', implode( ',', $this->ids ), $url );
+			$url = add_query_arg( NoticeQueryArg::Ids->value, implode( ',', $this->ids ), $url );
 		}
 
 		return $url;

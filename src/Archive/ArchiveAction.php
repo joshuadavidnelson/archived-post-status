@@ -5,6 +5,8 @@ namespace ArchivedPostStatus\Archive;
 // Exit if accessed directly, prevent direct access to this file.
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
+use ArchivedPostStatus\Admin\NoticeQueryArg;
+
 /**
  * The two actions that can be performed on a post's archive status.
  *
@@ -23,9 +25,18 @@ enum ArchiveAction: string {
 		return $this->value . 'd';
 	}
 
-	/** Alias for past_tense() — more readable at call sites. */
+	/**
+	 * The query arg name written to the redirect URL to report this action's
+	 * result count — {@see NoticeQueryArg::Archived} or
+	 * {@see NoticeQueryArg::Unarchived}.
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical query-arg-name source.
+	 */
 	public function query_arg(): string {
-		return $this->past_tense();
+		return match ( $this ) {
+			self::Archive   => NoticeQueryArg::Archived->value,
+			self::Unarchive => NoticeQueryArg::Unarchived->value,
+		};
 	}
 
 	/**

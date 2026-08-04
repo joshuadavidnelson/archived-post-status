@@ -25,27 +25,6 @@ use ArchivedPostStatus\Archive\ArchiveAction;
 final class BulkActionHandler {
 
 	/**
-	 * Query args stripped from the sendback URL before the result counts are
-	 * appended. Shared by {@see handle()} and {@see get_redirect_url()} so the
-	 * two paths cannot drift.
-	 *
-	 * Any new counter or id-list arg must also be added to
-	 * {@see PostList::query_vars()} and {@see PostList::removable_query_args()}.
-	 *
-	 * @var string[]
-	 */
-	private const STRIPPED_QUERY_ARGS = array(
-		'archived',
-		'unarchived',
-		'ids',
-		'locked',
-		'denied',
-		'not_found',
-		'wrong_status',
-		'skipped',
-	);
-
-	/**
 	 * Handle the bulk action filter callback.
 	 *
 	 * Entry point for `handle_bulk_actions-edit-{type}`: returns the sendback
@@ -59,7 +38,7 @@ final class BulkActionHandler {
 	 *                                    are not guaranteed to be int.
 	 * @return string
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- backed-enum hydration.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- backed-enum hydration and canonical query-arg-name source.
 	 */
 	public function handle( string $sendback, string $doaction, array $post_ids ): string {
 		if ( empty( $post_ids ) ) {
@@ -85,7 +64,7 @@ final class BulkActionHandler {
 		// No screen-level capability pre-gate: capabilities are ownership-aware
 		// (a post's own author may act on it), so the per-post check inside
 		// each loop below is the only correct gate.
-		$sendback = remove_query_arg( self::STRIPPED_QUERY_ARGS, $sendback );
+		$sendback = remove_query_arg( NoticeQueryArg::values(), $sendback );
 
 		return match ( $action ) {
 			ArchiveAction::Archive => $this->bulk_archive( $post_ids, $sendback ),
@@ -228,7 +207,7 @@ final class BulkActionHandler {
 	 * @param string $post_type The post type.
 	 * @return string
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- pure-functional URL builder.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- pure-functional URL builder and canonical query-arg-name source.
 	 */
 	public function get_redirect_url( string $post_type ): string {
 		$sendback = wp_get_referer();
@@ -237,7 +216,7 @@ final class BulkActionHandler {
 			$sendback = PostListUrlBuilder::for_post_type( $post_type );
 		}
 
-		return remove_query_arg( self::STRIPPED_QUERY_ARGS, $sendback );
+		return remove_query_arg( NoticeQueryArg::values(), $sendback );
 	}
 
 	/**
