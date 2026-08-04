@@ -8,5 +8,8 @@
 	"phpVersion": "8.3",
 	"plugins": [
 		"."
-	]
+	],
+	"mappings": {
+		"wp-content/mu-plugins": "./tests/e2e/fixtures"
+	}
 }
