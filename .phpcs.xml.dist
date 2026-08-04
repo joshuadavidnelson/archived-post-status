@@ -45,12 +45,6 @@
 		<exclude name="WordPressVIPMinimum.JS"/>
 		<!-- Exclude WordPress file naming conventions to allow modern PHP naming -->
 		<exclude name="WordPress.Files.FileName"/>
-		<!-- Exclude false positive escaping warnings for wp_die() calls -->
-		<exclude name="WordPress.Security.EscapeOutput.OutputNotEscaped"/>
-		<!-- Exclude nonce verification warnings for admin context $_GET access -->
-		<exclude name="WordPress.Security.NonceVerification.Recommended"/>
-		<!-- Exclude input sanitization warnings for common $_GET['post'] patterns -->
-		<exclude name="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized"/>
 	</rule>
 
 	<!-- Variable Analysis -->

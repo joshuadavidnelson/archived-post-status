@@ -202,7 +202,7 @@ final class ArchiveColumn implements HookableInterface {
 		// for HTML text context (esc_html() around both the format string and
 		// each substituted value) -- escaping it again here would double-escape
 		// and break the cell output.
-		echo ArchiveColumnCellRenderer::render( $meta );
+		echo ArchiveColumnCellRenderer::render( $meta ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- already escaped, see comment above.
 	}
 
 }
