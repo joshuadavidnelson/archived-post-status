@@ -1,3 +1,7 @@
+// Floors live in quality-thresholds.json alongside the PHP ones, so both
+// languages are tuned in one place and cannot drift apart.
+const { coverage } = require( './quality-thresholds.json' );
+
 module.exports = {
   testEnvironment: 'jsdom',
   testMatch: [
@@ -11,19 +15,18 @@ module.exports = {
   coverageReporters: [
     'text',
     'lcov',
-    'html'
+    'html',
+    // Machine-readable totals for the PR coverage report.
+    'json-summary'
   ],
   collectCoverage: false,
   // Applies whenever coverage is collected (npm run test:coverage, CI).
-  // The shipped sources are small and fully exercised — a drop below the
-  // floor means a suite stopped importing the real module.
+  // The floor holds coverage steady over time and catches a suite that has
+  // stopped importing the real module. It sits a few points below current
+  // so changes that legitimately add uncovered lines are not blocked; the
+  // PR report shows the delta against base for anything smaller than that.
   coverageThreshold: {
-    global: {
-      statements: 90,
-      branches: 85,
-      functions: 90,
-      lines: 90
-    }
+    global: coverage.js
   },
   verbose: true,
   transform: {
