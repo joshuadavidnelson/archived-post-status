@@ -51,6 +51,10 @@
     ],
     "phpmetrics": [
       "php -d error_reporting='E_ALL & ~E_DEPRECATED' ./vendor/bin/phpmetrics --report-html=reports/metrics --report-json=reports/metrics.json src/"
+    ],
+    "phpmetrics-summary": [
+      "@php -r \"is_dir('reports') || mkdir('reports', 0777, true);\"",
+      "php -d error_reporting='E_ALL & ~E_DEPRECATED' ./vendor/bin/phpmetrics --composer=false --report-summary-json=reports/metrics-summary.json src/"
     ]
   },
   "require-dev": {
