@@ -10,7 +10,6 @@ use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 use ArchivedPostStatus\Hooks\HookLoader;
 use ArchivedPostStatus\Status\PostStatusValue;
-use ArchivedPostStatus\Status\ArchiveLabel;
 
 /**
  * Adds an "Archived" column to the post list table.
@@ -25,54 +24,6 @@ final class ArchiveColumn implements HookableInterface {
 
 	/** The column key used in all column hook names and checks. */
 	public const COLUMN_KEY = 'aps_archived';
-
-	/**
-	 * Label of the Archived column header.
-	 *
-	 * Returns the label unescaped; callers escape for their own output context.
-	 *
-	 * @since 0.4.0
-	 * @return string
-	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable label accessor.
-	 */
-	public static function column_label(): string {
-		return ArchiveLabel::value();
-	}
-
-	/**
-	 * Attribution label used when a post was archived without a user context
-	 * (anonymous WP-CLI, cron).
-	 *
-	 * @since 0.4.0
-	 * @return string
-	 */
-	public static function system_attribution_label(): string {
-		/* translators: attribution shown when a post was archived with no user context (anonymous WP-CLI, cron). */
-		return _x( 'system', 'archive agent', 'archived-post-status' );
-	}
-
-	/**
-	 * Attribution label used when the archiving user record no longer exists.
-	 *
-	 * @since 0.4.0
-	 * @return string
-	 */
-	public static function unknown_attribution_label(): string {
-		/* translators: attribution shown when the archiving user's account no longer exists. */
-		return __( 'Unknown', 'archived-post-status' );
-	}
-
-	/**
-	 * Format template for the fully-attributed cell (`%1$s` is the display name).
-	 *
-	 * @since 0.4.0
-	 * @return string
-	 */
-	public static function attribution_template(): string {
-		/* translators: %1$s: user display name */
-		return __( 'Archived by %1$s', 'archived-post-status' );
-	}
 
 	/**
 	 * @since 0.4.0
@@ -146,7 +97,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * @param array<string, string> $columns Column header map (column key => label).
 	 * @return array<string, string>
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical filterable slug accessor and label accessor.
 	 */
 	public function add_column( array $columns ): array {
 		if ( ! in_array( PostStatusValue::resolved_slug(), (array) get_query_var( 'post_status' ), true ) ) {
@@ -158,7 +109,7 @@ final class ArchiveColumn implements HookableInterface {
 		unset( $columns['date'] );
 
 		// core's print_column_headers() echoes header values as raw HTML.
-		$columns[ self::COLUMN_KEY ] = esc_html( self::column_label() );
+		$columns[ self::COLUMN_KEY ] = esc_html( ArchiveColumnCellRenderer::column_label() );
 
 		return $columns;
 	}
@@ -189,7 +140,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * Prime the user cache for the whole page of rows in one query.
 	 *
 	 * Core primes the author cache but not this plugin's separate archive-user
-	 * meta, so without this {@see resolve_archive_agent_name()}'s
+	 * meta, so without this {@see ArchiveColumnCellRenderer::resolve_archive_agent_name()}'s
 	 * `get_userdata()` runs one uncached lookup per row. Scoped to the admin
 	 * archived-list main query — the only place the archived-by cell renders —
 	 * so no other request pays for a cache_users() call with no reader.
@@ -235,7 +186,7 @@ final class ArchiveColumn implements HookableInterface {
 	 * @param string $column_name The current column key.
 	 * @param int    $post_id     The current post ID.
 	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical value-object factory.
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical value-object factory and cell renderer.
 	 */
 	public function render_cell( string $column_name, int $post_id ): void {
 		if ( self::COLUMN_KEY !== $column_name ) {
@@ -247,56 +198,11 @@ final class ArchiveColumn implements HookableInterface {
 			return;
 		}
 
-		$this->render_archive_cell( $meta );
-	}
-
-	/**
-	 * Render the per-row HTML for an archived post's metadata.
-	 *
-	 * Three observable states:
-	 *
-	 *   1. No archive_date — pre-0.4.0 archive, written before archive metadata
-	 *      existed. Nothing to show beyond a bare "Archived".
-	 *   2. Date but no user — archived where get_current_user_id() returned 0
-	 *      (anonymous WP-CLI, cron, server-side call). "Archived by system".
-	 *   3. Both — "Archived by NAME".
-	 */
-	private function render_archive_cell( ArchiveMeta $meta ): void {
-		if ( ! $meta->archive_date ) {
-			echo '<span>' . esc_html( self::column_label() ) . '</span>';
-			return;
-		}
-
-		// Matches the format of core's Date column.
-		$date_format = get_option( 'date_format' ) . ' \a\t ' . get_option( 'time_format' );
-		$date_time   = wp_date( $date_format, $meta->archive_date );
-
-		$name = $this->resolve_archive_agent_name( $meta->archive_user );
-
-		printf(
-			'<span>' . esc_html( self::attribution_template() ) . '</span>'
-			. '<br><span class="aps-archive-datetime">'
-			. '%2$s'
-			. '</span>',
-			esc_html( $name ),
-			esc_html( $date_time )
-		);
-	}
-
-	/**
-	 * Resolve a display-ready name for the archiver of a post.
-	 *
-	 * @param int $archive_user Archive user id (0 for anonymous / system context).
-	 */
-	private function resolve_archive_agent_name( int $archive_user ): string {
-		if ( ! $archive_user ) {
-			return self::system_attribution_label();
-		}
-
-		// "Unknown" covers a user record deleted since archiving.
-		$user = get_userdata( $archive_user );
-
-		return $user ? $user->display_name : self::unknown_attribution_label();
+		// ArchiveColumnCellRenderer::render() already escapes its return value
+		// for HTML text context (esc_html() around both the format string and
+		// each substituted value) -- escaping it again here would double-escape
+		// and break the cell output.
+		echo ArchiveColumnCellRenderer::render( $meta );
 	}
 
 }
