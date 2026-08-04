@@ -38,13 +38,7 @@
 	<rule ref="WordPress-VIP-Go">
 		<!-- Exclude overly strict prefix rules that don't recognize aps_ as valid -->
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
-		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound"/>
-		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound"/>
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound"/>
-		<!-- Exclude JS scanning rules that cause deprecation warnings -->
-		<exclude name="WordPressVIPMinimum.JS"/>
-		<!-- Exclude WordPress file naming conventions to allow modern PHP naming -->
-		<exclude name="WordPress.Files.FileName"/>
 	</rule>
 
 	<!-- Variable Analysis -->
