@@ -474,7 +474,7 @@ describe( 'the CLI wrapper', () => {
 	} );
 
 	describe( 'reading real coverage files', () => {
-		// The env var names here are the ones pr-report.yml sets, against the
+		// The env var names here are the ones the report job sets, against the
 		// file names unit-tests.yml stages into the artifact. A rename on
 		// either side fails silently in production — the section just stops
 		// appearing — so it is pinned here rather than left to review.
