@@ -2,7 +2,7 @@
  * Renders the combined "PR Report" sticky comment: PHPMetrics deltas plus
  * coverage deltas in one comment.
  *
- * Called by the code-analysis job in .github/workflows/integrate.yml, which
+ * Called by the report job in .github/workflows/integrate.yml, which
  * generates the metrics summaries and coverage reports first. Kept out of
  * the workflow so it can be unit tested — see render-pr-report.test.js.
  */
