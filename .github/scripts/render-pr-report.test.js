@@ -277,10 +277,34 @@ describe( 'renderCoverageSection', () => {
 		expect( row( body, 'JS | Statements' ) ).toBe( '| JS | Statements | 100% | 100% | — | 95% ✅ |' );
 	} );
 
-	it( 'renders n/a, never 0%, for an unmeasured metric, and never marks it breached', () => {
+	it( 'omits a metric neither side measured', () => {
+		// PHP branch coverage is never populated by Xdebug, so a row for it
+		// could only ever read "n/a" — it is left out rather than shown.
 		const body = renderCoverageSection( { head: { php: phpHead, js: jsHead }, base: { php: phpBase, js: jsBase }, floors: FLOORS } );
 
-		expect( row( body, 'PHP | Branches' ) ).toBe( '| PHP | Branches | n/a | n/a | — | — |' );
+		expect( row( body, 'PHP | Branches' ) ).toBeUndefined();
+		expect( body ).not.toContain( 'n/a' );
+	} );
+
+	it( 'keeps a metric only one side measured, as n/a on the other, and does not mark it breached', () => {
+		const body = renderCoverageSection( {
+			head: { php: { ...phpHead, branches: metric( 8, 10, 80 ) }, js: jsHead },
+			base: { php: phpBase, js: jsBase },
+			floors: FLOORS,
+		} );
+
+		expect( row( body, 'PHP | Branches' ) ).toBe( '| PHP | Branches | n/a | 80% | — | — |' );
+	} );
+
+	it( 'omits the whole section when nothing at all was measured', () => {
+		const empty = { lines: null, methods: null, branches: null };
+		const body = renderCoverageSection( {
+			head: { php: empty, js: {} },
+			base: { php: empty, js: {} },
+			floors: FLOORS,
+		} );
+
+		expect( body ).toBe( '' );
 	} );
 
 	it( 'flags a suite metric that falls below its floor with ❌', () => {
@@ -516,8 +540,12 @@ describe( 'the CLI wrapper', () => {
 			const written = fs.readFileSync( path.join( dir, 'comment.md' ), 'utf8' );
 			expect( written ).toContain( '### Coverage' );
 			expect( written ).toContain( '| PHP | Lines | 95% | 94% | -1% | 90% ✅ |' );
-			// Xdebug leaves conditionals at 0/0, which is unmeasured, not zero.
-			expect( written ).toContain( '| PHP | Branches | n/a | n/a | — | — |' );
+			// Xdebug leaves conditionals at 0/0, so PHP branches are
+			// unmeasured on both sides and get no row. JS measures its
+			// branches, so that row stays — this is the real clover shape,
+			// pinning the distinction end to end.
+			expect( row( written, 'PHP | Branches' ) ).toBeUndefined();
+			expect( row( written, 'JS | Branches' ) ).toBeDefined();
 			expect( written ).toContain( '| JS | Statements | 99% | 99% | — | 95% ✅ |' );
 		} );
 
