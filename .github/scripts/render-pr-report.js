@@ -23,9 +23,10 @@ const CATALOGUE = {
 	avgEfferentCoupling: { section: 'Coupling', label: 'Avg efferent coupling' },
 };
 
-// The coverage shape has a fixed set of fields per suite (unlike PHPMetrics,
-// nothing here is optional), so every field always gets a row — a `null`
-// value renders as `n/a` rather than being omitted.
+// Every field a suite can report. A field neither side measured is left out
+// of the table entirely rather than shown as `n/a` — PHP branch coverage is
+// permanently unmeasured (Xdebug does not populate clover's conditionals),
+// and a row that can only ever say "no data" is noise.
 const COVERAGE_SUITES = [
 	[ 'php', 'PHP', [ [ 'lines', 'Lines' ], [ 'methods', 'Methods' ], [ 'branches', 'Branches' ] ] ],
 	[ 'js', 'JS', [ [ 'statements', 'Statements' ], [ 'branches', 'Branches' ], [ 'functions', 'Functions' ], [ 'lines', 'Lines' ] ] ],
@@ -257,6 +258,12 @@ function renderCoverageSection( { head, base, floors } ) {
 			const after = ( ( head && head[ suiteKey ] ) || {} )[ metricKey ] ?? null;
 			const floor = suiteFloors[ metricKey ];
 
+			// Neither side measured it, so there is nothing to report. Matches
+			// how the metrics table drops a metric absent from both summaries.
+			if ( before === null && after === null ) {
+				continue;
+			}
+
 			// An unmeasured metric (null) has nothing to gate on, and a
 			// metric with no configured floor isn't gated either — both
 			// render as "—", never a false ❌.
@@ -279,6 +286,12 @@ function renderCoverageSection( { head, base, floors } ) {
 			}
 			rows.push( `| ${ suiteLabel } | ${ metricLabel } | ${ pct( before ) } | ${ pct( after ) } | ${ delta } | ${ floorCell } |` );
 		}
+	}
+
+	// Dropping unmeasured rows can empty the table completely, which would
+	// leave a heading over nothing but column names.
+	if ( ! rows.length ) {
+		return '';
 	}
 
 	return [
@@ -313,7 +326,10 @@ function renderPrReport( { metrics, coverage, headSha, baseSha, runUrl } ) {
 		sections.push( renderMetricsSection( metrics ), '' );
 	}
 	if ( coverage ) {
-		sections.push( renderCoverageSection( coverage ), '' );
+		const section = renderCoverageSection( coverage );
+		if ( section ) {
+			sections.push( section, '' );
+		}
 	}
 
 	// Only claim a comparison the sections can actually back up. When no
