@@ -1,505 +1,401 @@
 <?php
 /**
- * Class FunctionsTest
+ * Facade-contract smoke test for the `aps_*` public global functions.
  *
- * @since 0.3.9
+ * A thin smoke test (mechanics live in the per-class suites) that
+ * confirms, for every
+ * `aps_*` global facade in `src/functions/functions.php` and
+ * `src/functions/deprecated.php`:
+ *
+ *   1. `function_exists()` returns true (the require_once chain in
+ *      {@see \ArchivedPostStatus\Loader::init()} successfully loaded both
+ *      files).
+ *   2. The symbol is `is_callable()` (no broken signature, no fatal at
+ *      definition time).
+ *   3. The facade routes through to the lifted static class — verified by
+ *      injecting a sentinel at the WP boundary (`apply_filters`,
+ *      `current_user_can`, or `get_post`) the delegate's body consults,
+ *      and asserting the sentinel is what comes back to the caller.
+ *
+ * The full mechanics tests now live with the lifted classes:
+ *
+ *   - {@see \ArchivedPostStatus\Status\ArchiveLabel}        → ArchiveLabelTest
+ *   - {@see \ArchivedPostStatus\Status\SupportedPostTypes}  → SupportedPostTypesTest
+ *   - {@see \ArchivedPostStatus\Archive\ViewCapability}     → ViewCapabilityTest
+ *   - {@see \ArchivedPostStatus\Archive\ReadOnlyPolicy}     → ReadOnlyPolicyTest
+ *   - {@see \ArchivedPostStatus\Archive\ArchiveCapability}  → ArchiveCapabilityTest
+ *   - {@see \ArchivedPostStatus\Archive\ArchivableStatuses} → ArchivableStatusesTest
+ *   - {@see \ArchivedPostStatus\Archive\ArchiveOperation}   → ArchiveOperationTest
+ *   - {@see \ArchivedPostStatus\Archive\UnarchiveOperation} → UnarchiveOperationTest
+ *   - {@see \ArchivedPostStatus\Admin\ArchivePostLink}      → ArchivePostLinkTest
+ *   - {@see \ArchivedPostStatus\Frontend\ArchivedPostLink}  → ArchivedPostLinkTest
+ *
+ * This file catches "did someone break a delegate signature" and "is this
+ * facade still exposed at the documented global name" — nothing more.
+ *
+ * @since 0.4.0
  * @package ArchivedPostStatus
- * @subpackage ClassFunctionsTest
  */
 
 /**
- * Sample test case.
+ * Functions test case.
  *
  * @since 0.3.9
  */
 class FunctionsTest extends TestCase {
 
 	/**
-	 * Mock post object.
+	 * `aps_archived_label_string()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Status\ArchiveLabel::value()} — verified by
+	 * injecting a sentinel on `aps_archived_label_string` (the filter
+	 * `ArchiveLabel::value()` applies) and asserting the sentinel comes
+	 * back through the facade.
 	 *
-	 * @var \Mockery\MockInterface
+	 * @covers ::aps_archived_label_string
 	 */
-	private $mock_post;
+	public function test_aps_archived_label_string_facade_delegates_to_archive_label() {
+		$this->assertTrue( function_exists( 'aps_archived_label_string' ) );
+		$this->assertTrue( is_callable( 'aps_archived_label_string' ) );
 
-	/**
-	 * Set up the test.
-	 *
-	 * @since 0.3.9
-	 */
-	public function setUp(): void {
-		parent::setUp();
-
-		\WP_Mock::userFunction(
-			'__', array(
-				'return' => 'Archived',
-			)
-		);
-
-		// Mock WP post object.
-		$this->mock_post = \Mockery::mock( 'WP_Post' );
-		$this->mock_post->post_title = 'Test Post';
-		$this->mock_post->post_status = 'archive';
-		$this->mock_post->post_type = 'post';
-		$this->mock_post->comment_status = 'open';
-		$this->mock_post->ping_status    = 'open';
-		$this->mock_post->ID = 86;
-
-	}
-
-	/**
-	 * Test the aps_archived_label_string() function.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_archived_label_string() {
-
-		$string = 'Archived';
-
-		// Confirm the filter is applied.
-		\WP_Mock::expectFilter( 'aps_archived_label_string', $string );
-
-		// Confirm default condition is true.
-		$this->assertEquals( $string, aps_archived_label_string() );
-
-	}
-
-	/**
-	 * Test the aps_is_excluded_post_type() function filters.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_archived_label_string_filter() {
-
-		$string = 'Resolved';
-
-		// Pass false to the filter.
-		WP_Mock::onFilter( 'aps_archived_label_string' )
+		\WP_Mock::userFunction( '__', array( 'return' => 'Archived' ) );
+		\WP_Mock::onFilter( 'aps_archived_label_string' )
 			->with( 'Archived' )
-			->reply( $string );
+			->reply( 'SENTINEL-LABEL' );
 
-		// Confirm the filter is applied.
-		$this->assertEquals( $string, aps_archived_label_string() );
-
+		$this->assertSame( 'SENTINEL-LABEL', aps_archived_label_string() );
 	}
 
 	/**
-	 * Test the aps_post_status_slug() function.
+	 * `aps_get_supported_post_types()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Status\SupportedPostTypes::all()} —
+	 * verified by stubbing `get_post_types` and asserting the
+	 * `aps_supported_post_types` filter result flows back to the caller.
 	 *
-	 * @since 0.3.9
+	 * @covers ::aps_get_supported_post_types
 	 */
-	public function test_aps_post_status_slug() {
+	public function test_aps_get_supported_post_types_facade_delegates_to_supported_post_types() {
+		$this->assertTrue( function_exists( 'aps_get_supported_post_types' ) );
+		$this->assertTrue( is_callable( 'aps_get_supported_post_types' ) );
 
-		$string = 'archive';
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( array( 'post' => 'post', 'page' => 'page', 'attachment' => 'attachment' ) );
+		// The default-exclusions list is only kept if the excluded slug
+		// actually exists — see SupportedPostTypes::all().
+		\WP_Mock::userFunction( 'post_type_exists' )
+			->andReturn( true );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( array( 'post' => 'post', 'page' => 'page' ) )
+			->reply( array( 'SENTINEL-TYPE' ) );
 
-		// Confirm the filter is applied.
-		\WP_Mock::expectFilter( 'aps_post_status_slug', $string );
-
-		// Confirm default condition is true.
-		$this->assertEquals( $string, aps_post_status_slug() );
-
+		$this->assertSame( array( 'SENTINEL-TYPE' ), aps_get_supported_post_types() );
 	}
 
 	/**
-	 * Test the aps_is_excluded_post_type() function filters.
+	 * `aps_is_supported_post_type()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Status\SupportedPostTypes::includes()} —
+	 * verified by stubbing the underlying supported-list resolution and
+	 * asserting both true/false branches flow back through the facade.
 	 *
-	 * @since 0.3.9
+	 * @covers ::aps_is_supported_post_type
 	 */
-	public function test_aps_post_status_slug_filter() {
+	public function test_aps_is_supported_post_type_facade_delegates_to_supported_post_types() {
+		$this->assertTrue( function_exists( 'aps_is_supported_post_type' ) );
+		$this->assertTrue( is_callable( 'aps_is_supported_post_type' ) );
 
-		$string = 'resolve';
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( array( 'post' => 'post' ) );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array() );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( array( 'post' => 'post' ) )
+			->reply( array( 'post' ) );
 
-		// Pass false to the filter.
-		WP_Mock::onFilter( 'aps_post_status_slug' )
-			->with( 'archive' )
-			->reply( $string );
-
-		// Confirm the filter is applied.
-		$this->assertEquals( $string, aps_post_status_slug() );
-
+		$this->assertTrue( aps_is_supported_post_type( 'post' ) );
+		$this->assertFalse( aps_is_supported_post_type( 'attachment' ) );
 	}
 
 	/**
-	 * Test the aps_is_frontend() function.
+	 * `aps_current_user_can_view()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Archive\ViewCapability::granted()} —
+	 * verified by asserting both `current_user_can`'s return value and the
+	 * `$post_id` argument flow through the facade to the filter and
+	 * `current_user_can()`.
 	 *
-	 * @since 0.3.9
+	 * @covers ::aps_current_user_can_view
 	 */
-	public function test_aps_is_frontend() {
+	public function test_aps_current_user_can_view_facade_delegates_to_view_capability() {
+		$this->assertTrue( function_exists( 'aps_current_user_can_view' ) );
+		$this->assertTrue( is_callable( 'aps_current_user_can_view' ) );
 
-		// Confirm the is_admin() function is called.
-		// Return false, then true.
+		$received_post_id = null;
+
 		\WP_Mock::userFunction(
-			'is_admin', array(
-				'times'           => 2,
-				'return_in_order' => array(
-					false,
-					true,
-				),
-			)
-		);
-
-		// Is frontend should return the opposite of is_admin().
-		$this->assertTrue( aps_is_frontend() );
-		$this->assertFalse( aps_is_frontend() );
-
-	}
-
-	/**
-	 * Test the aps_current_user_can_view() function.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_current_user_can_view() {
-
-		// Mock the current_user_can() function.
-		\WP_Mock::userFunction(
-			'current_user_can', array(
+			'current_user_can',
+			array(
 				'times'  => 1,
-				'return' => function( $capability ) {
-					return $capability === 'read_private_posts';
+				'return' => function ( $capability, $post_id ) use ( &$received_post_id ) {
+					$received_post_id = $post_id;
+					return true;
 				},
 			)
 		);
 
-		// Confirm the filter is applied.
-		\WP_Mock::expectFilter( 'aps_default_read_capability', 'read_private_posts' );
+		\WP_Mock::expectFilter( 'aps_default_read_capability', 'read_private_posts', 42 );
 
-		// Confirm the default condition is true.
-		$this->assertTrue( aps_current_user_can_view() );
-
+		$this->assertTrue( aps_current_user_can_view( 42 ) );
+		$this->assertSame( 42, $received_post_id );
 	}
 
 	/**
-	 * Test the aps_current_user_can_view() filter.
+	 * `aps_is_read_only()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Archive\ReadOnlyPolicy::enabled()} —
+	 * verified by injecting a sentinel boolean on the `aps_is_read_only`
+	 * filter and asserting it round-trips through the facade.
 	 *
-	 * @since 0.3.9
+	 * @covers ::aps_is_read_only
 	 */
-	public function test_aps_current_user_can_view_filter() {
+	public function test_aps_is_read_only_facade_delegates_to_read_only_policy() {
+		$this->assertTrue( function_exists( 'aps_is_read_only' ) );
+		$this->assertTrue( is_callable( 'aps_is_read_only' ) );
 
-		// Mock the current_user_can() function.
-		\WP_Mock::userFunction(
-			'current_user_can', array(
-				'times'  => 1,
-				'return' => function( $capability ) {
-					return $capability === 'read_private_posts';
-				},
-			)
-		);
-
-		// Use the filter to change the default capability.
-		WP_Mock::onFilter( 'aps_default_read_capability' )
-			->with( 'read_private_posts' )
-			->reply( 'read' );
-
-		// Confirm the filter is applied.
-		$this->assertFalse( aps_current_user_can_view() );
-
-	}
-
-	/**
-	 * Test the aps_is_read_only() function.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_is_read_only() {
-
-		// Confirm the filter is applied.
-		\WP_Mock::expectFilter( 'aps_is_read_only', true );
-
-		// Confirm default condition is true.
-		$this->assertTrue( aps_is_read_only() );
-
-	}
-
-	/**
-	 * Test the aps_is_read_only filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_is_read_only_filter() {
-
-		// Pass false to the filter.
-		WP_Mock::onFilter( 'aps_is_read_only' )
+		\WP_Mock::onFilter( 'aps_is_read_only' )
 			->with( true )
 			->reply( false );
 
-		// Confirm the filter is applied.
 		$this->assertFalse( aps_is_read_only() );
-
 	}
 
 	/**
-	 * Test the aps_the_title() function.
+	 * `aps_current_user_can_archive()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Archive\ArchiveCapability::can_archive()} —
+	 * verified by asserting both `current_user_can`'s return value and the
+	 * `$post_id` argument flow through the facade to the filter and
+	 * `current_user_can()`.
 	 *
-	 * @since 0.3.9
+	 * @covers ::aps_current_user_can_archive
 	 */
-	public function test_aps_the_title() {
+	public function test_aps_current_user_can_archive_facade_delegates_to_archive_capability() {
+		$this->assertTrue( function_exists( 'aps_current_user_can_archive' ) );
+		$this->assertTrue( is_callable( 'aps_current_user_can_archive' ) );
 
-		// Mock functions.
+		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( null );
+
+		$received_post_id = null;
+
 		\WP_Mock::userFunction(
-			'get_post', array(
-				'times'  => 1,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin', array(
-				'return' => false,
-			)
-		);
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( 'Archived: ' . $this->mock_post->post_title, $new_title );
-
-	}
-
-	/**
-	 * Test the aps_title_label filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_the_title_label_filter() {
-
-		// Mock functions.
-		\WP_Mock::userFunction(
-			'get_post',
+			'current_user_can',
 			array(
-				'times'  => 2,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin',
-			array(
-				'return' => false,
-			)
-		);
-
-		$new_label = 'Archived Post';
-
-		// Use the filter to change the title label.
-		\WP_Mock::onFilter( 'aps_title_label' )
-			->with(
-				'Archived',
-				$this->mock_post->ID,
-				$this->mock_post->post_title
-			)
-			->reply( $new_label );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( $new_label . ': ' . $this->mock_post->post_title, $new_title );
-
-		// Use the filter to remove the label by returning empty string
-		\WP_Mock::onFilter( 'aps_title_label' )
-			->with(
-				'Archived',
-				$this->mock_post->ID,
-				$this->mock_post->post_title
-			)
-			->reply( '' );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( $this->mock_post->post_title, $new_title );
-
-	}
-
-	/**
-	 * Test the aps_title_label_before filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_the_title_label_before_filter() {
-
-		// Mock functions.
-		\WP_Mock::userFunction(
-			'get_post', array(
 				'times'  => 1,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin', array(
-				'return' => false,
-			)
-		);
-
-		// Use the filter to change the title label location.
-		\WP_Mock::onFilter( 'aps_title_label_before' )
-			->with( true, $this->mock_post->ID )
-			->reply( false );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( $this->mock_post->post_title . ' - Archived', $new_title );
-
-	}
-
-	/**
-	 * Test the aps_title_separator filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_title_separator_filter() {
-
-		// Mock functions.
-		\WP_Mock::userFunction(
-			'get_post', array(
-				'times'  => 1,
-				'return' => $this->mock_post,
-			)
-		);
-		\WP_Mock::userFunction(
-			'is_admin', array(
-				'return' => false,
-			)
-		);
-
-		// Use the filter to change the title separator.
-		\WP_Mock::onFilter( 'aps_title_separator' )
-			->with( ': ', $this->mock_post->ID )
-			->reply( ' ~ ' );
-
-		$new_title = aps_the_title( $this->mock_post->post_title, $this->mock_post->ID );
-
-		$this->assertEquals( 'Archived ~ ' . $this->mock_post->post_title, $new_title );
-
-	}
-
-	/**
-	 * Test the aps_is_excluded_post_type() function.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_is_excluded_post_type() {
-
-		// Confirm the filter is applied.
-		\WP_Mock::expectFilter( 'aps_excluded_post_types', array( 'attachment' ) );
-
-		// Confirm default condition is true.
-		$this->assertTrue( aps_is_excluded_post_type( 'attachment' ) );
-		$this->assertFalse( aps_is_excluded_post_type( 'post' ) );
-
-	}
-
-	/**
-	 * Test the aps_excluded_post_types filter.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_excluded_post_types_filter() {
-
-		// Use the filter to change the default.
-		\WP_Mock::onFilter( 'aps_excluded_post_types' )
-			->with( 'attachment' )
-			->reply( array( 'post' ) );
-
-		// Confirm the filter is applied.
-		$this->assertFalse( aps_is_excluded_post_type( 'attachment' ) );
-		$this->assertTrue( aps_is_excluded_post_type( 'post' ) );
-
-	}
-
-	/**
-	 * Test the aps_display_post_states() function.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_display_post_states() {
-
-		// Mock the aps_is_excluded_post_type() function.
-		\WP_Mock::userFunction(
-			'aps_is_excluded_post_type', array(
-				'times'  => 1,
-				'return' => false,
-			)
-		);
-
-		// Mock the get_query_var() function.
-		\WP_Mock::userFunction(
-			'get_query_var', array(
-				'times'  => 1,
-				'return' => false,
-			)
-		);
-
-		$mock_post_states = array( 'some-state' => 'Some state' );
-		$new_post_states = aps_display_post_states( $mock_post_states, $this->mock_post );
-
-		$this->assertArrayHasKey( 'archive', $new_post_states );
-		$this->assertEquals( 'Archived', $new_post_states['archive'] );
-
-	}
-
-	/**
-	 * Test the aps_save_post() function.
-	 *
-	 * @since 0.3.9
-	 */
-	public function test_aps_save_post() {
-
-		$mock_post = $this->mock_post;
-
-		// Mock the wp_doing_ajax() function.
-		\WP_Mock::userFunction(
-			'wp_doing_ajax', array(
-				'return' => false,
-			)
-		);
-
-		// Mock the wp_doing_cron() function.
-		\WP_Mock::userFunction(
-			'wp_doing_cron', array(
-				'return' => false,
-			)
-		);
-
-		// Mock the wp_is_post_revision() function.
-		\WP_Mock::userFunction(
-			'wp_is_post_revision', array(
-				'return' => false,
-			)
-		);
-
-		// Mock the aps_is_excluded_post_type() function.
-		\WP_Mock::userFunction(
-			'aps_is_excluded_post_type', array(
-				'times'  => 1,
-				'return' => false,
-			)
-		);
-
-		// Mock the remove_action() function.
-		\WP_Mock::userFunction(
-			'remove_action', array(
-				'return' => true,
-			)
-		);
-
-		// Mock the wp_update_post() function.
-		\WP_Mock::userFunction(
-			'wp_update_post', array(
-				'times'  => 1,
-				'args'   => array(
-					array(
-						'ID'             => $mock_post->ID,
-						'comment_status' => 'closed',
-						'ping_status'    => 'closed',
-					),
-				),
-				'return' => function( $args ) use ( $mock_post ) {
-					$mock_post->comment_status = $args['comment_status'];
-					$mock_post->ping_status    = $args['ping_status'];
-					return $mock_post->ID;
+				'return' => function ( $capability, $post_id ) use ( &$received_post_id ) {
+					$received_post_id = $post_id;
+					return true;
 				},
 			)
 		);
 
-		aps_save_post( $mock_post->ID, $mock_post, true );
+		\WP_Mock::expectFilter( 'aps_default_archive_capability', 'edit_others_posts', 42 );
 
-		$this->assertEquals( 'closed', $mock_post->comment_status );
-		$this->assertEquals( 'closed', $mock_post->ping_status );
+		$this->assertTrue( aps_current_user_can_archive( 42 ) );
+		$this->assertSame( 42, $received_post_id );
+	}
 
+	/**
+	 * `aps_current_user_can_unarchive()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Archive\ArchiveCapability::can_unarchive()} —
+	 * verified by asserting both `current_user_can`'s return value and the
+	 * `$post_id` argument flow through the facade to the filter and
+	 * `current_user_can()`.
+	 *
+	 * @covers ::aps_current_user_can_unarchive
+	 */
+	public function test_aps_current_user_can_unarchive_facade_delegates_to_archive_capability() {
+		$this->assertTrue( function_exists( 'aps_current_user_can_unarchive' ) );
+		$this->assertTrue( is_callable( 'aps_current_user_can_unarchive' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->with( 42 )->andReturn( null );
+
+		$received_post_id = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability, $post_id ) use ( &$received_post_id ) {
+					$received_post_id = $post_id;
+					return false;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_unarchive_capability', 'edit_others_posts', 42 );
+
+		$this->assertFalse( aps_current_user_can_unarchive( 42 ) );
+		$this->assertSame( 42, $received_post_id );
+	}
+
+	/**
+	 * `aps_current_user_can_edit()` is exposed and applies the
+	 * `aps_default_edit_capability` filter before delegating to
+	 * `current_user_can` — verified by sentinel-filter + cap capture.
+	 *
+	 * Unlike the other capability helpers this one lives inline in
+	 * `src/functions/functions.php` (no lifted class) — it's still a public
+	 * facade though, so the smoke test exercises the same shape.
+	 *
+	 * @covers ::aps_current_user_can_edit
+	 */
+	public function test_aps_current_user_can_edit_facade_routes_through_default_edit_capability_filter() {
+		$this->assertTrue( function_exists( 'aps_current_user_can_edit' ) );
+		$this->assertTrue( is_callable( 'aps_current_user_can_edit' ) );
+
+		$received_capability = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can', array(
+				'return' => function ( $capability, ...$args ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::onFilter( 'aps_default_edit_capability' )
+			->with( 'edit_post', 7 )
+			->reply( 'SENTINEL-CAP' );
+
+		$this->assertTrue( aps_current_user_can_edit( 7 ) );
+		$this->assertSame( 'SENTINEL-CAP', $received_capability );
+	}
+
+	/**
+	 * `aps_get_archive_post_link()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Admin\ArchivePostLink::build()} — verified
+	 * by exercising the "post does not exist" short-circuit which returns
+	 * `false` directly without further WP calls.
+	 *
+	 * @covers ::aps_get_archive_post_link
+	 */
+	public function test_aps_get_archive_post_link_facade_delegates_to_archive_post_link() {
+		$this->assertTrue( function_exists( 'aps_get_archive_post_link' ) );
+		$this->assertTrue( is_callable( 'aps_get_archive_post_link' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->with( 999 )->andReturn( null );
+
+		$this->assertFalse( aps_get_archive_post_link( 999 ) );
+	}
+
+	/**
+	 * `aps_get_unarchive_post_link()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Admin\ArchivePostLink::build()} — verified
+	 * by the same "post does not exist" short-circuit.
+	 *
+	 * @covers ::aps_get_unarchive_post_link
+	 */
+	public function test_aps_get_unarchive_post_link_facade_delegates_to_archive_post_link() {
+		$this->assertTrue( function_exists( 'aps_get_unarchive_post_link' ) );
+		$this->assertTrue( is_callable( 'aps_get_unarchive_post_link' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->with( 999 )->andReturn( null );
+
+		$this->assertFalse( aps_get_unarchive_post_link( 999 ) );
+	}
+
+	/**
+	 * `aps_get_archived_post_link()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Frontend\ArchivedPostLink::build()} —
+	 * verified by the "no post" short-circuit.
+	 *
+	 * @covers ::aps_get_archived_post_link
+	 */
+	public function test_aps_get_archived_post_link_facade_delegates_to_archived_post_link() {
+		$this->assertTrue( function_exists( 'aps_get_archived_post_link' ) );
+		$this->assertTrue( is_callable( 'aps_get_archived_post_link' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( null );
+
+		$this->assertFalse( aps_get_archived_post_link( 999 ) );
+	}
+
+	/**
+	 * `aps_archive_post()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Archive\ArchiveOperation::perform()} —
+	 * verified by the "post does not exist" short-circuit which returns
+	 * `false`.
+	 *
+	 * @covers ::aps_archive_post
+	 */
+	public function test_aps_archive_post_facade_delegates_to_archive_operation() {
+		$this->assertTrue( function_exists( 'aps_archive_post' ) );
+		$this->assertTrue( is_callable( 'aps_archive_post' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( null );
+
+		$this->assertFalse( aps_archive_post( 999 ) );
+	}
+
+	/**
+	 * `aps_unarchive_post()` is exposed and routes through
+	 * {@see \ArchivedPostStatus\Archive\UnarchiveOperation::perform()} —
+	 * verified by the "post does not exist" short-circuit.
+	 *
+	 * @covers ::aps_unarchive_post
+	 */
+	public function test_aps_unarchive_post_facade_delegates_to_unarchive_operation() {
+		$this->assertTrue( function_exists( 'aps_unarchive_post' ) );
+		$this->assertTrue( is_callable( 'aps_unarchive_post' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->andReturn( null );
+
+		$this->assertFalse( aps_unarchive_post( 999 ) );
+	}
+
+	/**
+	 * `aps_unarchive_post_set_previous_status()` is exposed and routes
+	 * through {@see \ArchivedPostStatus\Archive\UnarchiveOperation::set_previous_status()} —
+	 * verified by passing a sentinel through and asserting it returns
+	 * verbatim (the helper's contract is to echo the third argument).
+	 *
+	 * @covers ::aps_unarchive_post_set_previous_status
+	 */
+	public function test_aps_unarchive_post_set_previous_status_facade_delegates_to_unarchive_operation() {
+		$this->assertTrue( function_exists( 'aps_unarchive_post_set_previous_status' ) );
+		$this->assertTrue( is_callable( 'aps_unarchive_post_set_previous_status' ) );
+
+		$result = aps_unarchive_post_set_previous_status( 'draft', 7, 'SENTINEL-PREVIOUS' );
+
+		$this->assertSame( 'SENTINEL-PREVIOUS', $result );
+	}
+
+	/**
+	 * `aps_is_excluded_post_type()` is the lone resident of
+	 * `src/functions/deprecated.php`. It self-deprecates via
+	 * `_deprecated_function()` and keeps its exact pre-0.4.0 semantics:
+	 * membership in the filterable `aps_excluded_post_types` list — NOT
+	 * the negation of `aps_is_supported_post_type()`, which would wrongly
+	 * report non-public post types as excluded.
+	 *
+	 * @covers ::aps_is_excluded_post_type
+	 */
+	public function test_aps_is_excluded_post_type_keeps_its_pre_040_membership_semantics() {
+		$this->assertTrue( function_exists( 'aps_is_excluded_post_type' ) );
+		$this->assertTrue( is_callable( 'aps_is_excluded_post_type' ) );
+
+		\WP_Mock::userFunction( '_deprecated_function' )
+			->with( 'aps_is_excluded_post_type', '0.4.0', 'aps_is_supported_post_type' )
+			->times( 2 );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+		\WP_Mock::userFunction( 'aps_is_supported_post_type' )->never();
+
+		$this->assertTrue( aps_is_excluded_post_type( 'attachment' ) );
+
+		// A non-public CPT outside the excluded list is NOT excluded, even
+		// though aps_is_supported_post_type() would report it unsupported.
+		$this->assertFalse( aps_is_excluded_post_type( 'internal_notes' ) );
 	}
 }

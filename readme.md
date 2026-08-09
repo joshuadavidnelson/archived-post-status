@@ -7,27 +7,62 @@
 
 [![WP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/wp-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest) [![PHP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/php-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest)
 
-Allows posts and pages to be archived so you can unpublish content without having to trash it.
-
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Minimum PHP version supported:** 8.1  
 **Tested up to PHP version:** 8.4  
 **Minimum WP Version supported:** 5.9  
-**Tested up to WP version:** 6.9.1  
-**Stable tag:** 0.3.12  
-**License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
+**Tested up to WP version:** 7.0  
+**Stable tag:** 0.4.0  
+**License:** [GPL-2.0+](https://www.gnu.org/licenses/gpl-2.0.html)  
 
 ## Description
 
-This plugin allows you to archive your WordPress content similar to the way you archive your e-mail.
+This plugin gives you the power to archive your WordPress content.
+
+WordPress supports a publishing workflow by marking content with a post status:
+* 3 for pre-published states: _draft_, _pending_, and _future_. These are editable and pre-viewable, not yet ready for public view.
+* 2 types of published statuses: _publish_ and _private_. These are viewable to the public or specific users.
+* 1 non-published status: _trash_. Trashed content is not editable or viewable and [automatically deleted](https://codex.wordpress.org/Trash_status#Default_Days_before_Permanently_Deleted) after 30 days.
+
+The one thing missing here is a status for content that is _viewable_ but **not** editable.
+
+### Introducing the Archive
+
+The 'archive' status marks content to a _post-published_ state, viewable to some but no longer edited. Examples might include:
+
+* an out-of-date walkthrough
+* a review of a discontinued product
+* a rough draft replaced with a final version
+* an old, time-specific post that is now irrelevant
+
+Whatever the reason, incorporating the 'Archive' status can be a useful addition to your WordPress editing workflow.
 
 * Unpublish your posts and pages without having to trash them
-* Archive content is hidden from public view 
 * Compatible with posts, pages, and public custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
-* Easily extended (see below)
+* Archive content is hidden from public view, only users with Editor or higher roles can see archived content.
 
-**[Over 13](https://translate.wordpress.org/projects/wp-plugins/archived-post-status/)** languages supported
+## New in 0.4.0
+
+0.4.0 is a major feature release and a full rewrite of the plugin's internals. Archiving is now available everywhere you work, and archived posts remember where they came from, so restoring one puts it back the way it was.
+
+* **Archive from the block editor** - an "Archive" button in the post summary panel, with a confirmation prompt.
+* **Archive from the classic editor** - an "Archive" link next to "Move to Trash" in the Publish box.
+* **Bulk archive and unarchive** - available in the Bulk actions dropdown. Posts that can't be processed are skipped rather than stopping the batch, with a notice explaining why, and successful archives come with an Undo link.
+* **Inline row actions** - hover a post to reveal "Archive", or "Unarchive" when viewing the Archived filter. Replaces the 0.3.x status dropdown in Quick Edit.
+* **"Archived" admin column** - a sortable column showing who archived each post and when.
+* **Archive metadata** - the previous post status, previous comment and ping status, archive date, and archiving user are recorded on archive and restored on unarchive.
+* **WP-CLI** - `wp post archive <id>...` and `wp post unarchive <id>...`, with `--force`, `--status=<status>`, and `--defer-term-counting` flags.
+* **`aps_archive_post()` / `aps_unarchive_post()`** - API functions modeled on core's `wp_trash_post()` and `wp_untrash_post()`, with matching pre-filters and post-actions. `aps_get_archive_post_link()`, `aps_get_unarchive_post_link()`, and `aps_get_archived_post_link()` return the corresponding URLs.
+* **Front-end protection** - visitors without permission to view archived content get a 404 for a single archived post.
+* **Per-action, ownership-aware capabilities** - `aps_current_user_can_view()`, `aps_current_user_can_archive()`, `aps_current_user_can_unarchive()`, and `aps_current_user_can_edit()`, each filterable via a matching `aps_default_*_capability` filter. Authors can archive, unarchive, and view their own content; archiving or unarchiving other authors' content requires `edit_others_posts`. Viewing others' archived content defaults to `read_private_posts`.
+* **Settings groundwork** - settings are stored in a single `aps_settings` option (currently just `is_read_only`). There is no settings screen yet; the admin UI is planned for a future release.
+* **Archiving is now restricted to `public` post types** - `aps_get_supported_post_types()` returns the public post types minus `aps_excluded_post_types`; a non-public post type that wasn't explicitly excluded could be archived in 0.3.x, and can no longer be unless added back via the `aps_supported_post_types` filter.
+* **Deprecated** `aps_is_excluded_post_type()` in favor of `! aps_is_supported_post_type( $post_type )`.
+* **Removed** eleven 0.3.x global functions, including `aps_post_status_slug()`, `aps_the_title()`, `aps_save_post()`, and `aps_is_frontend()` - calling any of them now fatals, and unhooking one (e.g. `remove_filter( 'the_title', 'aps_the_title' )`) is now a silent no-op. 0.4.0 registers its hooks on internal object instances that third-party code cannot reach, so use the documented filters instead - to drop the "Archived: " title prefix, for example, return an empty string from `aps_title_label`. See [changelog.md](changelog.md) for the full list and replacements.
+* **Fixed** the `aps_post_status_slug` filter, which 0.3.x only applied when registering the status while still saving the literal `archive` to the database. The default slug is unchanged (`archive`); only sites that add this filter to rename it need a one-off database migration - see [changelog.md](changelog.md) before updating.
+
+Full details in [changelog.md](changelog.md).
 
 **Pull requests welcome, please follow [these guidelines](/code-of-conduct.md).**
 
@@ -35,172 +70,103 @@ This plugin allows you to archive your WordPress content similar to the way you 
 
 **Did you find this plugin helpful? Please consider [leaving a 5-star review](https://wordpress.org/support/view/plugin-reviews/archived-post-status).**
 
-## Frequently Asked Questions
+## Documentation
 
-### Isn't this the same as using the Draft or Private statuses?
-
-Actually, no, they are not the same thing.
-
-The Draft status is a "pre-published" status that is reserved for content that is still being worked on. You can still make changes to content marked as Draft, and you can preview your changes.
-
-The Private status is a special kind of published status. It means the content is published, but only certain logged-in users can view it.
-
-The Archived post status, on the other hand, is meant to be a "post-published" status. Once a post has been set to Archived it can no longer be edited or viewed.
-
-Of course, you can always change the status back to Draft or Publish if you want to be able to edit its content again.
-
-### Can't I just trash old content I don't want anymore?
-
-Yes, there is nothing wong with trashing old content. And the behavior of the Archived status is very similar to that of trashing.
-
-However, WordPress permanently deletes trashed posts after 30 days ([see here](https://codex.wordpress.org/Trash_status#Default_Days_before_Permanently_Deleted)).
-
-This is what makes the Archived post status handy. You can unpublish content without having to delete it forever.
-
-### Where are the options for this plugin?
-
-This plugin does not have a settings page. However, there are numerous hooks available in the plugin so you can customize default behaviors. Many of those hooks are listed below in this FAQ.
-
-### Why are Archived posts appearing on the front-end?
-This is most likely because you are viewing your site while being logged in as an Editor or Administrator.
-
-By default, any user with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability will see Archived posts appear on the front-end of your site.
-
-You can change the default read capability by adding this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
-
-```php
-function my_aps_default_read_capability( $capability ) {
-	$capability = 'read';
-
-	return $capability;
-}
-add_filter( 'aps_default_read_capability', 'my_aps_default_read_capability' );
-```
-
-### Can I make Archived posts appear on the front-end for all users?
-Yes, add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
-
-```php
-add_filter( 'aps_status_arg_public', '__return_true' );
-add_filter( 'aps_status_arg_private', '__return_false' );
-add_filter( 'aps_status_arg_exclude_from_search', '__return_false' );
-```
-
-### Can I change the status name?
-
-You can change the post status name, the "Archived" string, by adding the code snippet to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
-
-```
-add_filter( 'aps_archived_label_string', function( $label ) {
-	$label = 'Custom Label'; // replace with your custom label
-	return $label;
-});
-```
-
-This will change the name used in the admin and on the post title label (see below).
-
-### How to modify or disable the "Archived" label added to the post title
-
-This plugin automatically adds `Archived:` to the title of archived content. (Note that archived content is only viewable to logged in users with the [`read_private_posts`](http://codex.wordpress.org/Roles_and_Capabilities#read_private_posts) capability).
-
-You can modify the label text, the separator, whether it appears before or after the title, or disable it entirely. 
-
-Follow the examples below, adding the code snippet to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins).
-
-#### Remove the label
-
-`add_filter( 'aps_title_label', '__return_false' );`
-
-#### Place the label _after_ the title
-
-`add_filter( 'aps_title_label_before', '__return_false' );`
-
-#### Change the separator
-
-The separator is the string between the "Archived" label and the post title, _including spaces_. When the label appears before the title, the separator is a colon and space `: `, if the label is placed after the title it is a dash with spaces on each side ` - `.
-
-You can customize the separator with the following filter:
-```
-add_filter( 'aps_title_separator', function( $sep ) {
-	$sep = ' ~ '; // replace with your separator
-	return $sep;
-});
-```
-
-### Can I make Archived posts hidden from the "All" list in the WP Admin, similar to Trashed posts?
-
-Add these hooks to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
-
-```php
-add_filter( 'aps_status_arg_public', '__return_false' );
-add_filter( 'aps_status_arg_private', '__return_false' );
-add_filter( 'aps_status_arg_show_in_admin_all_list', '__return_false' );
-```
-
-Please note that there is a [bug in core](https://core.trac.wordpress.org/ticket/24415) that requires public and private to be set to false in order for the `aps_status_arg_show_in_admin_all_list` to also be false. 
-
-### Can I exclude the Archived status from appearing on certain post types?
-
-Add this hook to your theme's `functions.php` file or as an [MU plugin](http://codex.wordpress.org/Must_Use_Plugins):
-
-```php
-function my_aps_excluded_post_types( $post_types ) {
-	$post_types[] = 'my_custom_post_type';
-
-	return $post_types;
-}
-add_filter( 'aps_excluded_post_types', 'my_aps_excluded_post_types' );
-```
-
-### My archived posts have disappeared when I deactivate the plugin!
-
-Don't worry, your content is _not_ gone it's just __inaccessible__. Unfortunately, using a custom post status like `archive` is only going to work while the plugin is active.
-
-If you have archived content and deactivate or delete this plugin, that content will disappear from _view_. Your content is in the database - WordPress just no longer recognizes the `post_status` because this plugin is not there to set this post status up. 
-
-If you no longer need the plugin but want to retain your archived content:
-1. Activate this plugin
-2. Switch all the archived posts/pages/post types to a native post status, like 'draft' or 'publish'
-3. THEN deactivate/delete the plugin.
-
-
-## Screenshots
-
-### Post list table screen.
-
-![Post list table screen.](.wordpress-org/screenshot-1.png)
-
-### Quick Edit mode.
-
-![Quick Edit mode.](.wordpress-org/screenshot-2.png)
-
-### Publish metabox controls.
-
-![Publish metabox controls.](.wordpress-org/screenshot-3.png)
+Learn how to use and extend the plugin at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)
 
 ## Contributing
 
-All contributions are welcomed and considered, please refer to [contributing.md](contributing.md).
+There are lots of ways to help with this project and all contributions are welcomed, thanks for your help! 
 
-### Pull requests
-All pull requests should be directed at the `develop` branch, and will be reviewed prior to merging. No pull requests will be merged with failing tests, but it's okay if you don't initially pass tests. Please create a draft pull request for proof of concept code or changes you'd like to have input on prior to review.
+Please refer to [contributing.md](contributing.md).
 
-Please make on a branch specific to a single issue or feature. For instance, if you are suggest a solution to an issue, please create fork with a branch like `issue-894`. Or if you are proposing a new feature, create a fork with the branch name indicating the feature like `feature-example-bananas`
+## Pull requests
 
-All improvements are merged into `develop` and then queued up for release before being merged into `stable`. Releases are deployed via github actions to wordpress.org on tagging a new release.
+All pull requests should be directed at the `develop` branch, and will be reviewed prior to merging.
 
-### Main Branches
+Stable releases should include unit tests, but it's okay if you don't initially have any tests. Please create a draft pull request for proof of concept code or changes you'd like to have input on prior to review.
 
-The `stable` branch is reserved for releases and intended to be a mirror of the official current release, or `trunk` on wordpress.org.
+### Branches
+
+The `stable` branch is reserved for releases and intended to be a mirror of the official current release, or `trunk` on `wordpress.org`.
 
 The `develop` branch is the most current working branch. _Please direct all pull requests to the `develop` branch_
 
+Please make your changes on a branch specific to a single issue or feature. For instance, if you are suggest a solution to an issue, please create fork with a branch like `issue-894`. Or if you are proposing a new feature, create a fork with the branch name indicating the feature like `feature/example-bananas`
+
+All improvements are merged into `develop` and then queued up for release before being merged into `stable`. Releases are deployed via github actions to `wordpress.org` on tagging a new release.
+
 ### Local Development
 
-**Requirements:**
+#### Requirements
+
 - Docker
 - Node Package Manager (npm)
+- PHP Composer
 
 This repo contains the files needed to boot up a local development environment using [wp-env](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/).
 
-Run `npm install` and the `npm run env:start` to boot up a local environment. 
+Run `npm install` and use the `npm run env:start` to boot up a local environment.
+
+Use `npm run env:stop` to stop the local environment.
+
+#### Accessing Shell
+
+To access the shell interface of your local development: `npm run env:shell`
+
+#### Debug.log
+
+You can access the `debug.log` file inside the `wp-env` via `npm run env:debuglog`, which will stream the most recent logs.
+
+#### Database Connection
+
+To connect to the local wp-env database (useful for tools like TablePlus, Sequel Pro, or phpMyAdmin), you'll need the connection details. Since wp-env uses dynamic ports for the database, use these npm scripts to find the current connection information:
+
+- `npm run env:db-port` - Shows just the database port
+- `npm run env:db-info` - Shows complete database connection details
+
+**Connection Details:**
+- Host: `localhost` or `127.0.0.1`
+- Port: Use the script above to get the current port
+- Database: `wordpress`
+- Username: `root`
+- Password: `password`
+
+Note: There are typically two database containers running - one for the main WordPress site and one for tests. The scripts will show both ports if available.
+
+### Tests and checks
+
+Github actions will run phpunit tests, coding standard checks, and static analysis. You can run these checks locally as outlined below.
+
+First, install composer dependencies by running `composer install`
+
+#### PHPUnit Tests
+
+PHP Unit tests go in the `/tests/php/` folder.
+
+To run tests in the terminal with `./vendor/bin/phpunit` or use the composer script: `composer run phpunit`
+
+#### PHP Coding Standards
+
+This project follows WordPress Coding Standards. To check your code:
+
+1. Run PHP Code Sniffer: `./vendor/bin/phpcs` or use the composer script: `composer run phpcs`
+2. To automatically fix coding standard issues: `./vendor/bin/phpcbf` or use the composer script: `composer run phpcbf`
+
+#### PHP Stan
+
+PHPStan is used for static analysis to catch potential issues.
+
+To run PHPStan in the terminal `./vendor/bin/phpstan analyse --memory-limit=2048M` or use the composer script: `composer run phpstan`
+
+#### PHP MD
+
+Another tool for checks, use `composer phpmd` to run this check.
+
+#### PHP Metrics
+
+Ideally we're keeping an eye on complexity of the code, use `composer phpmetrics` to generate a detailed report of code complexity.
+
+#### JS Unit tests
+
+The repo uses Jest for unit tests, through `npm`. Run `npm install` and then `npm run test` to run unit tests, or `npm run test:warch` to have tests run and watch for changes.

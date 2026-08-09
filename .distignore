@@ -1,32 +1,60 @@
+# Development and testing files
 /tests/
-.editorconfig
-.gitignore
-.gitattributes
+/playwright/
+/artifacts/
+playwright.config.ts
+/coverage/
+/reports/
+/vendor/
+/node_modules/
+/bin/
+/docs/
+/.github/
+/.wordpress-org/
+/.vscode/
+
+# Configuration files
+.babelrc
 .distignore
-.wordpress-org
+.editorconfig
+.gitattributes
+.gitbook.yaml
+.gitignore
+.phpunit*
+.wp-env.json
+.wp-env.override.json
+phpmd.xml
+quality-thresholds.json
+
+# Composer and npm files
 composer.json
 composer.lock
-code-of-conduct.md
-contributing.md
-phpstan.neon.dist
 package.json
 package-lock.json
-.wp-env.json
+node_modules
+
+# Documentation
+*.md
+refactoring plan.md
+Settings Reference.md
+
+# Test and build configuration
+jest.config.js
+webpack.config.js
+
+# System files
+.DS_Store
+Thumbs.db
+.git
+
+# File patterns
+*.cache
+*.log
+*.map
+*.dist
+*.test.js
+*.config.js
 *.sql
 *.tar.gz
 *.zip
-.git
-.github
-.travis.yml
-.DS_Store
-.wp-env.json
-Thumbs.db
-bin
-node_modules
-phpunit.xml
-phpunit.xml.dist
-phpstan.neon
-phpstan.neon.dist
-README.md
-tests
-cypress.config.js
+*Test.php

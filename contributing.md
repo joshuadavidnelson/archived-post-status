@@ -12,7 +12,7 @@ Thank you for considering contributing to the on-going development of this plugi
 
 - **Pull Requests** - Suggest changes to the code to enhance the plugin, see the [Pull Requests](README.md#pull-requests) section in the main readme doc. _Please direct all Pull Requests to the `develop` branch_
 
-- **Positive Reviews** - [Adding a positive review](https://wordpress.org/support/plugin/archived-post-status/reviews/#new-post) to the WordPress page helps spread the word and encourage otherts to trust our efforts.
+- **Positive Reviews** - [Adding a positive review](https://wordpress.org/support/plugin/archived-post-status/reviews/#new-post) to the WordPress page helps spread the word and encourage others to trust our efforts.
 
 - **Testing** - Taking the time to test the plugin and report back any findings is a great help! Feel free to test [current pull requests](https://github.com/joshuadavidnelson/archived-post-status/pulls/) and leave comments, or test the current version locally with the newest version of WordPress or your own plugin. We are strongly in favor of Cross Plugin Integration - being compatible with as many other plugins as possible!
 
@@ -22,6 +22,6 @@ However you choose to contribute, we ask that you follow the [Code of Conduct](c
 
 ## Current Contributors
 
-A huge thank you to @fjarrett for all his work in creating and building this plugin throuhg ot version 0.3.7.
+A huge thank you to @fjarrett for all his work in creating and building this plugin through to version 0.3.7.
 
 As of 0.3.8, ownership of this plugin has moved to @joshuadavidnelson.

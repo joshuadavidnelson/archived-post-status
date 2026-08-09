@@ -3,57 +3,73 @@
 use Yoast\PHPUnitPolyfills\TestCases\TestCase as BaseTestCase;
 
 /**
- * We will extend this test case to make WP_Mock set up easier
+ * Project base test case. Sets up / tears down WP_Mock and exposes a small
+ * surface of fixture helpers.
+ *
+ * The helpers here are deliberately scoped to the WordPress boundary (WP_Post
+ * fixture, the `current_user_can` + `get_post_types` + `wp_update_post`
+ * cluster). Stubs for plugin-owned `aps_*` functions do not belong here: they
+ * let a test pass while the SUT regresses inside the stubbed function.
+ *
+ * New tests should stub WP functions inline in the test body so the intent
+ * stays visible at the call site. To exercise `aps_*` behavior, register the
+ * upstream filter the real function consumes, or assert on the SUT's
+ * observable output end-to-end.
  */
 class TestCase extends BaseTestCase {
 
 	/**
-	 * Set up with WP_Mock
+	 * Set up with WP_Mock.
 	 *
-	 * @since  0.8
+	 * Also resets {@see \ArchivedPostStatus\Status\SupportedPostTypes}'s
+	 * per-request memo — it is a plain static, so without an explicit reset
+	 * here it would otherwise survive from whatever the previous test left
+	 * behind and silently feed a stale post-type list into this one.
 	 */
 	public function set_up() {
 		\WP_Mock::setUp();
-		$this->setup_common();
+		\ArchivedPostStatus\Status\SupportedPostTypes::reset();
 	}
 
 	/**
-	 * Tear down with WP_Mock
+	 * Tear down with WP_Mock.
 	 *
-	 * @since  0.8
+	 * Resets the same memo on the way out too — symmetric with the
+	 * WP_Mock::setUp()/tearDown() pairing above, and belt-and-suspenders
+	 * against leaking a cached post-type list into whichever test runs next.
 	 */
 	public function tear_down() {
+		\ArchivedPostStatus\Status\SupportedPostTypes::reset();
 		\WP_Mock::tearDown();
 	}
 
 	/**
-	 * Mock common functions
+	 * Build a Mockery WP_Post double with overridable defaults.
 	 *
-	 * @since 0.8
+	 * Returns a Mockery mock rather than a stdClass so tests that need to
+	 * pin method calls on the post (rare; mostly attribute access) still
+	 * have the option.
+	 *
+	 * @param array<string, mixed> $args Overrides for the default attributes.
 	 */
-	public function setup_common() {
-		\WP_Mock::userFunction(
-			'__', array(
-				'return_arg' => 0,
-			)
-		);
+	protected function createMockPost( array $args = [] ) {
+		$defaults = [
+			'ID'             => 123,
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'comment_status' => 'open',
+			'ping_status'    => 'open',
+			'post_title'     => 'Test Post',
+		];
 
-		\WP_Mock::userFunction(
-			'esc_html__', array(
-				'return_arg' => 0,
-			)
-		);
+		$args = array_merge( $defaults, $args );
+		$post = \Mockery::mock( 'WP_Post' );
 
-		\WP_Mock::userFunction(
-			'esc_html_e', array(
-				'return_arg' => 0,
-			)
-		);
+		foreach ( $args as $key => $value ) {
+			$post->$key = $value;
+		}
 
-		\WP_Mock::userFunction(
-			'_e', array(
-				'return_arg' => 0,
-			)
-		);
+		return $post;
 	}
+
 }

@@ -13,18 +13,33 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
     - name: "Checkout repository"
-      uses: "actions/checkout@v6"
-    - name: "Install PHPCS"
-      run: |
-        composer require --no-plugins --dev wp-coding-standards/wpcs
-        composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-        composer run post-install-cmd
+      uses: "actions/checkout@v7"
+    - name: "Set up PHP and Composer"
+      # Pinned to the same version the integrate.yml quality gate runs, so
+      # phpcbf cannot produce fixes that gate then rejects.
+      uses: "./.github/actions/setup-php-composer"
+      with:
+        php-version: "8.4"
     - name: "Fix violations"
       run: |
-        # phpcbf exists with 1 on success
-        vendor/bin/phpcbf --standard=WordPress-Core *.php includes/ || true
-        # Complex errors need a second run
-        vendor/bin/phpcbf --standard=WordPress-Core *.php includes/ || true
+        # phpcbf auto-discovers .phpcs.xml.dist — the same ruleset the
+        # integrate.yml quality gate enforces.
+        #
+        # phpcbf exit codes: 0 clean, 1 violations fixed, 2 some left
+        # unfixable, 3 error. Only 0 and 1 are expected here; swallowing
+        # 2 and 3 too would let a genuine tooling failure look identical
+        # to "already clean", since the diff check below would then find
+        # nothing and the workflow would end quietly with no PR.
+        #
+        # Twice, because complex errors need a second pass.
+        for attempt in 1 2; do
+          vendor/bin/phpcbf && continue
+          status=$?
+          if [ "$status" -ne 1 ]; then
+            echo "::error::phpcbf exited ${status} on pass ${attempt}"
+            exit "$status"
+          fi
+        done
     - name: "Check difference to repository"
       id: "list_diff"
       run: |

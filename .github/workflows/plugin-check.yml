@@ -1,0 +1,49 @@
+name: 'WP Plugin Check'
+on:
+  pull_request: null
+  push:
+    branches:
+    - stable
+    - develop
+
+permissions:
+  contents: "read"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    # wp_function_not_compatible_with_requires_wp is ignored because it reads
+    # function calls without seeing the guards around them. The plugin supports
+    # WordPress 5.9 and reaches newer core functions the way core itself
+    # recommends — behind function_exists(), with a fallback — so a call to a
+    # 6.4 function inside `if ( function_exists( 'wp_admin_notice' ) )` is
+    # reported as an incompatibility that cannot actually occur. See
+    # Notices::render_notices(). Any genuinely unguarded call to a too-new
+    # function is still caught by phpstan, which runs johnbillion/wp-compat
+    # against the same header value and DOES understand the guard.
+    #
+    # The PrefixAllGlobals codes are ignored because plugin-check derives the
+    # expected prefix from the plugin slug — it looks for `archived_post_status_`
+    # and flags every `aps_` function, hook and uninstall-scope variable as
+    # unprefixed. `aps_` IS the prefix; it has been the plugin's public API
+    # since 0.3.x, and renaming it would break every site calling
+    # aps_archive_post() and friends. The action exposes no way to declare an
+    # alternative prefix, so ignoring the three codes is the only lever.
+    #
+    # NonPrefixedVariableFound additionally fires on ordinary local variables
+    # in uninstall.php, which the sniff treats as globals because that file
+    # runs in the global scope.
+    - name: Run plugin check
+      uses: wordpress/plugin-check-action@v1
+      with:
+        exclude-directories: 'vendor,node_modules,tests,.github,.git,.wordpress-org,bin,reports'
+        exclude-files: 'package.json,package-lock.json,composer.json,composer.lock,contributing.md,code-of-conduct.md,phpstan.neon.dist,phpunit.xml.dist,readme.md,changelog.md,.phpcs.xml.dist,.gitbook.yaml,jest.config.js,LICENSE'
+        ignore-codes: 'hidden_files,wp_function_not_compatible_with_requires_wp,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound'

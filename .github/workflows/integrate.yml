@@ -5,6 +5,14 @@ on:
   push:
     branches:
       - stable
+      - develop
+
+permissions:
+  contents: "read"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   syntax-check:
@@ -16,24 +24,12 @@ jobs:
 
     steps:
     - name: "Checkout"
-      uses: "actions/checkout@v6"
+      uses: "actions/checkout@v7"
 
-    - name: "Install PHP"
-      uses: "shivammathur/setup-php@v2"
+    - name: "Set up PHP and Composer"
+      uses: "./.github/actions/setup-php-composer"
       with:
         php-version: ${{ matrix.php }}
-
-    - name: "Cache Composer dependencies"
-      uses: "actions/cache@v4"
-      with:
-        path: vendor
-        key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
-        restore-keys: |
-          composer-${{ matrix.php }}-
-          composer-
-
-    - name: "Install Composer dependencies"
-      run: "composer install"
 
     - name: "PHP lint"
       run: "composer lint"
@@ -41,31 +37,241 @@ jobs:
   code-quality:
     name: "Code quality checks"
     runs-on: "ubuntu-latest"
-    env:
-      PHP_VERSION: "8.4"
+    needs: syntax-check
     steps:
     - name: "Checkout"
-      uses: "actions/checkout@v6"
+      uses: "actions/checkout@v7"
 
-    - name: "Install PHP"
-      uses: "shivammathur/setup-php@v2"
+    - name: "Set up PHP and Composer"
+      uses: "./.github/actions/setup-php-composer"
       with:
-        php-version: ${{ env.PHP_VERSION }}
-
-    - name: "Cache Composer dependencies"
-      uses: "actions/cache@v4"
-      with:
-        path: vendor
-        key: composer-${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
-        restore-keys: |
-          composer-${{ env.PHP_VERSION }}-
-          composer-
-
-    - name: "Install Composer dependencies"
-      run: "composer install"
+        php-version: "8.4"
 
     - name: "Run PHPCS"
       run: "composer phpcs"
 
     - name: "Run PHPStan"
       run: "composer phpstan"
+
+    - name: "Run PHPMD"
+      run: "composer run phpmd"
+
+  # Computes and publishes metrics; it does not comment. The PR Report
+  # workflow reads this job's artifact and owns everything user-facing, so
+  # nothing here needs write access to the pull request.
+  code-analysis:
+    name: "Code Analysis & Metrics"
+    runs-on: "ubuntu-latest"
+    needs: [syntax-check, code-quality]
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: "read"
+
+    steps:
+    - name: "Checkout"
+      uses: "actions/checkout@v7"
+
+    - name: "Checkout base branch for comparison"
+      uses: "actions/checkout@v7"
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+        path: ".base"
+
+    - name: "Set up PHP and Composer"
+      uses: "./.github/actions/setup-php-composer"
+      with:
+        php-version: "8.4"
+
+    - name: "Generate metrics summary"
+      run: |
+        composer run phpmetrics-summary
+        test -s reports/metrics-summary.json || {
+          echo "::error::PHPMetrics produced no summary for the PR branch."
+          exit 1
+        }
+
+    - name: "Generate metrics summary for the base branch"
+      run: |
+        php -d error_reporting='E_ALL & ~E_DEPRECATED' ./vendor/bin/phpmetrics \
+          --composer=false --report-summary-json=reports/base-summary.json .base/src/
+        test -s reports/base-summary.json || {
+          echo "::error::PHPMetrics produced no summary for the base branch."
+          exit 1
+        }
+
+    - name: "Upload metrics summary"
+      uses: "actions/upload-artifact@v4"
+      with:
+        name: phpmetrics-summary
+        path: |
+          reports/metrics-summary.json
+          reports/base-summary.json
+        retention-days: 14
+
+  coverage:
+    name: "Coverage"
+    runs-on: "ubuntu-latest"
+    needs: [syntax-check, code-quality]
+
+    steps:
+    - name: "Checkout"
+      uses: "actions/checkout@v7"
+
+    - name: "Set up PHP and Composer"
+      uses: "./.github/actions/setup-php-composer"
+      with:
+        php-version: "8.4"
+        coverage: "xdebug"
+
+    - name: "Setup Node.js"
+      uses: "actions/setup-node@v5"
+      with:
+        node-version: '26'
+        cache: 'npm'
+
+    - name: "Install npm dependencies"
+      run: "npm ci"
+
+    - name: "Measure coverage"
+      run: |
+        composer phpunit:coverage-clover
+        npm run test:coverage
+
+    - name: "Enforce coverage floors"
+      # Floors live in quality-thresholds.json, shared with jest.config.js.
+      run: "node .github/scripts/check-coverage.js"
+
+    # Everything below produces the base-branch comparison for the report.
+    # Until 0.4.0 reaches stable the base has neither the coverage scripts
+    # nor a jest config, so measuring it is expected to be impossible — the
+    # report drops the Base and Δ columns and says so. Once the base does
+    # carry them this becomes a real comparison with no change here.
+    - name: "Checkout base branch for comparison"
+      if: github.event_name == 'pull_request'
+      uses: "actions/checkout@v7"
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+        path: ".base"
+
+    - name: "Measure base branch coverage"
+      if: github.event_name == 'pull_request'
+      continue-on-error: true
+      working-directory: ".base"
+      run: |
+        composer install --no-progress
+
+        if composer run --list | grep -q 'phpunit:coverage-clover'; then
+          composer phpunit:coverage-clover
+        else
+          echo "::notice::Base branch has no coverage script — skipping its PHP coverage."
+        fi
+
+        if [ -f jest.config.js ]; then
+          npm ci
+          # The base's own floors must not fail this PR — we only want its
+          # numbers, so the thresholds are overridden away.
+          npx jest --coverage --coverageReporters=json-summary --coverageThreshold='{}'
+        else
+          echo "::notice::Base branch has no jest config — skipping its JS coverage."
+        fi
+
+    - name: "Collect coverage for the report"
+      if: github.event_name == 'pull_request'
+      run: |
+        mkdir -p pr-coverage
+        cp coverage/php-clover.xml pr-coverage/php-clover.xml
+        cp coverage/coverage-summary.json pr-coverage/js-summary.json
+        cp .base/coverage/php-clover.xml pr-coverage/php-base-clover.xml \
+          || echo "::notice::No base PHP coverage — the report will omit the delta."
+        cp .base/coverage/coverage-summary.json pr-coverage/js-base-summary.json \
+          || echo "::notice::No base JS coverage — the report will omit the delta."
+
+    - name: "Upload coverage"
+      if: github.event_name == 'pull_request'
+      uses: "actions/upload-artifact@v4"
+      with:
+        name: pr-coverage
+        path: pr-coverage
+        retention-days: 14
+
+  # The only job that writes to the pull request. It runs no project code
+  # and performs no checks — it reads what the jobs above produced and
+  # renders it. needs: keeps it off a branch that failed its checks.
+  report:
+    name: "PR report"
+    runs-on: "ubuntu-latest"
+    needs: [code-analysis, coverage]
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: "read"
+      pull-requests: "write"
+
+    steps:
+    - name: "Checkout"
+      uses: "actions/checkout@v7"
+
+    - name: "Setup Node.js"
+      uses: "actions/setup-node@v5"
+      with:
+        node-version: '26'
+
+    - name: "Download metrics"
+      uses: "actions/download-artifact@v4"
+      with:
+        name: phpmetrics-summary
+        path: reports
+
+    - name: "Download coverage"
+      uses: "actions/download-artifact@v4"
+      with:
+        name: pr-coverage
+        path: coverage
+
+    - name: "Render the report"
+      run: node .github/scripts/render-pr-report.js
+      env:
+        HEAD_SUMMARY: reports/metrics-summary.json
+        BASE_SUMMARY: reports/base-summary.json
+        PHP_CLOVER: coverage/php-clover.xml
+        PHP_BASE_CLOVER: coverage/php-base-clover.xml
+        JS_SUMMARY: coverage/js-summary.json
+        JS_BASE_SUMMARY: coverage/js-base-summary.json
+        OUTPUT: reports/pr-report.md
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    - name: "Post the report"
+      # A pull_request run from a fork gets a read-only token, so posting is
+      # not possible there. That is a missing comment, not a broken build.
+      continue-on-error: true
+      uses: marocchino/sticky-pull-request-comment@v3
+      with:
+        header: pr-report
+        path: reports/pr-report.md
+
+  pot-freshness:
+    name: "Translation template freshness"
+    runs-on: "ubuntu-latest"
+    steps:
+    - name: "Checkout"
+      uses: "actions/checkout@v7"
+
+    - name: "Install PHP"
+      uses: "shivammathur/setup-php@v2"
+      with:
+        php-version: "8.4"
+        coverage: none
+
+    - name: "Regenerate the pot and compare source strings"
+      run: |
+        # -f so an HTTP error page fails the step here, rather than
+        # reaching php and surfacing as a baffling parse error.
+        curl -fsSL -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+        php wp-cli.phar i18n make-pot . /tmp/fresh.pot --slug=archived-post-status
+        grep '^msgid ' languages/archived-post-status.pot | sort -u > /tmp/committed-msgids
+        grep '^msgid ' /tmp/fresh.pot | sort -u > /tmp/fresh-msgids
+        diff -u /tmp/committed-msgids /tmp/fresh-msgids || {
+          echo '::error::languages/archived-post-status.pot is stale — run `wp i18n make-pot . languages/archived-post-status.pot --slug=archived-post-status` and commit the result.'
+          exit 1
+        }
