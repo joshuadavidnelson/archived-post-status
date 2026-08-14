@@ -45,3 +45,4 @@ define( 'ARCHIVED_POST_STATUS_LANG_PATH', dirname( ARCHIVED_POST_STATUS_PLUGIN )
  * The core plugin class that is used to define everything.
  */
 require ARCHIVED_POST_STATUS_DIR . '/src/archived-post-status.php';
+require ARCHIVED_POST_STATUS_DIR . '/src/scheduler.php';
