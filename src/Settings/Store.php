@@ -114,31 +114,25 @@ final class Store {
 	/**
 	 * Default values for all settings.
 	 *
-	 * Every setting key {@see HookAdapter} maps to a filter needs a default
-	 * here, matching that filter's own default — so enabling the settings
+	 * Derived from {@see Schema} — the single source of truth for every
+	 * setting's key, default, and sanitizer — so enabling the settings
 	 * system without configuring anything behaves identically to running
-	 * without it.
+	 * without it. Scoped to {@see Schema::LEVEL_SITE}: this class backs only
+	 * the single `aps_settings` site option (§4.6), so a future key that is
+	 * not site-scoped must not appear in what this option persists.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- Schema is the canonical settings-table accessor.
 	 */
 	public static function defaults(): array {
-		return array(
-			'is_read_only' => true,
+		$defaults = array();
 
-			/*
-			 * Future settings to be implemented:
-			 * - archivable_statuses: ['publish', 'future', 'draft', 'pending', 'private']
-			 * - excluded_post_types: ['attachment']
-			 * - read_capability: 'read_private_posts'
-			 * - archive_capability: 'edit_others_posts'
-			 * - label_string: 'Archived'
-			 * - title_label_enabled: true
-			 * - title_label_before: true
-			 * - auto_archive_enabled: false
-			 * - auto_archive_days: 365
-			 * - auto_archive_types: []
-			 */
-		);
+		foreach ( Schema::keys_for_level( Schema::LEVEL_SITE ) as $key ) {
+			$defaults[ $key ] = Schema::default_for( $key );
+		}
+
+		return $defaults;
 	}
 
 	/** Prevent instantiation — this is a static facade. */

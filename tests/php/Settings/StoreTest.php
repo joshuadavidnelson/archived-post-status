@@ -22,6 +22,34 @@ use ArchivedPostStatus\Settings\Store;
 class StoreTest extends TestCase {
 
 	/**
+	 * The full defaults table Store::defaults() must produce now that it
+	 * derives from Schema — the plan's §5.8 table, transcribed exactly, the
+	 * same literal values SchemaTest pins independently. Tests that need the
+	 * merged option array with one or two keys overridden build on this via
+	 * {@see self::defaultsWith()} rather than restating all ten keys.
+	 */
+	private const FULL_DEFAULTS = array(
+		'is_read_only'                 => true,
+		'scheduled_archive_enabled'    => true,
+		'scheduled_archive_post_types' => array(),
+		'auto_archive_enabled'         => false,
+		'auto_archive_days'            => null,
+		'auto_archive_child_mode'      => 'open',
+		'auto_archive_types'           => array(),
+		'auto_archive_taxonomies'      => array( 'category' ),
+		'auto_archive_age_basis'       => 'modified',
+		'auto_archive_grace_days'      => 7,
+	);
+
+	/**
+	 * @param array<string, mixed> $overrides
+	 * @return array<string, mixed>
+	 */
+	private function defaultsWith( array $overrides ): array {
+		return array_merge( self::FULL_DEFAULTS, $overrides );
+	}
+
+	/**
 	 * Defensive: clear the static cache before every test so test order
 	 * cannot affect outcomes.
 	 */
@@ -40,16 +68,27 @@ class StoreTest extends TestCase {
 	}
 
 	/**
-	 * defaults() returns the hardcoded default array — currently just
-	 * is_read_only=true. This is the source-of-truth fallback consumed
-	 * by every get() call that lands on a missing key.
+	 * defaults() derives its result from Schema — this pins the full
+	 * ten-key table Store hands back, independently of SchemaTest's own
+	 * pin, so a Store/Schema wiring mistake (e.g. a key dropped in
+	 * translation) fails here even if Schema itself is correct.
 	 *
 	 * @covers ArchivedPostStatus\Settings\Store::defaults
 	 */
-	public function test_defaults_returns_is_read_only_true() {
-		$defaults = Store::defaults();
+	public function test_defaults_returns_full_schema_derived_table() {
+		$this->assertSame( self::FULL_DEFAULTS, Store::defaults() );
+	}
 
-		$this->assertSame( array( 'is_read_only' => true ), $defaults );
+	/**
+	 * The pre-0.5.0 contract this class must keep unchanged: is_read_only
+	 * defaults to true, from the source-of-truth {@see self::defaultsWith()}
+	 * consumed by every get() call that lands on a missing key.
+	 *
+	 * @covers ArchivedPostStatus\Settings\Store::defaults
+	 */
+	public function test_defaults_still_contains_is_read_only_true() {
+		$this->assertArrayHasKey( 'is_read_only', Store::defaults() );
+		$this->assertTrue( Store::defaults()['is_read_only'] );
 	}
 
 	/**
@@ -109,7 +148,7 @@ class StoreTest extends TestCase {
 
 		\WP_Mock::userFunction( 'update_option' )
 			->once()
-			->with( Store::OPTION_KEY, array( 'is_read_only' => false ) )
+			->with( Store::OPTION_KEY, $this->defaultsWith( array( 'is_read_only' => false ) ) )
 			->andReturn( true );
 
 		Store::update( 'is_read_only', false );
@@ -128,7 +167,7 @@ class StoreTest extends TestCase {
 	public function test_save_merges_with_defaults_and_writes_option() {
 		\WP_Mock::userFunction( 'update_option' )
 			->once()
-			->with( Store::OPTION_KEY, array( 'is_read_only' => false ) )
+			->with( Store::OPTION_KEY, $this->defaultsWith( array( 'is_read_only' => false ) ) )
 			->andReturn( true );
 
 		Store::save( array( 'is_read_only' => false ) );
@@ -163,7 +202,7 @@ class StoreTest extends TestCase {
 			->with( Store::OPTION_KEY, array() )
 			->andReturn( array( 'is_read_only' => false ) );
 
-		$this->assertSame( array( 'is_read_only' => false ), Store::all() );
+		$this->assertSame( $this->defaultsWith( array( 'is_read_only' => false ) ), Store::all() );
 	}
 
 	/**
@@ -216,7 +255,7 @@ class StoreTest extends TestCase {
 			->andReturn( array() );
 
 		\WP_Mock::userFunction( 'update_option' )
-			->with( Store::OPTION_KEY, array( 'is_read_only' => false ) )
+			->with( Store::OPTION_KEY, $this->defaultsWith( array( 'is_read_only' => false ) ) )
 			->andReturn( true );
 
 		Store::update( 'is_read_only', false );
@@ -259,7 +298,7 @@ class StoreTest extends TestCase {
 		// Store::flush_cache via HookAdapter), the cache is cleared.
 		\WP_Mock::userFunction( 'update_option' )
 			->once()
-			->with( Store::OPTION_KEY, array( 'is_read_only' => false ) )
+			->with( Store::OPTION_KEY, $this->defaultsWith( array( 'is_read_only' => false ) ) )
 			->andReturnUsing(
 				static function () {
 					Store::flush_cache(); // simulate the hook-bound callback
@@ -299,7 +338,7 @@ class StoreTest extends TestCase {
 		// Store::flush_cache via HookAdapter), the cache is cleared.
 		\WP_Mock::userFunction( 'update_option' )
 			->once()
-			->with( Store::OPTION_KEY, array( 'is_read_only' => false ) )
+			->with( Store::OPTION_KEY, $this->defaultsWith( array( 'is_read_only' => false ) ) )
 			->andReturnUsing(
 				static function () {
 					Store::flush_cache(); // simulate the hook-bound callback

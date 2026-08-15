@@ -8,8 +8,9 @@
  *
  * Pins what runs when a site administrator deletes the plugin: removal of the
  * settings option, the version option, the sweep's `aps_last_sweep` option,
- * the sweep's `aps_queue_lock_sweep` transient, both cron events, and every
- * `_aps_archive_meta_*` / `_aps_schedule_meta_*` postmeta row.
+ * the cascade's `aps_rules_version` option, the sweep's `aps_queue_lock_sweep`
+ * transient, both cron events, and every `_aps_archive_meta_*` /
+ * `_aps_schedule_meta_*` postmeta row.
  *
  * Implementation notes
  *
@@ -146,6 +147,9 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_last_sweep' )
 			->once();
+		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_rules_version' )
+			->once();
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_run_scheduled_archives' )
 			->once();
@@ -212,6 +216,8 @@ class UninstallTest extends TestCase {
 			->with( 'aps_settings' )->once();
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_last_sweep' )->once();
+		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_rules_version' )->once();
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_run_scheduled_archives' )->once();
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
@@ -281,7 +287,7 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'restore_current_blog' )->times( 3 )->andReturn( true );
 
 		// delete_option fires three times (once per site) for each of the
-		// four deleted options.
+		// five deleted options.
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'archived_post_status_version' )->times( 3 );
 		\WP_Mock::userFunction( 'delete_option' )
@@ -290,6 +296,8 @@ class UninstallTest extends TestCase {
 			->with( 'aps_settings' )->times( 3 );
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_last_sweep' )->times( 3 );
+		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_rules_version' )->times( 3 );
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_run_scheduled_archives' )->times( 3 );
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )

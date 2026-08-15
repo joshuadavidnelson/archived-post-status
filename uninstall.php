@@ -38,6 +38,10 @@ function aps_uninstall_site() {
 	// as the class-constant mirrors throughout this function.
 	delete_option( 'aps_last_sweep' );
 
+	// Mirrors RulesVersion::OPTION_KEY, same duplicate-literal reasoning as
+	// the aps_settings option key above.
+	delete_option( 'aps_rules_version' );
+
 	// Mirrors CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES and
 	// CronQueueRunner::CONTINUE_HOOK. Literals duplicated on purpose, same
 	// reasoning as the aps_settings option key above.

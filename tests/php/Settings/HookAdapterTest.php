@@ -18,6 +18,7 @@
  * keeps the coverage credit honest rather than discarded as incidental.
  */
 
+use ArchivedPostStatus\AutoArchive\RulesVersion;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 use ArchivedPostStatus\Settings\HookAdapter;
 use ArchivedPostStatus\Settings\Store;
@@ -55,16 +56,18 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
-	 * hooks() returns five descriptors: one filter for the value bridge
-	 * and four actions for cache invalidation (three option-write hooks,
-	 * plus `switch_blog` for multisite).
+	 * hooks() returns seventeen descriptors: ten filters for the value
+	 * bridge (is_read_only plus the nine 0.5.0 settings keys), four actions
+	 * for cache invalidation (three option-write hooks, plus `switch_blog`
+	 * for multisite), and three actions bumping {@see RulesVersion} on the
+	 * same three option-write hooks.
 	 *
 	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
 	 */
-	public function test_hooks_returns_five_descriptors() {
+	public function test_hooks_returns_seventeen_descriptors() {
 		$hooks = $this->adapter->hooks();
 
-		$this->assertCount( 5, $hooks );
+		$this->assertCount( 17, $hooks );
 		foreach ( $hooks as $hook ) {
 			$this->assertInstanceOf( HookDescriptor::class, $hook );
 		}
@@ -91,6 +94,41 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
+	 * Descriptors 1-9 are the nine 0.5.0 settings filters, each at the
+	 * documented priority with the default single accepted arg — the same
+	 * shape as descriptor 0 (`aps_is_read_only`), pinned above.
+	 *
+	 * @dataProvider provider_new_settings_filter_descriptors
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
+	 */
+	public function test_hooks_registers_new_settings_filter_at_priority_twenty( int $index, string $hook, string $method ) {
+		$filter = $this->adapter->hooks()[ $index ];
+
+		$this->assertFalse( $filter->is_action() );
+		$this->assertSame( $hook, $filter->hook );
+		$this->assertSame( HookAdapter::PRIORITY, $filter->priority );
+		$this->assertSame( array( $this->adapter, $method ), $filter->callback );
+		$this->assertSame( 1, $filter->accepted_args );
+	}
+
+	/**
+	 * @return array<string, array{0: int, 1: string, 2: string}>
+	 */
+	public function provider_new_settings_filter_descriptors(): array {
+		return array(
+			'scheduled_archive_enabled'    => array( 1, 'aps_scheduled_archive_enabled', 'scheduled_archive_enabled' ),
+			'scheduled_archive_post_types' => array( 2, 'aps_scheduled_archive_post_types', 'scheduled_archive_post_types' ),
+			'auto_archive_enabled'         => array( 3, 'aps_auto_archive_enabled', 'auto_archive_enabled' ),
+			'auto_archive_days'            => array( 4, 'aps_auto_archive_days', 'auto_archive_days' ),
+			'auto_archive_child_mode'      => array( 5, 'aps_auto_archive_child_mode', 'auto_archive_child_mode' ),
+			'auto_archive_types'           => array( 6, 'aps_auto_archive_types', 'auto_archive_types' ),
+			'auto_archive_taxonomies'      => array( 7, 'aps_auto_archive_taxonomies', 'auto_archive_taxonomies' ),
+			'auto_archive_age_basis'       => array( 8, 'aps_auto_archive_age_basis', 'auto_archive_age_basis' ),
+			'auto_archive_grace_days'      => array( 9, 'aps_auto_archive_grace_days', 'auto_archive_grace_days' ),
+		);
+	}
+
+	/**
 	 * Cache invalidation: HookAdapter registers four cache-invalidation
 	 * actions on Store::flush_cache, each at the default priority with
 	 * zero accepted args (flush_cache() takes no parameters) — three for
@@ -104,7 +142,7 @@ class HookAdapterTest extends TestCase {
 	public function test_hooks_registers_four_cache_invalidation_actions() {
 		$hooks = $this->adapter->hooks();
 
-		$cache_actions  = array_slice( $hooks, 1 );
+		$cache_actions  = array_slice( $hooks, 10, 4 );
 		$expected_hooks = array(
 			'update_option_' . Store::OPTION_KEY,
 			'add_option_' . Store::OPTION_KEY,
@@ -116,6 +154,36 @@ class HookAdapterTest extends TestCase {
 		foreach ( $cache_actions as $descriptor ) {
 			$this->assertTrue( $descriptor->is_action() );
 			$this->assertSame( array( Store::class, 'flush_cache' ), $descriptor->callback );
+			$this->assertSame( 10, $descriptor->priority );
+			$this->assertSame( 0, $descriptor->accepted_args );
+			$actual_hooks[] = $descriptor->hook;
+		}
+
+		$this->assertSame( $expected_hooks, $actual_hooks );
+	}
+
+	/**
+	 * Every write of the settings option also bumps {@see RulesVersion} —
+	 * a sibling action on the same three option-write hooks the
+	 * cache-invalidation actions above already cover (not `switch_blog`,
+	 * which switches sites rather than writing a rule).
+	 *
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
+	 */
+	public function test_hooks_registers_rules_version_bump_on_each_option_write_action() {
+		$hooks = $this->adapter->hooks();
+
+		$bump_actions   = array_slice( $hooks, 14, 3 );
+		$expected_hooks = array(
+			'update_option_' . Store::OPTION_KEY,
+			'add_option_' . Store::OPTION_KEY,
+			'delete_option_' . Store::OPTION_KEY,
+		);
+		$actual_hooks   = array();
+
+		foreach ( $bump_actions as $descriptor ) {
+			$this->assertTrue( $descriptor->is_action() );
+			$this->assertSame( array( RulesVersion::class, 'bump' ), $descriptor->callback );
 			$this->assertSame( 10, $descriptor->priority );
 			$this->assertSame( 0, $descriptor->accepted_args );
 			$actual_hooks[] = $descriptor->hook;
@@ -241,6 +309,71 @@ class HookAdapterTest extends TestCase {
 		$this->assertFalse(
 			$this->adapter->is_read_only( false ),
 			'Stored null + caller false default: caller default wins (false is non-null, so `??` returns it).'
+		);
+	}
+
+	// -----------------------------------------------------------------------
+	// The nine 0.5.0 settings filters — each returns the stored value when
+	// set, and the filter's own incoming default when unset. Every provider
+	// row below picks a stored value deliberately different from the
+	// caller-supplied default so the two tests below can only pass if the
+	// SUT reads the right one.
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @dataProvider provider_new_settings_key_values
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::scheduled_archive_enabled
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::scheduled_archive_post_types
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_enabled
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_days
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_child_mode
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_types
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_taxonomies
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_age_basis
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_grace_days
+	 */
+	public function test_new_filter_method_returns_stored_value_when_option_set( string $method, string $key, mixed $stored, mixed $caller_default ) {
+		\WP_Mock::userFunction( 'get_option' )
+			->with( Store::OPTION_KEY, array() )
+			->andReturn( array( $key => $stored ) );
+
+		$this->assertSame( $stored, $this->adapter->$method( $caller_default ) );
+	}
+
+	/**
+	 * @dataProvider provider_new_settings_key_values
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::scheduled_archive_enabled
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::scheduled_archive_post_types
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_enabled
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_days
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_child_mode
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_types
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_taxonomies
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_age_basis
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::auto_archive_grace_days
+	 */
+	public function test_new_filter_method_returns_incoming_default_when_option_unset( string $method, string $key, mixed $stored, mixed $caller_default ) {
+		\WP_Mock::userFunction( 'get_option' )
+			->with( Store::OPTION_KEY, array() )
+			->andReturn( array() );
+
+		$this->assertSame( $caller_default, $this->adapter->$method( $caller_default ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: mixed, 3: mixed}>
+	 */
+	public function provider_new_settings_key_values(): array {
+		return array(
+			'scheduled_archive_enabled'    => array( 'scheduled_archive_enabled', 'scheduled_archive_enabled', false, true ),
+			'scheduled_archive_post_types' => array( 'scheduled_archive_post_types', 'scheduled_archive_post_types', array( 'post' ), array() ),
+			'auto_archive_enabled'         => array( 'auto_archive_enabled', 'auto_archive_enabled', true, false ),
+			'auto_archive_days'            => array( 'auto_archive_days', 'auto_archive_days', 45, null ),
+			'auto_archive_child_mode'      => array( 'auto_archive_child_mode', 'auto_archive_child_mode', 'locked', 'open' ),
+			'auto_archive_types'           => array( 'auto_archive_types', 'auto_archive_types', array( 'page' ), array() ),
+			'auto_archive_taxonomies'      => array( 'auto_archive_taxonomies', 'auto_archive_taxonomies', array( 'post_tag' ), array( 'category' ) ),
+			'auto_archive_age_basis'       => array( 'auto_archive_age_basis', 'auto_archive_age_basis', 'published', 'modified' ),
+			'auto_archive_grace_days'      => array( 'auto_archive_grace_days', 'auto_archive_grace_days', 14, 7 ),
 		);
 	}
 }
