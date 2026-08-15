@@ -5,9 +5,17 @@
  * Defines the plugin's constants, registers the autoloader, and starts the
  * plugin on plugins_loaded.
  *
- * There are no activation or deactivation hooks: the plugin registers a post
- * *status*, never a post type or a rewrite rule, so there is nothing to set up
- * or tear down. Data removal lives in uninstall.php.
+ * There is still no activation hook: nothing needs provisioning when the
+ * plugin turns on. `Schedule\CronRegistrar` schedules the recurring sweep
+ * event itself, on the next `init`, if it finds one missing -- the same
+ * self-repair path a lost event takes after a bad deactivate or a host that
+ * flushed the cron option, so activation has nothing to do that init
+ * wouldn't already do on its own.
+ *
+ * There IS now a deactivation hook, because 0.5.0 added cron: it clears the
+ * recurring sweep event and any pending `aps_continue_queue` continuation,
+ * so a deactivated plugin leaves no orphaned `wp_next_scheduled()` entries
+ * behind. Data removal otherwise still lives in uninstall.php.
  *
  * @link    https://github.com/joshuadavidnelson/archived-post-status
  * @since   0.4.0
@@ -53,3 +61,22 @@ function aps_run_plugin() {
 	$plugin->run();
 }
 add_action( 'plugins_loaded', 'aps_run_plugin', 10, 0 );
+
+/**
+ * Clear every cron event this plugin schedules.
+ *
+ * Runs on deactivation, not uninstall: a site reactivating the plugin later
+ * gets its schedules back for free from `CronRegistrar`'s own `init`
+ * self-repair, without needing an activation hook to put them back.
+ *
+ * @since 0.5.0
+ * @return void
+ */
+function aps_clear_scheduled_events() {
+	foreach ( ArchivedPostStatus\Schedule\CronRegistrar::recurring_hooks() as $hook ) {
+		wp_clear_scheduled_hook( $hook );
+	}
+
+	wp_clear_scheduled_hook( ArchivedPostStatus\Schedule\Queue\CronQueueRunner::CONTINUE_HOOK );
+}
+register_deactivation_hook( __FILE__, 'aps_clear_scheduled_events' );

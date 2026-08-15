@@ -114,6 +114,32 @@ class PluginTest extends TestCase {
 	}
 
 	/**
+	 * The schedule/cron wiring -- the sweep queue runner, cron self-repair,
+	 * per-post-type meta registration, and the archived-post schedule
+	 * cleanup listener -- fires on cron ticks and REST requests, neither of
+	 * which is `is_admin()`. `is_admin()` is stubbed `false` here
+	 * specifically: `PluginHookablesParityTest` always stubs it `true`, so
+	 * that snapshot alone cannot see these four hookables being gated
+	 * behind `is_admin()` by mistake -- a regression that would silently
+	 * stop the sweeper from ever running outside wp-admin while every
+	 * existing test stayed green.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::hookables
+	 * @covers ArchivedPostStatus\Plugin::schedule_hookables
+	 */
+	public function test_hookables_registers_schedule_and_cron_wiring_when_is_admin_is_false() {
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		$names = $this->class_names( $this->invoke_hookables() );
+
+		$this->assertContains( ArchivedPostStatus\Schedule\Queue\CronQueueRunner::class, $names );
+		$this->assertContains( ArchivedPostStatus\Schedule\CronRegistrar::class, $names );
+		$this->assertContains( ArchivedPostStatus\Schedule\MetaRegistrar::class, $names );
+		$this->assertContains( ArchivedPostStatus\Schedule\ScheduleMetaListener::class, $names );
+	}
+
+	/**
 	 * `Notices` is constructed with a `NoticeBuilder` injected via the
 	 * constructor — `Plugin::hookables()` is the single composition root
 	 * that does the `new`. If anyone tries to `new Notices()` (zero-arg)

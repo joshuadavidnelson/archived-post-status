@@ -30,14 +30,45 @@ function aps_uninstall_site() {
 	// class. Any change to Store::OPTION_KEY must be mirrored here.
 	delete_option( 'aps_settings' );
 
-	// One query rather than loading every archived post into memory. A direct
-	// DB call is right here: it runs once during uninstall, and there is no
-	// object cache left to invalidate.
+	// Mirrors CronQueueRunner's per-queue "aps_last_{$queue}" bookkeeping
+	// option. Only the sweep queue exists as of the 0.5.0 cron wiring, so
+	// this is the only variant to delete today; a future queue gets its own
+	// delete_option() line here, alongside its own entry in
+	// CronRegistrar::RECURRING_EVENTS -- same duplicate-literal reasoning
+	// as the class-constant mirrors throughout this function.
+	delete_option( 'aps_last_sweep' );
+
+	// Mirrors CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES and
+	// CronQueueRunner::CONTINUE_HOOK. Literals duplicated on purpose, same
+	// reasoning as the aps_settings option key above.
+	wp_clear_scheduled_hook( 'aps_run_scheduled_archives' );
+	wp_clear_scheduled_hook( 'aps_continue_queue' );
+
+	// Mirrors QueueLock's per-queue "aps_queue_lock_{$queue}" transient.
+	// delete_transient() removes both the value and its paired timeout row
+	// in one call. Only the sweep queue exists as of the 0.5.0 cron wiring,
+	// same one-variant-today reasoning as the aps_last_sweep option above --
+	// a future queue gets its own delete_transient() line here.
+	delete_transient( 'aps_queue_lock_sweep' );
+
+	// One query per postmeta namespace rather than loading every affected
+	// post into memory. A direct DB call is right here: it runs once during
+	// uninstall, and there is no object cache left to invalidate.
 	// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
 			$wpdb->esc_like( '_aps_archive_meta_' ) . '%'
+		)
+	);
+
+	// Mirrors ScheduleMeta's five _aps_schedule_meta_* keys (time, source,
+	// user, rule_version, attempts) -- one LIKE DELETE covers the whole
+	// family, same shape as the archive-meta DELETE above.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( '_aps_schedule_meta_' ) . '%'
 		)
 	);
 	// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching

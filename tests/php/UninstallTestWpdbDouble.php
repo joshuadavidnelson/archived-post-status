@@ -3,9 +3,10 @@
  * Test double for the WordPress `wpdb` global used by UninstallTest.
  *
  * Captures `prepare()` and `query()` calls so the test can assert that
- * uninstall.php issues exactly one DELETE against the postmeta table with
- * the `_aps_archive_meta_%` LIKE pattern. Subclasses the bootstrap-defined
- * `wpdb` stub so type checks and `$wpdb->postmeta` lookups continue to work.
+ * uninstall.php issues exactly one DELETE per postmeta namespace it owns
+ * (`_aps_archive_meta_%`, `_aps_schedule_meta_%`) against the postmeta
+ * table. Subclasses the bootstrap-defined `wpdb` stub so type checks and
+ * `$wpdb->postmeta` lookups continue to work.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus

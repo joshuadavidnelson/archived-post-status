@@ -7,8 +7,9 @@
  * @covers ::aps_uninstall_site
  *
  * Pins what runs when a site administrator deletes the plugin: removal of the
- * settings option, the version option, and every `_aps_archive_meta_*`
- * postmeta row.
+ * settings option, the version option, the sweep's `aps_last_sweep` option,
+ * the sweep's `aps_queue_lock_sweep` transient, both cron events, and every
+ * `_aps_archive_meta_*` / `_aps_schedule_meta_*` postmeta row.
  *
  * Implementation notes
  *
@@ -142,6 +143,18 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_settings' )
 			->once();
+		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_last_sweep' )
+			->once();
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_run_scheduled_archives' )
+			->once();
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_continue_queue' )
+			->once();
+		\WP_Mock::userFunction( 'delete_transient' )
+			->with( 'aps_queue_lock_sweep' )
+			->once();
 
 		// Install our $wpdb double so we can verify the prepared statement.
 		global $wpdb;
@@ -152,20 +165,28 @@ class UninstallTest extends TestCase {
 		// scope and persists for the remainder of the PHP process.
 		include self::UNINSTALL_FILE;
 
-		// Verify the prepared LIKE pattern is exactly _aps_archive_meta_% —
-		// the 0.4.0 archive metadata namespace.
-		$this->assertCount( 1, $wpdb->prepared_queries, 'expected exactly one prepared DELETE' );
-		$prepared = $wpdb->prepared_queries[0];
+		// Verify the prepared LIKE patterns are exactly _aps_archive_meta_%
+		// and _aps_schedule_meta_% -- the 0.4.0 archive metadata namespace
+		// and the 0.5.0 schedule metadata namespace.
+		$this->assertCount( 2, $wpdb->prepared_queries, 'expected exactly two prepared DELETEs' );
 
-		$this->assertStringContainsString( 'DELETE FROM', $prepared['query'] );
-		$this->assertStringContainsString( 'meta_key LIKE %s', $prepared['query'] );
+		$this->assertStringContainsString( 'DELETE FROM', $wpdb->prepared_queries[0]['query'] );
+		$this->assertStringContainsString( 'meta_key LIKE %s', $wpdb->prepared_queries[0]['query'] );
 		$this->assertSame(
 			'_aps_archive_meta_%',
-			$prepared['args'][0],
+			$wpdb->prepared_queries[0]['args'][0],
 			'LIKE pattern must target the 0.4.0 _aps_archive_meta_ namespace'
 		);
 
-		$this->assertSame( 1, $wpdb->query_calls, 'wpdb::query must be called exactly once' );
+		$this->assertStringContainsString( 'DELETE FROM', $wpdb->prepared_queries[1]['query'] );
+		$this->assertStringContainsString( 'meta_key LIKE %s', $wpdb->prepared_queries[1]['query'] );
+		$this->assertSame(
+			'_aps_schedule_meta_%',
+			$wpdb->prepared_queries[1]['args'][0],
+			'LIKE pattern must target the 0.5.0 _aps_schedule_meta_ namespace'
+		);
+
+		$this->assertSame( 2, $wpdb->query_calls, 'wpdb::query must be called exactly twice' );
 	}
 
 	/**
@@ -189,16 +210,28 @@ class UninstallTest extends TestCase {
 			->with( 'archived_post_status_previous_version' )->once();
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_settings' )->once();
+		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_last_sweep' )->once();
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_run_scheduled_archives' )->once();
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_continue_queue' )->once();
+		\WP_Mock::userFunction( 'delete_transient' )
+			->with( 'aps_queue_lock_sweep' )->once();
 
 		global $wpdb;
 		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();
 
 		aps_uninstall_site();
 
-		$this->assertSame( 1, $wpdb->query_calls, 'one DELETE per call' );
+		$this->assertSame( 2, $wpdb->query_calls, 'two DELETEs per call' );
 		$this->assertSame(
 			'_aps_archive_meta_%',
 			$wpdb->prepared_queries[0]['args'][0]
+		);
+		$this->assertSame(
+			'_aps_schedule_meta_%',
+			$wpdb->prepared_queries[1]['args'][0]
 		);
 	}
 
@@ -248,13 +281,21 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'restore_current_blog' )->times( 3 )->andReturn( true );
 
 		// delete_option fires three times (once per site) for each of the
-		// three deleted options.
+		// four deleted options.
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'archived_post_status_version' )->times( 3 );
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'archived_post_status_previous_version' )->times( 3 );
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_settings' )->times( 3 );
+		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_last_sweep' )->times( 3 );
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_run_scheduled_archives' )->times( 3 );
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_continue_queue' )->times( 3 );
+		\WP_Mock::userFunction( 'delete_transient' )
+			->with( 'aps_queue_lock_sweep' )->times( 3 );
 
 		global $wpdb;
 		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();
@@ -262,7 +303,7 @@ class UninstallTest extends TestCase {
 		include self::UNINSTALL_FILE;
 
 		$this->assertSame( array( 1, 2, 3 ), $switched, 'switch_to_blog called once per site in order' );
-		$this->assertSame( 3, $wpdb->query_calls, 'wpdb::query called once per site' );
+		$this->assertSame( 6, $wpdb->query_calls, 'wpdb::query called twice per site' );
 	}
 
 	/**

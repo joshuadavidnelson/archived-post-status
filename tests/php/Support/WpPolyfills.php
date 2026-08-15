@@ -190,6 +190,18 @@ function register_post_status( $post_status, $args = array() ) {
 }
 
 /**
+ * Mock register_deactivation_hook() function.
+ *
+ * archived-post-status.php calls this unconditionally at bootstrap time,
+ * outside of any test's set_up() -- WP_Mock's action/filter system is not
+ * involved, so this has to exist as a real function before the suite loads
+ * a single test, the same reason register_post_status() above does.
+ */
+function register_deactivation_hook( $file, $callback ) {
+	return true;
+}
+
+/**
  * Mock wp_die() function.
  */
 function wp_die( $message = '', $title = '', $args = array() ) {

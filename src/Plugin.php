@@ -19,6 +19,10 @@ use ArchivedPostStatus\CLI\Registrar;
 use ArchivedPostStatus\CLI\UnarchiveCommand;
 use ArchivedPostStatus\Frontend;
 use ArchivedPostStatus\Hooks\HookLoader;
+use ArchivedPostStatus\Schedule;
+use ArchivedPostStatus\Schedule\Queue\BatchProcessorInterface;
+use ArchivedPostStatus\Schedule\Queue\CronQueueRunner;
+use ArchivedPostStatus\Schedule\Queue\QueueRunnerInterface;
 use ArchivedPostStatus\Settings;
 use ArchivedPostStatus\Status\PostStatus;
 use ArchivedPostStatus\Status\PostStatusGuard;
@@ -93,6 +97,8 @@ final class Plugin {
 			$hookables[] = new ArchiveMetaListener();
 		}
 
+		array_push( $hookables, ...$this->schedule_hookables() );
+
 		if ( is_admin() ) {
 			$bulk_handler = new Admin\BulkActionHandler();
 
@@ -114,6 +120,62 @@ final class Plugin {
 		}
 
 		return $hookables;
+	}
+
+	/**
+	 * The unconditional schedule/cron hookables: the sweep queue runner,
+	 * cron self-repair, per-post-type schedule meta registration, and the
+	 * archived-post schedule cleanup listener.
+	 *
+	 * All four fire on cron and REST requests, which are neither
+	 * `is_admin()` nor `WP_CLI`, so none of them can live inside either
+	 * gated block above -- gating any of them there would mean the sweeper
+	 * never actually runs.
+	 *
+	 * @since 0.5.0
+	 * @return Contracts\HookableInterface[]
+	 */
+	private function schedule_hookables(): array {
+		$sweep_runner = $this->build_queue_runner( new Schedule\Sweeper() );
+
+		$hookables = array();
+
+		if ( $sweep_runner instanceof Contracts\HookableInterface ) {
+			$hookables[] = $sweep_runner;
+		}
+
+		$hookables[] = new Schedule\CronRegistrar();
+		$hookables[] = new Schedule\MetaRegistrar();
+		$hookables[] = new Schedule\ScheduleMetaListener();
+
+		return $hookables;
+	}
+
+	/**
+	 * Construct the default queue runner for a processor, filtered so a
+	 * site can swap the built-in cron-driven runner for a different
+	 * dispatch mechanism entirely -- e.g. Action Scheduler -- without
+	 * touching the processor itself.
+	 *
+	 * @since 0.5.0
+	 * @param BatchProcessorInterface $processor The queue to drive.
+	 * @return QueueRunnerInterface
+	 */
+	private function build_queue_runner( BatchProcessorInterface $processor ): QueueRunnerInterface {
+
+		/**
+		 * Filters the queue runner that drives a given batch processor.
+		 *
+		 * A replacement runner is only added to the plugin's hookables when
+		 * it also implements {@see Contracts\HookableInterface}; a runner
+		 * driven entirely by an external scheduler is free to implement
+		 * neither its own cron hook nor this interface at all.
+		 *
+		 * @since 0.5.0
+		 * @param QueueRunnerInterface    $runner    The default runner: a CronQueueRunner.
+		 * @param BatchProcessorInterface $processor The queue this runner drives.
+		 */
+		return apply_filters( 'aps_queue_runner', new CronQueueRunner( $processor ), $processor );
 	}
 
 	/**

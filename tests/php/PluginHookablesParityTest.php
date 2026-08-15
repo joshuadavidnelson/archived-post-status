@@ -74,7 +74,7 @@ class PluginHookablesParityTest extends TestCase {
 
 	/**
 	 * The hookable list under the canonical (admin + archive-meta-enabled,
-	 * no WP-CLI) composition is exactly 14 hookables today. This is a
+	 * no WP-CLI) composition is exactly 18 hookables today. This is a
 	 * parity snapshot — a delta here means something slipped into (or was
 	 * silently dropped from) the composition root.
 	 *
@@ -84,7 +84,7 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			14,
+			18,
 			$hookables,
 			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
@@ -123,6 +123,16 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Admin\PostEditorGuard::class,
 			ArchivedPostStatus\Settings\HookAdapter::class,
 			ArchivedPostStatus\Archive\ArchiveMetaListener::class,
+			// The unconditional schedule/cron block: fires on cron and REST
+			// requests, neither is_admin() nor WP_CLI, so none of it can live
+			// in either gated block below. CronQueueRunner here drives the
+			// sweep queue specifically -- Plugin::hookables()'s own docblock
+			// covers phase 6's second instance, driving the rule stamper on
+			// its own recurring hook, when that lands.
+			ArchivedPostStatus\Schedule\Queue\CronQueueRunner::class,
+			ArchivedPostStatus\Schedule\CronRegistrar::class,
+			ArchivedPostStatus\Schedule\MetaRegistrar::class,
+			ArchivedPostStatus\Schedule\ScheduleMetaListener::class,
 			// PostEditor, Notices, PostList, PostActionHandler, ArchiveColumn,
 			// ArchiveColumnSort, and PluginScreen are the is_admin()-gated
 			// admin-only block. PostEditor and Notices moved here in the perf
