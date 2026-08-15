@@ -19,6 +19,9 @@ use ArchivedPostStatus\Archive\ReadOnlyPolicy;
 use ArchivedPostStatus\Archive\UnarchiveOperation;
 use ArchivedPostStatus\Archive\ViewCapability;
 use ArchivedPostStatus\Frontend\ArchivedPostLink;
+use ArchivedPostStatus\Schedule\ScheduleMeta;
+use ArchivedPostStatus\Schedule\ScheduleOperation;
+use ArchivedPostStatus\Schedule\ScheduleSource;
 use ArchivedPostStatus\Status\ArchiveLabel;
 use ArchivedPostStatus\Status\SupportedPostTypes;
 
@@ -277,4 +280,67 @@ function aps_unarchive_post_set_previous_status( $new_status, $post_id, $previou
 		(int) $post_id,
 		(string) $previous_status
 	);
+}
+
+/**
+ * Schedule a post to be archived at a future UTC timestamp.
+ *
+ * $source is a string at this public boundary — 'manual', 'rule', or
+ * 'exempt' — so callers never need to construct a ScheduleSource enum
+ * directly. An unrecognized value falls back to 'manual'.
+ *
+ * @since 0.5.0
+ * @param int    $post_id   The post ID to schedule.
+ * @param int    $timestamp UTC epoch the post is due to archive.
+ * @param string $source    Optional. The schedule's origin. Default 'manual'.
+ * @return bool
+ *
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
+ * {@see ScheduleOperation::set()}.
+ */
+function aps_schedule_archive( $post_id = 0, $timestamp = 0, $source = 'manual' ) {
+	$source_enum = ScheduleSource::tryFrom( (string) $source ) ?? ScheduleSource::Manual;
+
+	return ScheduleOperation::set( (int) $post_id, (int) $timestamp, $source_enum );
+}
+
+/**
+ * Clear a post's scheduled archive.
+ *
+ * A rule-stamped schedule is tombstoned rather than deleted outright — see
+ * {@see ScheduleOperation::clear()}.
+ *
+ * @since 0.5.0
+ * @param int $post_id The post ID to clear the schedule for.
+ * @return bool
+ *
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
+ * {@see ScheduleOperation::clear()}.
+ */
+function aps_unschedule_archive( $post_id = 0 ) {
+	return ScheduleOperation::clear( (int) $post_id );
+}
+
+/**
+ * Get the UTC epoch a post is scheduled to archive at.
+ *
+ * Returns null both when the post has no schedule record at all and when
+ * it has a tombstone (an exempt record with its time dropped) — either way,
+ * there is no time to report.
+ *
+ * @since 0.5.0
+ * @param int $post_id The post ID to check.
+ * @return int|null
+ *
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
+ * {@see ScheduleMeta::for_post()}.
+ */
+function aps_get_scheduled_archive_time( $post_id = 0 ) {
+	$meta = ScheduleMeta::for_post( (int) $post_id );
+
+	if ( null === $meta || $meta->time <= 0 ) {
+		return null;
+	}
+
+	return $meta->time;
 }

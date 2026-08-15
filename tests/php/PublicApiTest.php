@@ -34,6 +34,8 @@
 
 use ArchivedPostStatus\Archive\ArchiveMeta;
 use ArchivedPostStatus\Archive\ArchiveMetaListener;
+use ArchivedPostStatus\Schedule\ScheduleMeta;
+use ArchivedPostStatus\Schedule\ScheduleSource;
 
 /**
  * Public-API test case.
@@ -574,5 +576,185 @@ class PublicApiTest extends TestCase {
 		$this->assertSame( 'closed', $by_key[ ArchiveMeta::META_PING_STATUS ] );
 		$this->assertIsInt( $by_key[ ArchiveMeta::META_ARCHIVE_DATE ] );
 		$this->assertGreaterThan( 0, $by_key[ ArchiveMeta::META_ARCHIVE_DATE ] );
+	}
+
+	// -----------------------------------------------------------------------
+	// aps_schedule_archive / aps_unschedule_archive / aps_get_scheduled_archive_time
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Stub the WP-boundary functions aps_is_supported_post_type() traverses
+	 * on its way through the real SupportedPostTypes resolver.
+	 */
+	private function mockSupportedPostTypesBoundary(): void {
+		\WP_Mock::userFunction( 'get_post_types' )
+			->andReturn( array( 'post' => 'post' ) );
+		\WP_Mock::onFilter( 'aps_excluded_post_types' )
+			->with( array( 'attachment' ) )
+			->reply( array( 'attachment' ) );
+		\WP_Mock::onFilter( 'aps_supported_post_types' )
+			->with( array( 'post' ) )
+			->reply( array( 'post' ) );
+	}
+
+	/**
+	 * aps_schedule_archive() with the default 'manual' source: it hydrates
+	 * the string to ScheduleSource::Manual, runs the real ScheduleOperation
+	 * guard chain, writes the schedule meta, and fires aps_scheduled_archive
+	 * with the string source value.
+	 *
+	 * @covers ::aps_schedule_archive
+	 */
+	public function test_aps_schedule_archive_writes_schedule_and_fires_action_with_default_manual_source() {
+		$post = $this->createMockPost( array( 'ID' => 123, 'post_type' => 'post' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->with( 123 )->andReturn( $post );
+		$this->mockSupportedPostTypesBoundary();
+
+		\WP_Mock::onFilter( 'aps_pre_schedule_archive' )
+			->with( null, 123, 1700000000, ScheduleSource::Manual )
+			->reply( null );
+
+		\WP_Mock::userFunction( 'update_post_meta' )
+			->once()->with( 123, ScheduleMeta::META_TIME, 1700000000 )->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
+			->once()->with( 123, ScheduleMeta::META_SOURCE, 'manual' )->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
+			->once()->with( 123, ScheduleMeta::META_USER, 1 )->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
+			->once()->with( 123, ScheduleMeta::META_RULE_VERSION, 0 )->andReturn( true );
+		\WP_Mock::userFunction( 'update_post_meta' )
+			->once()->with( 123, ScheduleMeta::META_ATTEMPTS, 0 )->andReturn( true );
+
+		\WP_Mock::expectAction( 'aps_scheduled_archive', 123, 1700000000, 'manual' );
+
+		$this->assertTrue( aps_schedule_archive( 123, 1700000000 ) );
+	}
+
+	/**
+	 * An unrecognized $source string falls back to ScheduleSource::Manual —
+	 * the public boundary never requires callers to construct the enum, and
+	 * never lets a typo'd source value reach storage unmapped.
+	 *
+	 * @covers ::aps_schedule_archive
+	 */
+	public function test_aps_schedule_archive_falls_back_to_manual_for_unrecognized_source_string() {
+		$post = $this->createMockPost( array( 'ID' => 124, 'post_type' => 'post' ) );
+
+		\WP_Mock::userFunction( 'get_post' )->with( 124 )->andReturn( $post );
+		$this->mockSupportedPostTypesBoundary();
+
+		\WP_Mock::onFilter( 'aps_pre_schedule_archive' )
+			->with( null, 124, 1700000000, ScheduleSource::Manual )
+			->reply( null );
+
+		\WP_Mock::userFunction( 'update_post_meta' )->andReturn( true );
+
+		\WP_Mock::expectAction( 'aps_scheduled_archive', 124, 1700000000, 'manual' );
+
+		$this->assertTrue( aps_schedule_archive( 124, 1700000000, 'not-a-real-source' ) );
+	}
+
+	/**
+	 * aps_unschedule_archive() clears a manually-set schedule outright and
+	 * fires aps_unscheduled_archive.
+	 *
+	 * @covers ::aps_unschedule_archive
+	 */
+	public function test_aps_unschedule_archive_deletes_a_manual_schedule_and_fires_action() {
+		$post = $this->createMockPost( array( 'ID' => 125 ) );
+
+		\WP_Mock::userFunction( 'get_post' )->with( 125 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 125, ScheduleMeta::META_SOURCE, true )->andReturn( 'manual' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 125, ScheduleMeta::META_TIME, true )->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 125, ScheduleMeta::META_USER, true )->andReturn( '1' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 125, ScheduleMeta::META_RULE_VERSION, true )->andReturn( '0' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 125, ScheduleMeta::META_ATTEMPTS, true )->andReturn( '0' );
+
+		\WP_Mock::onFilter( 'aps_schedule_tombstone_on_clear' )
+			->with( false, 125, ScheduleSource::Manual )
+			->reply( false );
+
+		\WP_Mock::userFunction( 'delete_post_meta' )->andReturn( true );
+
+		\WP_Mock::expectAction( 'aps_unscheduled_archive', 125 );
+
+		$this->assertTrue( aps_unschedule_archive( 125 ) );
+	}
+
+	/**
+	 * aps_unschedule_archive() returns false when there is nothing to clear.
+	 *
+	 * @covers ::aps_unschedule_archive
+	 */
+	public function test_aps_unschedule_archive_returns_false_when_no_schedule_exists() {
+		$post = $this->createMockPost( array( 'ID' => 126 ) );
+
+		\WP_Mock::userFunction( 'get_post' )->with( 126 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 126, ScheduleMeta::META_SOURCE, true )->andReturn( '' );
+
+		$this->assertFalse( aps_unschedule_archive( 126 ) );
+	}
+
+	/**
+	 * aps_get_scheduled_archive_time() returns the stored UTC epoch when a
+	 * schedule with a time exists.
+	 *
+	 * @covers ::aps_get_scheduled_archive_time
+	 */
+	public function test_aps_get_scheduled_archive_time_returns_stored_epoch() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 127, ScheduleMeta::META_SOURCE, true )->andReturn( 'manual' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 127, ScheduleMeta::META_TIME, true )->andReturn( '1700000000' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 127, ScheduleMeta::META_USER, true )->andReturn( '1' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 127, ScheduleMeta::META_RULE_VERSION, true )->andReturn( '0' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 127, ScheduleMeta::META_ATTEMPTS, true )->andReturn( '0' );
+
+		$this->assertSame( 1700000000, aps_get_scheduled_archive_time( 127 ) );
+	}
+
+	/**
+	 * aps_get_scheduled_archive_time() returns null for a post with no
+	 * schedule record at all.
+	 *
+	 * @covers ::aps_get_scheduled_archive_time
+	 */
+	public function test_aps_get_scheduled_archive_time_returns_null_when_no_schedule_exists() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 128, ScheduleMeta::META_SOURCE, true )->andReturn( '' );
+
+		$this->assertNull( aps_get_scheduled_archive_time( 128 ) );
+	}
+
+	/**
+	 * aps_get_scheduled_archive_time() returns null for an exempt tombstone
+	 * — the record exists, but its time was dropped, so there is no time to
+	 * report.
+	 *
+	 * @covers ::aps_get_scheduled_archive_time
+	 */
+	public function test_aps_get_scheduled_archive_time_returns_null_for_exempt_tombstone() {
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 129, ScheduleMeta::META_SOURCE, true )->andReturn( 'exempt' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 129, ScheduleMeta::META_TIME, true )->andReturn( '' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 129, ScheduleMeta::META_USER, true )->andReturn( '0' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 129, ScheduleMeta::META_RULE_VERSION, true )->andReturn( '3' );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 129, ScheduleMeta::META_ATTEMPTS, true )->andReturn( '0' );
+
+		$this->assertNull( aps_get_scheduled_archive_time( 129 ) );
 	}
 }
