@@ -286,11 +286,13 @@ class PluginTest extends TestCase {
 	 * button), Notices (admin_notices), PostList (post list table),
 	 * PostActionHandler (the single-post archive/unarchive admin actions),
 	 * ArchiveColumn (the archive metadata column), ArchiveColumnSort (the
-	 * column's meta-aware sorting), and PluginScreen (the deactivation
-	 * warning) — only matter on admin page loads. Gating them via
-	 * is_admin() avoids hooking front-end/CLI requests with admin-only
-	 * hooks (admin_enqueue_scripts, post_submitbox_start, admin_notices,
-	 * etc.) that would never fire there anyway.
+	 * column's meta-aware sorting), ScheduleColumn (the Scheduled column,
+	 * 0.5.0 phase 10), ScheduleColumnSort (its meta-aware sorting), and
+	 * PluginScreen (the deactivation warning) — only matter on admin page
+	 * loads. Gating them via is_admin() avoids hooking front-end/CLI
+	 * requests with admin-only hooks (admin_enqueue_scripts,
+	 * post_submitbox_start, admin_notices, etc.) that would never fire there
+	 * anyway.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -306,6 +308,8 @@ class PluginTest extends TestCase {
 		$this->assertContains( ArchivedPostStatus\Admin\PostActionHandler::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\ScheduleColumn::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\ScheduleColumnSort::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 		$this->assertContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
 		$this->assertContains( ArchivedPostStatus\Settings\TermFields::class, $names );
@@ -463,10 +467,11 @@ class PluginTest extends TestCase {
 	/**
 	 * Mirror: under a non-admin request (front-end page view, REST API
 	 * call, etc.), none of PostEditor, Notices, PostList,
-	 * PostActionHandler, ArchiveColumn, ArchiveColumnSort, or PluginScreen
-	 * should appear. Every hook they register only fires on an actual
-	 * wp-admin page load, so composing them anyway burns autoloader cycles
-	 * and makes the dependency graph less honest.
+	 * PostActionHandler, ArchiveColumn, ArchiveColumnSort, ScheduleColumn,
+	 * ScheduleColumnSort, or PluginScreen should appear. Every hook they
+	 * register only fires on an actual wp-admin page load, so composing them
+	 * anyway burns autoloader cycles and makes the dependency graph less
+	 * honest.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -482,6 +487,8 @@ class PluginTest extends TestCase {
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostActionHandler::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\ScheduleColumn::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\ScheduleColumnSort::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Settings\TermFields::class, $names );

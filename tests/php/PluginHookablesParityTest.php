@@ -84,7 +84,7 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			22,
+			24,
 			$hookables,
 			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
@@ -139,8 +139,9 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Schedule\MetaRegistrar::class,
 			ArchivedPostStatus\Schedule\ScheduleMetaListener::class,
 			// PostEditor, Notices, PostList, PostActionHandler, ArchiveColumn,
-			// ArchiveColumnSort, and PluginScreen are the is_admin()-gated
-			// admin-only block. PostEditor and Notices moved here in the perf
+			// ArchiveColumnSort, ScheduleColumn, ScheduleColumnSort, and
+			// PluginScreen are the is_admin()-gated admin-only block.
+			// PostEditor and Notices moved here in the perf
 			// fix that gated them on is_admin() -- every hook either one
 			// registers only fires on an actual wp-admin page load, so
 			// hooking them on every request (front end, WP-CLI) was pure
@@ -157,6 +158,13 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Admin\PostActionHandler::class,
 			ArchivedPostStatus\Admin\ArchiveColumn::class,
 			ArchivedPostStatus\Admin\ArchiveColumnSort::class,
+			// ScheduleColumn / ScheduleColumnSort (0.5.0 phase 10): the
+			// Scheduled column's visibility gate is the deliberate inversion
+			// of ArchiveColumn's own -- see ScheduleColumn's class docblock.
+			// Placed alongside the Archive column pair since both are
+			// list-table column additions.
+			ArchivedPostStatus\Admin\ScheduleColumn::class,
+			ArchivedPostStatus\Admin\ScheduleColumnSort::class,
 			ArchivedPostStatus\Admin\PluginScreen::class,
 			// SettingsPage: the site settings screen (0.5.0) -- genuinely
 			// admin-only, unlike the schedule/cron block above. TermFields

@@ -118,6 +118,8 @@ final class Plugin {
 			$hookables[] = new Admin\PostActionHandler( $bulk_handler );
 			$hookables[] = new Admin\ArchiveColumn();
 			$hookables[] = new Admin\ArchiveColumnSort();
+			$hookables[] = new Admin\ScheduleColumn();
+			$hookables[] = new Admin\ScheduleColumnSort();
 			$hookables[] = new Admin\PluginScreen();
 			$hookables[] = new Settings\SettingsPage();
 			$hookables[] = new Settings\TermFields();
