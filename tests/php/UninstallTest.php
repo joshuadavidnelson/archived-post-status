@@ -10,8 +10,9 @@
  * settings option, the version option, the sweep's `aps_last_sweep` and the
  * stamper's `aps_last_stamp` options, the cascade's `aps_rules_version`
  * option, the `aps_queue_lock_sweep` and `aps_queue_lock_stamp` transients,
- * all three cron events, and every `_aps_archive_meta_*` /
- * `_aps_schedule_meta_*` postmeta row.
+ * all three cron events, every `_aps_archive_meta_*` / `_aps_schedule_meta_*`
+ * postmeta row, and — on multisite, exactly once, never per site — the
+ * `aps_network_settings` network option.
  *
  * Implementation notes
  *
@@ -135,6 +136,7 @@ class UninstallTest extends TestCase {
 		}
 
 		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		\WP_Mock::userFunction( 'delete_network_option' )->never();
 
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'archived_post_status_version' )
@@ -327,6 +329,19 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'delete_transient' )
 			->with( 'aps_queue_lock_stamp' )->times( 3 );
 
+		// The network option is deleted ONCE, outside the per-site loop --
+		// not once per site the way every per-site option/transient/cron
+		// entry above is.
+		\WP_Mock::userFunction( 'delete_network_option' )
+			->with( null, 'aps_network_settings' )
+			->once();
+
+		// The network half of the rules-version counter, same guard, same
+		// once-not-per-site placement.
+		\WP_Mock::userFunction( 'delete_network_option' )
+			->with( null, 'aps_network_rules_version' )
+			->once();
+
 		global $wpdb;
 		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();
 
@@ -346,7 +361,9 @@ class UninstallTest extends TestCase {
 	 * uninstall.php:53. Networks at this scale are expected to drop the
 	 * plugin's options out of band (WP-CLI loop across sites, direct SQL,
 	 * etc.). get_sites must NEVER be called when the count is at or above
-	 * the cap.
+	 * the cap. The network option deletion sits OUTSIDE the cap guard,
+	 * though — it is a single row, not a per-site operation, so there is no
+	 * scale reason to skip it here: it must still fire exactly once.
 	 *
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled
@@ -365,6 +382,16 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'switch_to_blog' )->never();
 		\WP_Mock::userFunction( 'restore_current_blog' )->never();
 		\WP_Mock::userFunction( 'delete_option' )->never();
+
+		\WP_Mock::userFunction( 'delete_network_option' )
+			->with( null, 'aps_network_settings' )
+			->once();
+
+		// The network half of the rules-version counter, same guard, same
+		// once-not-per-site placement.
+		\WP_Mock::userFunction( 'delete_network_option' )
+			->with( null, 'aps_network_rules_version' )
+			->once();
 
 		global $wpdb;
 		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();
@@ -395,6 +422,16 @@ class UninstallTest extends TestCase {
 			->once()
 			->with( array( 'number' => 4999 ) )
 			->andReturn( array() );
+
+		\WP_Mock::userFunction( 'delete_network_option' )
+			->with( null, 'aps_network_settings' )
+			->once();
+
+		// The network half of the rules-version counter, same guard, same
+		// once-not-per-site placement.
+		\WP_Mock::userFunction( 'delete_network_option' )
+			->with( null, 'aps_network_rules_version' )
+			->once();
 
 		global $wpdb;
 		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();

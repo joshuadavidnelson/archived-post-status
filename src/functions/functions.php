@@ -22,6 +22,7 @@ use ArchivedPostStatus\Frontend\ArchivedPostLink;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleOperation;
 use ArchivedPostStatus\Schedule\ScheduleSource;
+use ArchivedPostStatus\Settings\NetworkSettingsCapability;
 use ArchivedPostStatus\Settings\SettingsCapability;
 use ArchivedPostStatus\Status\ArchiveLabel;
 use ArchivedPostStatus\Status\SupportedPostTypes;
@@ -361,4 +362,22 @@ function aps_get_scheduled_archive_time( $post_id = 0 ) {
  */
 function aps_current_user_can_manage_settings() {
 	return SettingsCapability::granted();
+}
+
+/**
+ * Check that the current user can manage the network settings screen.
+ *
+ * Default `manage_network_options`, filterable via
+ * `aps_default_network_settings_capability`. Every network-settings-screen
+ * capability check routes through this function, never a raw
+ * current_user_can().
+ *
+ * @since 0.5.0
+ * @return bool
+ *
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
+ * {@see NetworkSettingsCapability::granted()}.
+ */
+function aps_current_user_can_manage_network_settings() {
+	return NetworkSettingsCapability::granted();
 }

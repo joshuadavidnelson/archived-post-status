@@ -169,6 +169,24 @@ function is_admin() {
 }
 
 /**
+ * Mock is_multisite() function.
+ *
+ * Defaults false so `Plugin::hookables()` — invoked unconditionally at
+ * suite bootstrap via `aps_run_plugin()` and again in every `PluginTest` /
+ * `PluginHookablesParityTest` case — can call
+ * `Settings\NetworkActivation::active()` without every test needing to stub
+ * this explicitly. Tests exercising the network-activated path override via
+ * `WP_Mock::userFunction( 'is_multisite' )->andReturn( true )`, the same
+ * pattern already used throughout `UninstallTest`.
+ *
+ * @since 0.5.0
+ * @return bool
+ */
+function is_multisite() {
+	return false;
+}
+
+/**
  * Mock current_user_can() function.
  */
 function current_user_can( $capability, ...$args ) {

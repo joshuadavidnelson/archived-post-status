@@ -6,6 +6,7 @@ namespace ArchivedPostStatus\AutoArchive;
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 use ArchivedPostStatus\Archive\ArchivableStatuses;
+use ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleSource;
 use ArchivedPostStatus\Settings\Schema;
@@ -23,18 +24,19 @@ use ArchivedPostStatus\Settings\Schema;
  * ⚠️ **`$min_days` is the whole safety of {@see self::candidates()}.** It
  * MUST be the smallest `days` value ANY cascade level could currently
  * produce for ANY post the query might match — never one level's value in
- * isolation. This release ships only {@see \ArchivedPostStatus\AutoArchive\Provider\SiteRuleProvider},
- * so the site's own `auto_archive_days` setting genuinely *is* the whole
- * cascade's minimum, and {@see RuleStamper} passes it as-is. **Phases 8 and
- * 9, which add term and post levels, change that**: a term rule of 3 days or
- * a post override of 1 day can each be smaller than the site default, and
- * the caller computing `$min_days` must take the minimum across every level
- * that could apply, not just the site's. Getting this wrong does not throw
- * or log anything — a post whose effective rule is smaller than the
- * `$min_days` this method was called with is silently invisible to
- * `date_query`, and simply never archives. There is no correctness check
- * inside this class that can catch that mistake; it can only be caught by
- * the caller computing the right number.
+ * isolation. {@see self::min_days()} is where this class computes that
+ * number for {@see RuleStamper} to pass in; as of phase 7 it takes the
+ * minimum across {@see \ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider}
+ * and the site level's own settings. **Phases 8 and 9, which add the term
+ * and post levels, must extend {@see self::min_days()} further**: a term
+ * rule of 3 days or a post override of 1 day can each be smaller than either
+ * level phase 7 already checks, and the caller computing `$min_days` must
+ * take the minimum across every level that could apply, not just the ones
+ * already covered. Getting this wrong does not throw or log anything — a
+ * post whose effective rule is smaller than the `$min_days` this method was
+ * called with is silently invisible to `date_query`, and simply never
+ * archives. There is no correctness check inside this class that can catch
+ * that mistake; it can only be caught by whoever computes the right number.
  *
  * @since 0.5.0
  */
@@ -154,6 +156,60 @@ final class RuleQuery {
 		);
 
 		return self::filtered( $args, 'stale_refreshes', $now );
+	}
+
+	/**
+	 * The current `$min_days` — see the class docblock's warning. The
+	 * minimum of every level's own contribution, ignoring whichever level
+	 * has nothing to contribute; null only when NO level could currently
+	 * schedule anything, in which case {@see RuleStamper}'s candidate pass
+	 * does not run at all that batch.
+	 *
+	 * @since 0.5.0
+	 * @return ?int
+	 */
+	public static function min_days(): ?int {
+		$candidates = array_filter(
+			array( self::network_min_days(), self::site_min_days() ),
+			static fn ( ?int $days ): bool => null !== $days
+		);
+
+		return array() === $candidates ? null : min( $candidates );
+	}
+
+	/**
+	 * The site level's own contribution to {@see self::min_days()}. Null
+	 * when nothing at the site level could currently schedule anything
+	 * (auto-archive disabled, or enabled with no days value set).
+	 *
+	 * @since 0.5.0
+	 * @return ?int
+	 */
+	private static function site_min_days(): ?int {
+		if ( ! (bool) self::setting( 'auto_archive_enabled' ) ) {
+			return null;
+		}
+
+		$days = self::setting( 'auto_archive_days' );
+
+		return null === $days ? null : (int) $days;
+	}
+
+	/**
+	 * The network level's own contribution to {@see self::min_days()}.
+	 * Delegates entirely to {@see NetworkRuleProvider::rules_for()} rather
+	 * than re-deriving its network-activation/enabled/days checks here —
+	 * that provider is the single place that logic lives. `$post_id` is
+	 * irrelevant to the network level (see that provider's own docblock),
+	 * so `0` is passed.
+	 *
+	 * @since 0.5.0
+	 * @return ?int
+	 */
+	private static function network_min_days(): ?int {
+		$rules = ( new NetworkRuleProvider() )->rules_for( 0 );
+
+		return array() === $rules ? null : $rules[0]->days;
 	}
 
 	/**

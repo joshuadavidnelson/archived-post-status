@@ -32,7 +32,7 @@ final class HookAdapter implements HookableInterface {
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructors.
 	 */
 	public function hooks(): array {
-		return array(
+		$hooks = array(
 			HookDescriptor::filter(
 				'aps_is_read_only',
 				array( $this, 'is_read_only' ),
@@ -118,35 +118,59 @@ final class HookAdapter implements HookableInterface {
 				10,
 				0
 			),
-
-			/*
-			 * Every write of the settings option is a potential rule change
-			 * (§4.7) -- bump the counter the stamper compares its stored
-			 * schedules against, on the same three write paths the cache-flush
-			 * actions above already cover. A sibling action on the same hook
-			 * rather than folding into flush_cache() above, so flush_cache's
-			 * own callback identity stays a stable, independently-registrable
-			 * unit -- WordPress runs both listeners on a single option write.
-			 */
-			HookDescriptor::action(
-				'update_option_' . Store::OPTION_KEY,
-				array( RulesVersion::class, 'bump' ),
-				10,
-				0
-			),
-			HookDescriptor::action(
-				'add_option_' . Store::OPTION_KEY,
-				array( RulesVersion::class, 'bump' ),
-				10,
-				0
-			),
-			HookDescriptor::action(
-				'delete_option_' . Store::OPTION_KEY,
-				array( RulesVersion::class, 'bump' ),
-				10,
-				0
-			),
 		);
+
+		return array_merge( $hooks, self::rules_version_bump_actions() );
+	}
+
+	/**
+	 * The six rules-version bump actions: three for a site-option write,
+	 * three for a network-option write.
+	 *
+	 * Every write of either settings option is a potential rule change
+	 * (§4.7's "any level"), and the two option kinds fire different hook name
+	 * families -- `*_option_` for the site option, `*_site_option_` for the
+	 * network one (network options are still internally called "site options"
+	 * by core's own `update_network_option()`) -- so neither trio can stand in
+	 * for the other.
+	 *
+	 * The two trios also call DIFFERENT methods, which is the load-bearing
+	 * part: a network-option write happens once, on whichever single site the
+	 * network admin request ran on, so bumping the per-site counter there
+	 * would leave every other site on the network reading an unchanged
+	 * version. {@see RulesVersion} carries a separate network-wide counter for
+	 * exactly that reason.
+	 *
+	 * Siblings of the cache-flush actions above rather than folded into
+	 * `flush_cache()` itself, so that callback's identity stays a stable,
+	 * independently-registrable unit; WordPress runs every listener bound to a
+	 * hook on a single option write.
+	 *
+	 * @since 0.5.0
+	 * @return array<int, HookDescriptor>
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- HookDescriptor named constructor.
+	 */
+	private static function rules_version_bump_actions(): array {
+		// A flat list of (hook, method) pairs rather than a method-keyed map:
+		// a map makes the method name an array key, and a second entry reusing
+		// one silently discards the first.
+		$bumps = array(
+			array( 'update_option_' . Store::OPTION_KEY, 'bump' ),
+			array( 'add_option_' . Store::OPTION_KEY, 'bump' ),
+			array( 'delete_option_' . Store::OPTION_KEY, 'bump' ),
+			array( 'update_site_option_' . NetworkStore::OPTION_KEY, 'bump_network' ),
+			array( 'add_site_option_' . NetworkStore::OPTION_KEY, 'bump_network' ),
+			array( 'delete_site_option_' . NetworkStore::OPTION_KEY, 'bump_network' ),
+		);
+
+		$actions = array();
+
+		foreach ( $bumps as list( $hook, $method ) ) {
+			$actions[] = HookDescriptor::action( $hook, array( RulesVersion::class, $method ), 10, 0 );
+		}
+
+		return $actions;
 	}
 
 	/**

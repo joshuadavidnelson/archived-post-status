@@ -150,8 +150,9 @@ class PluginTest extends TestCase {
 
 	/**
 	 * The second `CronQueueRunner` instance wraps a `RuleStamper`
-	 * constructed over a `RuleChain` of exactly one provider --
-	 * `SiteRuleProvider` -- the single-level cascade this phase ships.
+	 * constructed over a `RuleChain` of two providers, general to specific
+	 * per the resolver's own ordering requirement -- `NetworkRuleProvider`
+	 * then `SiteRuleProvider` -- the two-level cascade this phase ships.
 	 * Reflection is required because both `CronQueueRunner::$processor` and
 	 * `RuleStamper::$chain` are private readonly properties with no public
 	 * accessor, and `RuleChain::$providers` likewise -- same pattern as the
@@ -160,7 +161,7 @@ class PluginTest extends TestCase {
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 * @covers ArchivedPostStatus\Plugin::schedule_hookables
 	 */
-	public function test_hookables_wires_the_stamp_runner_with_a_rule_stamper_over_a_site_rule_provider_chain() {
+	public function test_hookables_wires_the_stamp_runner_with_a_rule_stamper_over_a_network_then_site_rule_provider_chain() {
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
 		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
 
@@ -194,8 +195,9 @@ class PluginTest extends TestCase {
 		$providers_property->setAccessible( true );
 		$providers = $providers_property->getValue( $chain );
 
-		$this->assertCount( 1, $providers );
-		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\SiteRuleProvider::class, $providers[0] );
+		$this->assertCount( 2, $providers );
+		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider::class, $providers[0], 'The network level must be first -- general to specific.' );
+		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\SiteRuleProvider::class, $providers[1] );
 	}
 
 	/**
@@ -301,6 +303,67 @@ class PluginTest extends TestCase {
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
+		$this->assertContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
+	}
+
+	/**
+	 * `NetworkSettingsPage` is registered ONLY when the plugin is
+	 * network-activated ({@see ArchivedPostStatus\Settings\NetworkActivation}),
+	 * even under `is_admin() === true` -- mirrors the CLI `Registrar`'s own
+	 * conditional presence. `is_multisite()` defaults false in the test
+	 * runtime (see `WpPolyfills.php`), so this is the ordinary case every
+	 * other admin-only-set test above already exercises without knowing it.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::hookables
+	 */
+	public function test_hookables_omits_network_settings_page_when_not_network_activated() {
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		\WP_Mock::userFunction( 'get_site_option' )->never();
+
+		$names = $this->class_names( $this->invoke_hookables() );
+
+		$this->assertNotContains( ArchivedPostStatus\Settings\NetworkSettingsPage::class, $names );
+	}
+
+	/**
+	 * Multisite, but this plugin is not active at the network level:
+	 * `NetworkSettingsPage` is still omitted.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::hookables
+	 */
+	public function test_hookables_omits_network_settings_page_when_multisite_but_not_network_activated() {
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_site_option' )
+			->with( 'active_sitewide_plugins', array() )
+			->andReturn( array() );
+
+		$names = $this->class_names( $this->invoke_hookables() );
+
+		$this->assertNotContains( ArchivedPostStatus\Settings\NetworkSettingsPage::class, $names );
+	}
+
+	/**
+	 * Network-activated: `NetworkSettingsPage` IS registered, alongside
+	 * (not instead of) the site `SettingsPage` -- a network-activated
+	 * install still has a site screen too.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::hookables
+	 */
+	public function test_hookables_includes_network_settings_page_when_network_activated() {
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( true );
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_site_option' )
+			->with( 'active_sitewide_plugins', array() )
+			->andReturn( array( ARCHIVED_POST_STATUS_PLUGIN => true ) );
+
+		$names = $this->class_names( $this->invoke_hookables() );
+
+		$this->assertContains( ArchivedPostStatus\Settings\NetworkSettingsPage::class, $names );
 		$this->assertContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
 	}
 
@@ -416,6 +479,7 @@ class PluginTest extends TestCase {
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Settings\NetworkSettingsPage::class, $names );
 	}
 
 	/**

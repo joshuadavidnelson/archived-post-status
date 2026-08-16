@@ -101,6 +101,23 @@ if ( is_multisite() ) {
 			restore_current_blog();
 		}
 	}
+
+	// The network option lives outside any single site, so it is deleted
+	// here -- ONCE, regardless of the sites-cap guard above -- never inside
+	// aps_uninstall_site(), which runs per site and would otherwise delete
+	// the same single row once per site iterated. Mirrors
+	// Settings\NetworkStore::OPTION_KEY; the literal is duplicated on
+	// purpose, same reasoning as every other option-key mirror in this file.
+	// Guarded by the enclosing is_multisite() branch: on a single-site
+	// install the network option was never written, and
+	// delete_network_option()'s own single-site fallback to
+	// delete_option() would otherwise delete an unrelated option of the
+	// same name that this plugin never created there.
+	delete_network_option( null, 'aps_network_settings' );
+
+	// The network half of the rules-version counter, for the same reason and
+	// under the same guard. Mirrors AutoArchive\RulesVersion::NETWORK_OPTION_KEY.
+	delete_network_option( null, 'aps_network_rules_version' );
 } else {
 	aps_uninstall_site();
 }

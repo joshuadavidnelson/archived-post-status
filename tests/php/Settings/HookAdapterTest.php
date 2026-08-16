@@ -21,6 +21,7 @@
 use ArchivedPostStatus\AutoArchive\RulesVersion;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 use ArchivedPostStatus\Settings\HookAdapter;
+use ArchivedPostStatus\Settings\NetworkStore;
 use ArchivedPostStatus\Settings\Store;
 
 /**
@@ -56,18 +57,20 @@ class HookAdapterTest extends TestCase {
 	}
 
 	/**
-	 * hooks() returns seventeen descriptors: ten filters for the value
-	 * bridge (is_read_only plus the nine 0.5.0 settings keys), four actions
-	 * for cache invalidation (three option-write hooks, plus `switch_blog`
-	 * for multisite), and three actions bumping {@see RulesVersion} on the
-	 * same three option-write hooks.
+	 * hooks() returns twenty descriptors: ten filters for the value bridge
+	 * (is_read_only plus the nine 0.5.0 settings keys), four actions for
+	 * cache invalidation (three option-write hooks, plus `switch_blog` for
+	 * multisite), three actions bumping {@see RulesVersion} on the site
+	 * option's write hooks, and three more bumping it on the network
+	 * option's write hooks (phase 7 — a network settings write is a rule
+	 * write too, per §4.7).
 	 *
 	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
 	 */
-	public function test_hooks_returns_seventeen_descriptors() {
+	public function test_hooks_returns_twenty_descriptors() {
 		$hooks = $this->adapter->hooks();
 
-		$this->assertCount( 17, $hooks );
+		$this->assertCount( 20, $hooks );
 		foreach ( $hooks as $hook ) {
 			$this->assertInstanceOf( HookDescriptor::class, $hook );
 		}
@@ -184,6 +187,42 @@ class HookAdapterTest extends TestCase {
 		foreach ( $bump_actions as $descriptor ) {
 			$this->assertTrue( $descriptor->is_action() );
 			$this->assertSame( array( RulesVersion::class, 'bump' ), $descriptor->callback );
+			$this->assertSame( 10, $descriptor->priority );
+			$this->assertSame( 0, $descriptor->accepted_args );
+			$actual_hooks[] = $descriptor->hook;
+		}
+
+		$this->assertSame( $expected_hooks, $actual_hooks );
+	}
+
+	/**
+	 * A network settings write is also a rule write (§4.7's "any level"),
+	 * but it lands through update_network_option(), which fires the
+	 * *_site_option_ hook family, not *_option_ — a genuinely different
+	 * hook name for the same event, so it needs its own trio distinct from
+	 * the site-option one above.
+	 *
+	 * @covers ArchivedPostStatus\Settings\HookAdapter::hooks
+	 */
+	public function test_hooks_registers_rules_version_bump_on_each_network_option_write_action() {
+		$hooks = $this->adapter->hooks();
+
+		$bump_actions   = array_slice( $hooks, 17, 3 );
+		$expected_hooks = array(
+			'update_site_option_' . NetworkStore::OPTION_KEY,
+			'add_site_option_' . NetworkStore::OPTION_KEY,
+			'delete_site_option_' . NetworkStore::OPTION_KEY,
+		);
+		$actual_hooks   = array();
+
+		foreach ( $bump_actions as $descriptor ) {
+			$this->assertTrue( $descriptor->is_action() );
+
+			// bump_network(), not bump(): this hook fires once, on whichever
+			// single site the network admin request ran on, so a per-site
+			// counter could never carry a network rule change to the rest of
+			// the network.
+			$this->assertSame( array( RulesVersion::class, 'bump_network' ), $descriptor->callback );
 			$this->assertSame( 10, $descriptor->priority );
 			$this->assertSame( 0, $descriptor->accepted_args );
 			$actual_hooks[] = $descriptor->hook;

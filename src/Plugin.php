@@ -82,9 +82,15 @@ final class Plugin {
 	 * `map_meta_cap` filter runs on every capability check anywhere — front
 	 * end, REST, CLI. `SettingsPage` is genuinely admin-only too — unlike the
 	 * schedule/cron block below, a settings screen has no cron/REST-request
-	 * reason to exist outside wp-admin.
+	 * reason to exist outside wp-admin. `NetworkSettingsPage` is the same,
+	 * with the added condition that it is only registered on a
+	 * network-activated install ({@see Settings\NetworkActivation}) — like
+	 * the WP_CLI `Registrar` below, it simply does not exist in the
+	 * composition otherwise.
 	 *
 	 * @return Contracts\HookableInterface[]
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical network-activation accessor.
 	 */
 	private function hookables(): array {
 		$hookables = array(
@@ -113,6 +119,10 @@ final class Plugin {
 			$hookables[] = new Admin\ArchiveColumnSort();
 			$hookables[] = new Admin\PluginScreen();
 			$hookables[] = new Settings\SettingsPage();
+
+			if ( Settings\NetworkActivation::active() ) {
+				$hookables[] = new Settings\NetworkSettingsPage();
+			}
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -138,11 +148,13 @@ final class Plugin {
 	 * (or the stamper) never actually runs.
 	 *
 	 * The stamp runner drives a {@see AutoArchive\RuleStamper} over a
-	 * {@see AutoArchive\RuleChain} of exactly one level today --
-	 * {@see AutoArchive\Provider\SiteRuleProvider} -- the same single-level
-	 * cascade {@see AutoArchive\RuleQuery}'s `$min_days` warning documents.
-	 * Phases 7-9 append network, term, and post providers to this same
-	 * array; nothing else about how the runner is built changes.
+	 * {@see AutoArchive\RuleChain} of two levels today --
+	 * {@see AutoArchive\Provider\NetworkRuleProvider} then
+	 * {@see AutoArchive\Provider\SiteRuleProvider}, general to specific, per
+	 * the resolver's own ordering requirement -- the same two-level cascade
+	 * {@see AutoArchive\RuleQuery}'s `$min_days` warning documents. Phases
+	 * 8-9 append term and post providers to this same array; nothing else
+	 * about how the runner is built changes.
 	 *
 	 * @since 0.5.0
 	 * @return Contracts\HookableInterface[]
@@ -151,7 +163,12 @@ final class Plugin {
 		$sweep_runner = $this->build_queue_runner( new Schedule\Sweeper() );
 		$stamp_runner = $this->build_queue_runner(
 			new AutoArchive\RuleStamper(
-				new AutoArchive\RuleChain( array( new AutoArchive\Provider\SiteRuleProvider() ) )
+				new AutoArchive\RuleChain(
+					array(
+						new AutoArchive\Provider\NetworkRuleProvider(),
+						new AutoArchive\Provider\SiteRuleProvider(),
+					)
+				)
 			)
 		);
 

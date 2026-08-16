@@ -28,6 +28,21 @@ use ArchivedPostStatus\Schedule\ScheduleMeta;
  */
 class RuleStamperTest extends TestCase {
 
+	/**
+	 * NetworkStore carries a static in-memory cache -- flush it on both
+	 * sides so a network-settings stub in one test can never leak into the
+	 * next, symmetric with StoreTest's / NetworkStoreTest's own discipline.
+	 */
+	public function set_up() {
+		parent::set_up();
+		\ArchivedPostStatus\Settings\NetworkStore::flush_cache();
+	}
+
+	public function tear_down() {
+		\ArchivedPostStatus\Settings\NetworkStore::flush_cache();
+		parent::tear_down();
+	}
+
 	// -----------------------------------------------------------------------
 	// fixtures
 	// -----------------------------------------------------------------------
@@ -112,6 +127,31 @@ class RuleStamperTest extends TestCase {
 		foreach ( array_merge( $defaults, $overrides ) as $key => $value ) {
 			\WP_Mock::onFilter( "aps_{$key}" )->with( $defaults[ $key ] )->reply( $value );
 		}
+	}
+
+	/**
+	 * Stub the network-activation check plus the stored network option
+	 * {@see \ArchivedPostStatus\AutoArchive\RuleQuery::min_days()} reads
+	 * (via {@see \ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider})
+	 * directly — not through an `aps_*` filter, since the network level has
+	 * no HookAdapter of its own.
+	 *
+	 * @param array<string, mixed> $stored The stored network option array.
+	 */
+	private function stubNetworkActivatedWith( array $stored ): void {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_site_option' )
+			->with( 'active_sitewide_plugins', array() )
+			->andReturn( array( ARCHIVED_POST_STATUS_PLUGIN => true ) );
+		\WP_Mock::userFunction( 'get_network_option' )
+			->with( null, \ArchivedPostStatus\Settings\NetworkStore::OPTION_KEY, array() )
+			->andReturn( $stored );
+
+		// RulesVersion::current() reads the network half of the counter too,
+		// once is_multisite() is true.
+		\WP_Mock::userFunction( 'get_network_option' )
+			->with( null, \ArchivedPostStatus\AutoArchive\RulesVersion::NETWORK_OPTION_KEY, 0 )
+			->andReturn( 0 );
 	}
 
 	/**
@@ -425,6 +465,96 @@ class RuleStamperTest extends TestCase {
 		$this->assertSame( 0, $result->processed );
 		$this->assertCount( 1, $calls, 'Only the stale-refresh pass should query -- the candidate pass has no min_days to search with.' );
 		$this->assertSame( '!=', $calls[0]['meta_query'][1]['compare'], 'The one call made must be the stale-refresh pass.' );
+	}
+
+	// -----------------------------------------------------------------------
+	// process_batch() — min_days across network and site (phase 7)
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Network 30 + site 365: the candidate pass's `$min_days` prefilter must
+	 * be built from the SMALLER value, 30 -- not 365. A prefilter built from
+	 * 365 would make a post whose effective rule is 30 days invisible to the
+	 * candidate query and silently never archive; see RuleQuery's and
+	 * RuleStamper's own class docblocks.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleStamper::process_batch
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_takes_the_minimum_across_network_and_site() {
+		$this->stubNetworkActivatedWith(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 30,
+			)
+		);
+		$this->stubSiteSettings(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 365,
+				'auto_archive_types'   => array( 'post' ),
+			)
+		);
+		\WP_Mock::userFunction( 'get_option' )->with( 'aps_rules_version', 0 )->andReturn( 1 );
+
+		$chain = $this->chainReturning( null );
+
+		$candidate_args = null;
+		$factory        = static function ( array $args ) use ( &$candidate_args ) {
+			if ( 'NOT EXISTS' === ( $args['meta_query'][0]['compare'] ?? null ) ) {
+				$candidate_args = $args;
+			}
+
+			return (object) array( 'posts' => array(), 'found_posts' => 0 );
+		};
+
+		$before  = time();
+		$stamper = new RuleStamper( $chain, $factory );
+		$stamper->process_batch( $this->neverExceededBudget() );
+
+		$this->assertNotNull( $candidate_args, 'The candidate pass must run -- both levels supply a min_days.' );
+
+		$expected_cutoff = $before - ( 30 * DAY_IN_SECONDS );
+		$actual_cutoff   = strtotime( $candidate_args['date_query'][0]['before'] . ' UTC' );
+
+		$this->assertLessThanOrEqual(
+			5,
+			abs( $expected_cutoff - $actual_cutoff ),
+			'The candidate prefilter must be built from the smaller network value (30 days), not the site value (365).'
+		);
+	}
+
+	/**
+	 * The network level alone, with the site level disabled entirely, still
+	 * supplies a min_days and the candidate pass runs -- min_days is not
+	 * site-only.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleStamper::process_batch
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_runs_the_candidate_pass_from_network_alone_when_site_is_disabled() {
+		$this->stubNetworkActivatedWith(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 30,
+			)
+		);
+		$this->stubSiteSettings(); // auto_archive_enabled defaults false.
+		\WP_Mock::userFunction( 'get_option' )->with( 'aps_rules_version', 0 )->andReturn( 1 );
+
+		$chain = $this->chainReturning( null );
+
+		$calls   = array();
+		$factory = static function ( array $args ) use ( &$calls ) {
+			$calls[] = $args;
+
+			return (object) array( 'posts' => array(), 'found_posts' => 0 );
+		};
+
+		$stamper = new RuleStamper( $chain, $factory );
+		$stamper->process_batch( $this->neverExceededBudget() );
+
+		$this->assertCount( 2, $calls, 'Both the candidate and stale-refresh pass must run -- the network level alone already supplies a min_days.' );
 	}
 
 	// -----------------------------------------------------------------------

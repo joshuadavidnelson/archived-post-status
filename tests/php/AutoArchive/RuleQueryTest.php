@@ -14,6 +14,7 @@
 use ArchivedPostStatus\AutoArchive\RuleQuery;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleSource;
+use ArchivedPostStatus\Settings\NetworkStore;
 use ArchivedPostStatus\Tests\Support\BoundaryStubs;
 
 /**
@@ -23,6 +24,16 @@ use ArchivedPostStatus\Tests\Support\BoundaryStubs;
 class RuleQueryTest extends TestCase {
 
 	use BoundaryStubs;
+
+	public function set_up() {
+		parent::set_up();
+		NetworkStore::flush_cache();
+	}
+
+	public function tear_down() {
+		NetworkStore::flush_cache();
+		parent::tear_down();
+	}
 
 	/**
 	 * Stub the two settings RuleQuery::candidates()/stale_refreshes() read
@@ -34,6 +45,32 @@ class RuleQueryTest extends TestCase {
 	private function stubQuerySettings( array $types, string $basis = 'modified' ): void {
 		\WP_Mock::onFilter( 'aps_auto_archive_types' )->with( array() )->reply( $types );
 		\WP_Mock::onFilter( 'aps_auto_archive_age_basis' )->with( 'modified' )->reply( $basis );
+	}
+
+	/**
+	 * Stub the site-level `auto_archive_enabled`/`auto_archive_days`
+	 * filters {@see RuleQuery::min_days()}'s site half reads.
+	 */
+	private function stubSiteMinDays( bool $enabled, ?int $days ): void {
+		\WP_Mock::onFilter( 'aps_auto_archive_enabled' )->with( false )->reply( $enabled );
+		\WP_Mock::onFilter( 'aps_auto_archive_days' )->with( null )->reply( $days );
+	}
+
+	/**
+	 * Stub the network-activation check plus the stored network option
+	 * {@see RuleQuery::min_days()}'s network half reads (via
+	 * {@see \ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider}).
+	 *
+	 * @param array<string, mixed> $stored The stored network option array.
+	 */
+	private function stubNetworkActivatedWith( array $stored ): void {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_site_option' )
+			->with( 'active_sitewide_plugins', array() )
+			->andReturn( array( ARCHIVED_POST_STATUS_PLUGIN => true ) );
+		\WP_Mock::userFunction( 'get_network_option' )
+			->with( null, NetworkStore::OPTION_KEY, array() )
+			->andReturn( $stored );
 	}
 
 	// Tests that do not stub `aps_auto_archive_query_args` at all rely on
@@ -236,5 +273,89 @@ class RuleQueryTest extends TestCase {
 			->reply( $replaced );
 
 		$this->assertSame( $replaced, RuleQuery::candidates( $now, 1, 10 ) );
+	}
+
+	// -----------------------------------------------------------------------
+	// min_days()
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Network 30 + site 365: min_days() must return the SMALLER value, 30
+	 * -- not 365. The non-negotiable case from the phase-7 brief.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_takes_the_minimum_across_network_and_site() {
+		$this->stubNetworkActivatedWith(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 30,
+			)
+		);
+		$this->stubSiteMinDays( true, 365 );
+
+		$this->assertSame( 30, RuleQuery::min_days() );
+	}
+
+	/**
+	 * The reverse: site 30, network 365 -- still 30, proving this is a
+	 * genuine min(), not "prefer the network value".
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_takes_the_minimum_regardless_of_which_level_is_smaller() {
+		$this->stubNetworkActivatedWith(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 365,
+			)
+		);
+		$this->stubSiteMinDays( true, 30 );
+
+		$this->assertSame( 30, RuleQuery::min_days() );
+	}
+
+	/**
+	 * Network alone, site disabled entirely: min_days() is not site-only --
+	 * the network level's own value is still returned.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_uses_the_network_value_alone_when_site_is_disabled() {
+		$this->stubNetworkActivatedWith(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 30,
+			)
+		);
+		$this->stubSiteMinDays( false, null );
+
+		$this->assertSame( 30, RuleQuery::min_days() );
+	}
+
+	/**
+	 * Site alone, not network-activated: min_days() is exactly the site
+	 * value -- the pre-phase-7 behavior, unbroken.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_uses_the_site_value_alone_when_not_network_activated() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		$this->stubSiteMinDays( true, 12 );
+
+		$this->assertSame( 12, RuleQuery::min_days() );
+	}
+
+	/**
+	 * Neither level currently schedules anything: null, and the candidate
+	 * pass does not run this batch (see RuleStamperTest).
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_is_null_when_neither_level_has_a_value() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		$this->stubSiteMinDays( false, null );
+
+		$this->assertNull( RuleQuery::min_days() );
 	}
 }

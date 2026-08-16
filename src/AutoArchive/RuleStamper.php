@@ -30,15 +30,15 @@ use ArchivedPostStatus\Settings\Schema;
  * schedule in this plugin, per the plan's §5.1.
  *
  * ⚠️ **The candidate pass's coarse `date_query` net is sized by `$min_days`
- * — see {@see RuleQuery}'s class docblock.** This release ships only
- * {@see \ArchivedPostStatus\AutoArchive\Provider\SiteRuleProvider}, so
- * {@see min_days()} below reads the site's own `auto_archive_days` setting
- * directly and that genuinely *is* the whole cascade's minimum today.
- * **Phases 8 and 9 must change {@see min_days()}** to take the minimum
- * across every level that could apply — term meta across the opted-in
- * taxonomies, and any post-level override — not just the site value, or a
- * post whose effective rule is smaller than the site default becomes
- * invisible to the candidate query and silently never archives.
+ * — see {@see RuleQuery}'s class docblock, which owns computing it via
+ * {@see RuleQuery::min_days()}.** Living there rather than here is
+ * deliberate: `RuleStamper` already depends on `RuleQuery` for both
+ * passes' query args, so resolving `$min_days` there too adds no
+ * additional coupling to the network level's own classes. **Phases 8 and 9
+ * must extend `RuleQuery::min_days()` further** to also cover term meta
+ * across the opted-in taxonomies and any post-level override, or a post
+ * whose effective rule is smaller than every level already checked there
+ * becomes invisible to the candidate query and silently never archives.
  *
  * Neither pass trusts its query's filtering alone, and both re-check the
  * same way: the stale-refresh pass independently reads each post's existing
@@ -118,7 +118,7 @@ final class RuleStamper implements BatchProcessorInterface {
 		$now           = time();
 		$batch_size    = RuleQuery::batch_size();
 		$grace_seconds = $this->grace_seconds();
-		$min_days      = $this->min_days();
+		$min_days      = RuleQuery::min_days();
 
 		$processed        = 0;
 		$failed           = 0;
@@ -399,25 +399,6 @@ final class RuleStamper implements BatchProcessorInterface {
 		 * @param ResolvedRule $resolved The resolved cascade this instant came from.
 		 */
 		return (int) apply_filters( 'aps_auto_archive_stamp_time', $stamp_at, $post_id, $resolved );
-	}
-
-	/**
-	 * The candidate pass's `$min_days` — see the class docblock's warning.
-	 * Null when nothing at the site level could currently schedule anything
-	 * (auto-archive disabled, or enabled with no days value set), in which
-	 * case the candidate pass does not run at all this batch.
-	 *
-	 * @since 0.5.0
-	 * @return ?int
-	 */
-	private function min_days(): ?int {
-		if ( ! (bool) $this->setting( 'auto_archive_enabled' ) ) {
-			return null;
-		}
-
-		$days = $this->setting( 'auto_archive_days' );
-
-		return null === $days ? null : (int) $days;
 	}
 
 	/**
