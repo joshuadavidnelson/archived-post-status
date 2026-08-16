@@ -757,4 +757,54 @@ class PublicApiTest extends TestCase {
 
 		$this->assertNull( aps_get_scheduled_archive_time( 129 ) );
 	}
+
+	// -----------------------------------------------------------------------
+	// aps_current_user_can_manage_settings
+	// -----------------------------------------------------------------------
+
+	/**
+	 * aps_current_user_can_manage_settings() delegates to
+	 * SettingsCapability::granted(), sending the default 'manage_options'
+	 * through to current_user_can().
+	 *
+	 * @covers ::aps_current_user_can_manage_settings
+	 */
+	public function test_aps_current_user_can_manage_settings_defaults_to_manage_options() {
+		$received_capability = null;
+
+		\WP_Mock::userFunction(
+			'current_user_can',
+			array(
+				'times'  => 1,
+				'return' => function ( $capability ) use ( &$received_capability ) {
+					$received_capability = $capability;
+					return true;
+				},
+			)
+		);
+
+		\WP_Mock::expectFilter( 'aps_default_settings_capability', 'manage_options' );
+
+		$this->assertTrue( aps_current_user_can_manage_settings() );
+		$this->assertSame( 'manage_options', $received_capability );
+	}
+
+	/**
+	 * aps_default_settings_capability replaces the capability
+	 * current_user_can() sees.
+	 *
+	 * @covers ::aps_current_user_can_manage_settings
+	 */
+	public function test_aps_current_user_can_manage_settings_filter_replaces_capability() {
+		\WP_Mock::onFilter( 'aps_default_settings_capability' )
+			->with( 'manage_options' )
+			->reply( 'manage_network_options' );
+
+		\WP_Mock::userFunction( 'current_user_can' )
+			->once()
+			->with( 'manage_network_options' )
+			->andReturn( false );
+
+		$this->assertFalse( aps_current_user_can_manage_settings() );
+	}
 }

@@ -294,4 +294,48 @@ class SchemaTest extends TestCase {
 
 		$this->assertSame( array(), $sanitizer( 'not-an-array' ) );
 	}
+
+	/**
+	 * Every key has a non-empty label — the settings screen this phase adds
+	 * has no field it can render without one.
+	 *
+	 * @covers ArchivedPostStatus\Settings\Schema::label_for
+	 */
+	public function test_every_key_has_a_non_empty_label() {
+		foreach ( Schema::keys() as $key ) {
+			$this->assertNotSame( '', Schema::label_for( $key ), "label for '{$key}'" );
+		}
+	}
+
+	/**
+	 * Every key has a non-empty description — the settings screen's "what
+	 * is inherited" text and field help both depend on this.
+	 *
+	 * @covers ArchivedPostStatus\Settings\Schema::description_for
+	 */
+	public function test_every_key_has_a_non_empty_description() {
+		foreach ( Schema::keys() as $key ) {
+			$this->assertNotSame( '', Schema::description_for( $key ), "description for '{$key}'" );
+		}
+	}
+
+	/**
+	 * label_for() returns an empty string for a key the schema does not
+	 * define — mirrors {@see self::test_default_for_returns_null_for_unknown_key()}.
+	 *
+	 * @covers ArchivedPostStatus\Settings\Schema::label_for
+	 */
+	public function test_label_for_returns_empty_string_for_unknown_key() {
+		$this->assertSame( '', Schema::label_for( 'not_a_real_setting' ) );
+	}
+
+	/**
+	 * description_for() returns an empty string for a key the schema does
+	 * not define.
+	 *
+	 * @covers ArchivedPostStatus\Settings\Schema::description_for
+	 */
+	public function test_description_for_returns_empty_string_for_unknown_key() {
+		$this->assertSame( '', Schema::description_for( 'not_a_real_setting' ) );
+	}
 }

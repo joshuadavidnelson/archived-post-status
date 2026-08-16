@@ -79,7 +79,9 @@ final class Plugin {
 	 * Everything in the `is_admin()` branch registers hooks that only fire on a
 	 * wp-admin page load. `PostEditorGuard` stays unconditional because its
 	 * `map_meta_cap` filter runs on every capability check anywhere — front
-	 * end, REST, CLI.
+	 * end, REST, CLI. `SettingsPage` is genuinely admin-only too — unlike the
+	 * schedule/cron block below, a settings screen has no cron/REST-request
+	 * reason to exist outside wp-admin.
 	 *
 	 * @return Contracts\HookableInterface[]
 	 */
@@ -109,6 +111,7 @@ final class Plugin {
 			$hookables[] = new Admin\ArchiveColumn();
 			$hookables[] = new Admin\ArchiveColumnSort();
 			$hookables[] = new Admin\PluginScreen();
+			$hookables[] = new Settings\SettingsPage();
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {

@@ -22,6 +22,7 @@ use ArchivedPostStatus\Frontend\ArchivedPostLink;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleOperation;
 use ArchivedPostStatus\Schedule\ScheduleSource;
+use ArchivedPostStatus\Settings\SettingsCapability;
 use ArchivedPostStatus\Status\ArchiveLabel;
 use ArchivedPostStatus\Status\SupportedPostTypes;
 
@@ -343,4 +344,21 @@ function aps_get_scheduled_archive_time( $post_id = 0 ) {
 	}
 
 	return $meta->time;
+}
+
+/**
+ * Check that the current user can manage the site settings screen.
+ *
+ * Default `manage_options`, filterable via `aps_default_settings_capability`.
+ * Every settings-screen capability check routes through this function, never
+ * a raw current_user_can().
+ *
+ * @since 0.5.0
+ * @return bool
+ *
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
+ * {@see SettingsCapability::granted()}.
+ */
+function aps_current_user_can_manage_settings() {
+	return SettingsCapability::granted();
 }

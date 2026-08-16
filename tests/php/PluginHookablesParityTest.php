@@ -84,7 +84,7 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			18,
+			19,
 			$hookables,
 			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
@@ -153,6 +153,9 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Admin\ArchiveColumn::class,
 			ArchivedPostStatus\Admin\ArchiveColumnSort::class,
 			ArchivedPostStatus\Admin\PluginScreen::class,
+			// SettingsPage: the site settings screen (0.5.0) -- genuinely
+			// admin-only, unlike the schedule/cron block above.
+			ArchivedPostStatus\Settings\SettingsPage::class,
 		);
 
 		$actual_fqcn_order = array_map( static fn( $row ) => $row['class'], $snapshot );

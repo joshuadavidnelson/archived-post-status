@@ -9,13 +9,14 @@ use ArchivedPostStatus\AutoArchive\ChildMode;
 
 /**
  * The single source of truth for every plugin setting: key, default,
- * sanitizer, and which cascade levels it applies to.
+ * sanitizer, label, description, and which cascade levels it applies to.
  *
- * Five things eventually derive from this table rather than restating it —
- * {@see Store::defaults()}, {@see Sanitizer::sanitize()}, the site settings
- * screen, the network settings screen, and the REST schema plus the CLI's
- * key validation. Only the first two exist yet; the rest are later phases.
- * Adding a setting means adding one row here, not editing five files.
+ * Five things derive from this table rather than restating it — {@see
+ * Store::defaults()}, {@see Sanitizer::sanitize()}, the site settings screen
+ * ({@see SettingsPage}, this phase's consumer for `label`/`description`),
+ * the network settings screen, and the REST schema plus the CLI's key
+ * validation. The last two are later phases. Adding a setting means adding
+ * one row here, not editing five files.
  *
  * `auto_archive_days` defaults to `null`, not a number. `null` means "this
  * level sets nothing" and is what lets the cascade fall through to another
@@ -70,6 +71,30 @@ final class Schema {
 	}
 
 	/**
+	 * The human-readable label for one key, e.g. a settings field's
+	 * `<label>` text. Empty string for an unknown key.
+	 *
+	 * @since 0.5.0
+	 * @param string $key The setting key.
+	 * @return string
+	 */
+	public static function label_for( string $key ): string {
+		return self::definitions()[ $key ]['label'] ?? '';
+	}
+
+	/**
+	 * The explanatory description for one key, e.g. a settings field's
+	 * helper text. Empty string for an unknown key.
+	 *
+	 * @since 0.5.0
+	 * @param string $key The setting key.
+	 * @return string
+	 */
+	public static function description_for( string $key ): string {
+		return self::definitions()[ $key ]['description'] ?? '';
+	}
+
+	/**
 	 * The keys that apply at a given cascade level.
 	 *
 	 * @since 0.5.0
@@ -86,68 +111,89 @@ final class Schema {
 	}
 
 	/**
-	 * The key => {default, levels, sanitizer} table — the plan's §5.8 list,
-	 * transcribed exactly.
+	 * The key => {default, levels, sanitizer, label, description} table —
+	 * the plan's §5.8 list, transcribed exactly, plus the label/description
+	 * pair this phase adds now that the settings screen is a real consumer.
 	 *
 	 * @since 0.5.0
-	 * @return array<string, array{default: mixed, levels: string[], sanitizer: callable}>
+	 * @return array<string, array{default: mixed, levels: string[], sanitizer: callable, label: string, description: string}>
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- ChildMode's own cases()/value are the canonical way to read an enum's backed values.
 	 */
 	private static function definitions(): array {
 		return array(
 			'is_read_only'                 => array(
-				'default'   => true,
-				'levels'    => array( self::LEVEL_SITE ),
-				'sanitizer' => self::bool_sanitizer(),
+				'default'     => true,
+				'levels'      => array( self::LEVEL_SITE ),
+				'sanitizer'   => self::bool_sanitizer(),
+				'label'       => __( 'Read-only archive', 'archived-post-status' ),
+				'description' => __( 'Prevent edits to content while it is in the Archived status.', 'archived-post-status' ),
 			),
 			'scheduled_archive_enabled'    => array(
-				'default'   => true,
-				'levels'    => array( self::LEVEL_NETWORK, self::LEVEL_SITE ),
-				'sanitizer' => self::bool_sanitizer(),
+				'default'     => true,
+				'levels'      => array( self::LEVEL_NETWORK, self::LEVEL_SITE ),
+				'sanitizer'   => self::bool_sanitizer(),
+				'label'       => __( 'Per-post scheduling', 'archived-post-status' ),
+				'description' => __( 'Let editors pick a date and time to archive an individual post.', 'archived-post-status' ),
 			),
 			'scheduled_archive_post_types' => array(
-				'default'   => array(),
-				'levels'    => array( self::LEVEL_SITE ),
-				'sanitizer' => self::post_types_sanitizer(),
+				'default'     => array(),
+				'levels'      => array( self::LEVEL_SITE ),
+				'sanitizer'   => self::post_types_sanitizer(),
+				'label'       => __( 'Schedulable post types', 'archived-post-status' ),
+				'description' => __( 'Post types that show the archive date picker. Leave empty to allow every supported post type.', 'archived-post-status' ),
 			),
 			'auto_archive_enabled'         => array(
-				'default'   => false,
-				'levels'    => array( self::LEVEL_NETWORK, self::LEVEL_SITE ),
-				'sanitizer' => self::bool_sanitizer(),
+				'default'     => false,
+				'levels'      => array( self::LEVEL_NETWORK, self::LEVEL_SITE ),
+				'sanitizer'   => self::bool_sanitizer(),
+				'label'       => __( 'Automatic archiving', 'archived-post-status' ),
+				'description' => __( 'Archive posts automatically after a set number of days, with no editor needing to pick a date.', 'archived-post-status' ),
 			),
 			'auto_archive_days'            => array(
-				'default'   => null,
-				'levels'    => array( self::LEVEL_NETWORK, self::LEVEL_SITE, self::LEVEL_TERM, self::LEVEL_POST ),
-				'sanitizer' => self::nullable_int_sanitizer(),
+				'default'     => null,
+				'levels'      => array( self::LEVEL_NETWORK, self::LEVEL_SITE, self::LEVEL_TERM, self::LEVEL_POST ),
+				'sanitizer'   => self::nullable_int_sanitizer(),
+				'label'       => __( 'Archive after (days)', 'archived-post-status' ),
+				'description' => __( 'Days after the archive basis (published or modified date) before a post is archived automatically.', 'archived-post-status' ),
 			),
 			'auto_archive_child_mode'      => array(
-				'default'   => ChildMode::Open->value,
-				'levels'    => array( self::LEVEL_NETWORK, self::LEVEL_SITE, self::LEVEL_TERM ),
-				'sanitizer' => self::enum_sanitizer(
+				'default'     => ChildMode::Open->value,
+				'levels'      => array( self::LEVEL_NETWORK, self::LEVEL_SITE, self::LEVEL_TERM ),
+				'sanitizer'   => self::enum_sanitizer(
 					array_map( static fn ( ChildMode $case ): string => $case->value, ChildMode::cases() ),
 					ChildMode::Open->value
 				),
+				'label'       => __( 'Category and post control', 'archived-post-status' ),
+				'description' => __( 'Whether categories and individual posts may set their own automatic-archive rule, or must use this one.', 'archived-post-status' ),
 			),
 			'auto_archive_types'           => array(
-				'default'   => array(),
-				'levels'    => array( self::LEVEL_SITE ),
-				'sanitizer' => self::post_types_sanitizer(),
+				'default'     => array(),
+				'levels'      => array( self::LEVEL_SITE ),
+				'sanitizer'   => self::post_types_sanitizer(),
+				'label'       => __( 'Automatically archived post types', 'archived-post-status' ),
+				'description' => __( 'Post types the automatic-archive rule applies to.', 'archived-post-status' ),
 			),
 			'auto_archive_taxonomies'      => array(
-				'default'   => array( 'category' ),
-				'levels'    => array( self::LEVEL_SITE ),
-				'sanitizer' => self::taxonomies_sanitizer(),
+				'default'     => array( 'category' ),
+				'levels'      => array( self::LEVEL_SITE ),
+				'sanitizer'   => self::taxonomies_sanitizer(),
+				'label'       => __( 'Category-level rules', 'archived-post-status' ),
+				'description' => __( 'Taxonomies that can set their own automatic-archive rule, overriding the site default.', 'archived-post-status' ),
 			),
 			'auto_archive_age_basis'       => array(
-				'default'   => 'modified',
-				'levels'    => array( self::LEVEL_SITE ),
-				'sanitizer' => self::enum_sanitizer( array( 'modified', 'published' ), 'modified' ),
+				'default'     => 'modified',
+				'levels'      => array( self::LEVEL_SITE ),
+				'sanitizer'   => self::enum_sanitizer( array( 'modified', 'published' ), 'modified' ),
+				'label'       => __( 'Archive age basis', 'archived-post-status' ),
+				'description' => __( 'Whether the automatic-archive countdown is measured from the publish date or the last-modified date.', 'archived-post-status' ),
 			),
 			'auto_archive_grace_days'      => array(
-				'default'   => 7,
-				'levels'    => array( self::LEVEL_SITE ),
-				'sanitizer' => self::int_sanitizer(),
+				'default'     => 7,
+				'levels'      => array( self::LEVEL_SITE ),
+				'sanitizer'   => self::int_sanitizer(),
+				'label'       => __( 'Backlog grace period (days)', 'archived-post-status' ),
+				'description' => __( 'Minimum days before an already-old post is archived after a rule newly applies to it, so enabling a rule never empties the site immediately.', 'archived-post-status' ),
 			),
 		);
 	}

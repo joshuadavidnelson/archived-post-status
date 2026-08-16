@@ -242,6 +242,7 @@ class PluginTest extends TestCase {
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
+		$this->assertContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
 	}
 
 	/**
@@ -355,6 +356,7 @@ class PluginTest extends TestCase {
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumn::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
 	}
 
 	/**
