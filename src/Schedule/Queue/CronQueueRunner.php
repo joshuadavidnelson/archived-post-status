@@ -14,12 +14,12 @@ use ArchivedPostStatus\Schedule\CronRegistrar;
  * recurring cron tick plus a self-scheduled continuation.
  *
  * One instance drives exactly one processor -- `Plugin::hookables()`
- * constructs `new CronQueueRunner( new Sweeper() )` today; phase 6 adds a
- * second instance wrapping the rule stamper on its own recurring hook. Both
- * instances share this class and the one distinct `aps_continue_queue`
- * continuation hook; {@see handle_continuation()} ignores any event
- * addressed to a queue it does not drive, which is what lets two instances
- * coexist on that shared hook without either driving the other's processor.
+ * constructs one `CronQueueRunner` wrapping a `Sweeper` and a second
+ * wrapping a `RuleStamper`, each on its own recurring hook. Both instances
+ * share this class and the one distinct `aps_continue_queue` continuation
+ * hook; {@see handle_continuation()} ignores any event addressed to a queue
+ * it does not drive, which is what lets two instances coexist on that
+ * shared hook without either driving the other's processor.
  *
  * @since 0.5.0
  */
@@ -54,15 +54,14 @@ final class CronQueueRunner implements HookableInterface, QueueRunnerInterface {
 
 	/**
 	 * Maps a processor's {@see BatchProcessorInterface::queue_name()} to the
-	 * recurring cron hook {@see hooks()} binds it to. One entry per queue;
-	 * phase 6 adds `'stamp' => CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES`
-	 * here and nowhere else in this class.
+	 * recurring cron hook {@see hooks()} binds it to. One entry per queue.
 	 *
 	 * @since 0.5.0
 	 * @var array<string, string>
 	 */
 	private const QUEUE_CRON_HOOKS = array(
 		'sweep' => CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES,
+		'stamp' => CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES,
 	);
 
 	/**

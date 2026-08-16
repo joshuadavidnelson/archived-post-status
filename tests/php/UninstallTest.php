@@ -7,9 +7,10 @@
  * @covers ::aps_uninstall_site
  *
  * Pins what runs when a site administrator deletes the plugin: removal of the
- * settings option, the version option, the sweep's `aps_last_sweep` option,
- * the cascade's `aps_rules_version` option, the sweep's `aps_queue_lock_sweep`
- * transient, both cron events, and every `_aps_archive_meta_*` /
+ * settings option, the version option, the sweep's `aps_last_sweep` and the
+ * stamper's `aps_last_stamp` options, the cascade's `aps_rules_version`
+ * option, the `aps_queue_lock_sweep` and `aps_queue_lock_stamp` transients,
+ * all three cron events, and every `_aps_archive_meta_*` /
  * `_aps_schedule_meta_*` postmeta row.
  *
  * Implementation notes
@@ -148,16 +149,25 @@ class UninstallTest extends TestCase {
 			->with( 'aps_last_sweep' )
 			->once();
 		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_last_stamp' )
+			->once();
+		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_rules_version' )
 			->once();
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_run_scheduled_archives' )
 			->once();
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_apply_auto_archive_rules' )
+			->once();
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_continue_queue' )
 			->once();
 		\WP_Mock::userFunction( 'delete_transient' )
 			->with( 'aps_queue_lock_sweep' )
+			->once();
+		\WP_Mock::userFunction( 'delete_transient' )
+			->with( 'aps_queue_lock_stamp' )
 			->once();
 
 		// Install our $wpdb double so we can verify the prepared statement.
@@ -217,13 +227,19 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_last_sweep' )->once();
 		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_last_stamp' )->once();
+		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_rules_version' )->once();
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_run_scheduled_archives' )->once();
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_apply_auto_archive_rules' )->once();
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_continue_queue' )->once();
 		\WP_Mock::userFunction( 'delete_transient' )
 			->with( 'aps_queue_lock_sweep' )->once();
+		\WP_Mock::userFunction( 'delete_transient' )
+			->with( 'aps_queue_lock_stamp' )->once();
 
 		global $wpdb;
 		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();
@@ -297,13 +313,19 @@ class UninstallTest extends TestCase {
 		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_last_sweep' )->times( 3 );
 		\WP_Mock::userFunction( 'delete_option' )
+			->with( 'aps_last_stamp' )->times( 3 );
+		\WP_Mock::userFunction( 'delete_option' )
 			->with( 'aps_rules_version' )->times( 3 );
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_run_scheduled_archives' )->times( 3 );
 		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
+			->with( 'aps_apply_auto_archive_rules' )->times( 3 );
+		\WP_Mock::userFunction( 'wp_clear_scheduled_hook' )
 			->with( 'aps_continue_queue' )->times( 3 );
 		\WP_Mock::userFunction( 'delete_transient' )
 			->with( 'aps_queue_lock_sweep' )->times( 3 );
+		\WP_Mock::userFunction( 'delete_transient' )
+			->with( 'aps_queue_lock_stamp' )->times( 3 );
 
 		global $wpdb;
 		$wpdb = new \ArchivedPostStatus\Tests\UninstallTestWpdbDouble();

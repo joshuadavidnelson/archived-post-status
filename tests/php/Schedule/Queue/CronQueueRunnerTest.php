@@ -59,12 +59,22 @@ class CronQueueRunnerTest extends TestCase {
 
 	/**
 	 * A Mockery double of BatchProcessorInterface reporting the 'sweep'
-	 * queue name -- the only queue name CronQueueRunner has mapped to a
-	 * cron hook as of this phase.
+	 * queue name.
 	 */
 	private function sweepProcessor(): \Mockery\MockInterface {
 		$processor = \Mockery::mock( BatchProcessorInterface::class );
 		$processor->shouldReceive( 'queue_name' )->andReturn( 'sweep' );
+
+		return $processor;
+	}
+
+	/**
+	 * A Mockery double of BatchProcessorInterface reporting the 'stamp'
+	 * queue name.
+	 */
+	private function stampProcessor(): \Mockery\MockInterface {
+		$processor = \Mockery::mock( BatchProcessorInterface::class );
+		$processor->shouldReceive( 'queue_name' )->andReturn( 'stamp' );
 
 		return $processor;
 	}
@@ -106,6 +116,20 @@ class CronQueueRunnerTest extends TestCase {
 		foreach ( $descriptors as $descriptor ) {
 			$this->assertTrue( $descriptor->is_action() );
 		}
+	}
+
+	/**
+	 * @covers ArchivedPostStatus\Schedule\Queue\CronQueueRunner::hooks
+	 */
+	public function test_hooks_binds_the_stamp_hook_and_the_continuation_hook() {
+		$runner      = new CronQueueRunner( $this->stampProcessor() );
+		$descriptors = $runner->hooks();
+
+		$this->assertCount( 2, $descriptors );
+
+		$hook_names = array_map( fn( $d ) => $d->hook, $descriptors );
+		$this->assertContains( CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES, $hook_names );
+		$this->assertContains( CronQueueRunner::CONTINUE_HOOK, $hook_names );
 	}
 
 	/**

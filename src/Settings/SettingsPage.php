@@ -6,6 +6,7 @@ namespace ArchivedPostStatus\Settings;
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 use ArchivedPostStatus\AutoArchive\ChildMode;
+use ArchivedPostStatus\AutoArchive\MatchCountPreview;
 use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 
@@ -39,6 +40,25 @@ final class SettingsPage implements HookableInterface {
 
 	/** The admin page slug, per `add_options_page()`. */
 	public const PAGE_SLUG = 'aps-settings';
+
+	/**
+	 * The match-count preview (plan risk #2's mitigation): how many posts
+	 * currently match the configured auto-archive rule.
+	 *
+	 * @since 0.5.0
+	 * @var MatchCountPreview
+	 */
+	private readonly MatchCountPreview $match_count_preview;
+
+	/**
+	 * Constructor.
+	 *
+	 * @since 0.5.0
+	 * @param ?MatchCountPreview $match_count_preview Defaults to a real one.
+	 */
+	public function __construct( ?MatchCountPreview $match_count_preview = null ) {
+		$this->match_count_preview = $match_count_preview ?? new MatchCountPreview();
+	}
 
 	/**
 	 * @since 0.5.0
@@ -150,6 +170,7 @@ final class SettingsPage implements HookableInterface {
 		settings_fields( self::OPTION_GROUP );
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- already-escaped HTML: render_fields() only ever concatenates CascadeField/SettingsRenderer output, both escaped at their own call sites (see their class docblocks).
 		echo $this->render_fields();
+		$this->maybe_render_match_count_preview();
 		submit_button();
 		echo '</form></div>';
 	}
@@ -282,6 +303,50 @@ final class SettingsPage implements HookableInterface {
 		}
 
 		return $choices;
+	}
+
+	/**
+	 * The match-count preview (plan risk #2): how many posts currently
+	 * match the *stored* auto-archive rule, shown before it can ever fire.
+	 * Silent when auto-archive is off, or on but with no `auto_archive_days`
+	 * value stored yet — there is nothing to preview in either case.
+	 *
+	 * Reads the stored values directly through {@see Store::get()}, the
+	 * same way {@see render_cascade_field()} does, rather than through the
+	 * `aps_*` filters {@see MatchCountPreview}'s own query builder resolves
+	 * against — this is a preview of what is saved, not of a filtered
+	 * runtime value a developer override might diverge from.
+	 *
+	 * @since 0.5.0
+	 * @return void
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical settings-store/schema accessors.
+	 */
+	private function maybe_render_match_count_preview(): void {
+		if ( ! (bool) Store::get( 'auto_archive_enabled', Schema::default_for( 'auto_archive_enabled' ) ) ) {
+			return;
+		}
+
+		$days = Store::get( 'auto_archive_days', Schema::default_for( 'auto_archive_days' ) );
+
+		if ( null === $days ) {
+			return;
+		}
+
+		$count = $this->match_count_preview->count( (int) $days, time() );
+
+		echo '<p class="description">' . esc_html(
+			sprintf(
+				/* translators: %s: number of posts, already formatted for the current locale. */
+				_n(
+					'%s post currently matches this rule and will be scheduled to archive.',
+					'%s posts currently match this rule and will be scheduled to archive.',
+					$count,
+					'archived-post-status'
+				),
+				number_format_i18n( $count )
+			)
+		) . '</p>';
 	}
 
 	/**

@@ -21,9 +21,10 @@ use ArchivedPostStatus\Hooks\HookDescriptor;
  * {@see RECURRING_EVENTS} is the single source both {@see maybe_schedule_events()}
  * and {@see recurring_hooks()} read from, so the deactivation cleanup in
  * `archived-post-status.php` never drifts out of sync with what this class
- * actually schedules. Phase 6 adds the daily rule-apply event as one more
- * entry there -- nothing else in this class, or in the deactivation hook
- * that reads {@see recurring_hooks()}, needs to change.
+ * actually schedules. The daily rule-apply event added in 0.5.0's stamp
+ * queue is one more entry there -- nothing else in this class, or in the
+ * deactivation hook that reads {@see recurring_hooks()}, needed to change to
+ * pick it up.
  *
  * @since 0.5.0
  */
@@ -36,6 +37,16 @@ final class CronRegistrar implements HookableInterface {
 	 * @var string
 	 */
 	public const HOOK_RUN_SCHEDULED_ARCHIVES = 'aps_run_scheduled_archives';
+
+	/**
+	 * The recurring stamp event's cron hook -- applies the auto-archive
+	 * rule cascade, stamping new matches and refreshing stale-version
+	 * stamps (plan §4.7).
+	 *
+	 * @since 0.5.0
+	 * @var string
+	 */
+	public const HOOK_APPLY_AUTO_ARCHIVE_RULES = 'aps_apply_auto_archive_rules';
 
 	/**
 	 * The custom `cron_schedules` recurrence key the sweep event runs on.
@@ -57,11 +68,17 @@ final class CronRegistrar implements HookableInterface {
 	 * Every recurring event this plugin schedules: cron hook => the
 	 * `cron_schedules` recurrence key it runs on.
 	 *
+	 * The stamp event runs on WordPress core's built-in `daily` recurrence
+	 * rather than a custom one -- unlike the sweep interval, its cadence is
+	 * not filterable, so there is no need for {@see register_interval()} to
+	 * register anything for it.
+	 *
 	 * @since 0.5.0
 	 * @var array<string, string>
 	 */
 	private const RECURRING_EVENTS = array(
-		self::HOOK_RUN_SCHEDULED_ARCHIVES => self::RECURRENCE_KEY,
+		self::HOOK_RUN_SCHEDULED_ARCHIVES   => self::RECURRENCE_KEY,
+		self::HOOK_APPLY_AUTO_ARCHIVE_RULES => 'daily',
 	);
 
 	/**

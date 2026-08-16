@@ -114,15 +114,20 @@ class PluginTest extends TestCase {
 	}
 
 	/**
-	 * The schedule/cron wiring -- the sweep queue runner, cron self-repair,
-	 * per-post-type meta registration, and the archived-post schedule
-	 * cleanup listener -- fires on cron ticks and REST requests, neither of
-	 * which is `is_admin()`. `is_admin()` is stubbed `false` here
-	 * specifically: `PluginHookablesParityTest` always stubs it `true`, so
-	 * that snapshot alone cannot see these four hookables being gated
-	 * behind `is_admin()` by mistake -- a regression that would silently
-	 * stop the sweeper from ever running outside wp-admin while every
-	 * existing test stayed green.
+	 * The schedule/cron wiring -- both CronQueueRunner instances (sweep and
+	 * stamp), cron self-repair, per-post-type meta registration, and the
+	 * archived-post schedule cleanup listener -- fires on cron ticks and
+	 * REST requests, neither of which is `is_admin()`. `is_admin()` is
+	 * stubbed `false` here specifically: `PluginHookablesParityTest` always
+	 * stubs it `true`, so that snapshot alone cannot see these hookables
+	 * being gated behind `is_admin()` by mistake -- a regression that would
+	 * silently stop the sweeper (or the stamper) from ever running outside
+	 * wp-admin while every existing test stayed green.
+	 *
+	 * Asserts a COUNT of 2 for `CronQueueRunner`, not merely presence --
+	 * `assertContains` alone cannot distinguish "both runners registered"
+	 * from "only one did, and this test happens to be checking for the
+	 * class both would share".
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 * @covers ArchivedPostStatus\Plugin::schedule_hookables
@@ -133,10 +138,64 @@ class PluginTest extends TestCase {
 
 		$names = $this->class_names( $this->invoke_hookables() );
 
-		$this->assertContains( ArchivedPostStatus\Schedule\Queue\CronQueueRunner::class, $names );
+		$this->assertSame(
+			2,
+			count( array_filter( $names, static fn( $name ) => ArchivedPostStatus\Schedule\Queue\CronQueueRunner::class === $name ) ),
+			'Both the sweep and stamp CronQueueRunner instances must be registered.'
+		);
 		$this->assertContains( ArchivedPostStatus\Schedule\CronRegistrar::class, $names );
 		$this->assertContains( ArchivedPostStatus\Schedule\MetaRegistrar::class, $names );
 		$this->assertContains( ArchivedPostStatus\Schedule\ScheduleMetaListener::class, $names );
+	}
+
+	/**
+	 * The second `CronQueueRunner` instance wraps a `RuleStamper`
+	 * constructed over a `RuleChain` of exactly one provider --
+	 * `SiteRuleProvider` -- the single-level cascade this phase ships.
+	 * Reflection is required because both `CronQueueRunner::$processor` and
+	 * `RuleStamper::$chain` are private readonly properties with no public
+	 * accessor, and `RuleChain::$providers` likewise -- same pattern as the
+	 * other private-property pins in this file.
+	 *
+	 * @covers ArchivedPostStatus\Plugin::hookables
+	 * @covers ArchivedPostStatus\Plugin::schedule_hookables
+	 */
+	public function test_hookables_wires_the_stamp_runner_with_a_rule_stamper_over_a_site_rule_provider_chain() {
+		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
+		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
+
+		$hookables = $this->invoke_hookables();
+
+		$runners = array_values(
+			array_filter( $hookables, static fn( $h ) => $h instanceof ArchivedPostStatus\Schedule\Queue\CronQueueRunner )
+		);
+		$this->assertCount( 2, $runners );
+
+		$processor_property = new ReflectionProperty( ArchivedPostStatus\Schedule\Queue\CronQueueRunner::class, 'processor' );
+		$processor_property->setAccessible( true );
+
+		$stamper = null;
+		foreach ( $runners as $runner ) {
+			$processor = $processor_property->getValue( $runner );
+			if ( $processor instanceof ArchivedPostStatus\AutoArchive\RuleStamper ) {
+				$stamper = $processor;
+			}
+		}
+
+		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\RuleStamper::class, $stamper, 'One CronQueueRunner must wrap a RuleStamper.' );
+
+		$chain_property = new ReflectionProperty( ArchivedPostStatus\AutoArchive\RuleStamper::class, 'chain' );
+		$chain_property->setAccessible( true );
+		$chain = $chain_property->getValue( $stamper );
+
+		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\RuleChain::class, $chain );
+
+		$providers_property = new ReflectionProperty( ArchivedPostStatus\AutoArchive\RuleChain::class, 'providers' );
+		$providers_property->setAccessible( true );
+		$providers = $providers_property->getValue( $chain );
+
+		$this->assertCount( 1, $providers );
+		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\SiteRuleProvider::class, $providers[0] );
 	}
 
 	/**

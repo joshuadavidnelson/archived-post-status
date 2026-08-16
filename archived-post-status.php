@@ -6,15 +6,16 @@
  * plugin on plugins_loaded.
  *
  * There is still no activation hook: nothing needs provisioning when the
- * plugin turns on. `Schedule\CronRegistrar` schedules the recurring sweep
- * event itself, on the next `init`, if it finds one missing -- the same
+ * plugin turns on. `Schedule\CronRegistrar` schedules any of its recurring
+ * events it finds missing itself, on the next `init` -- the same
  * self-repair path a lost event takes after a bad deactivate or a host that
  * flushed the cron option, so activation has nothing to do that init
  * wouldn't already do on its own.
  *
- * There IS now a deactivation hook, because 0.5.0 added cron: it clears the
- * recurring sweep event and any pending `aps_continue_queue` continuation,
- * so a deactivated plugin leaves no orphaned `wp_next_scheduled()` entries
+ * There IS now a deactivation hook, because 0.5.0 added cron: it clears
+ * every recurring event `CronRegistrar` schedules (the sweep and the
+ * auto-archive stamp) and any pending `aps_continue_queue` continuation, so
+ * a deactivated plugin leaves no orphaned `wp_next_scheduled()` entries
  * behind. Data removal otherwise still lives in uninstall.php.
  *
  * @link    https://github.com/joshuadavidnelson/archived-post-status

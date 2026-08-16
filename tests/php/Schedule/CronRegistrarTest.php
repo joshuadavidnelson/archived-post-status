@@ -52,13 +52,28 @@ class CronRegistrarTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
+	 * Both recurring events this plugin schedules -- the sweep and the
+	 * auto-archive stamp -- in registration order. `archived-post-status.php`'s
+	 * deactivation hook reads exactly this list, so a hook missing here
+	 * would leave an orphaned `wp_next_scheduled()` entry after deactivation.
+	 *
 	 * @covers ArchivedPostStatus\Schedule\CronRegistrar::recurring_hooks
 	 */
-	public function test_recurring_hooks_includes_the_sweep_hook() {
+	public function test_recurring_hooks_includes_the_sweep_and_stamp_hooks() {
 		$this->assertSame(
-			array( CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES ),
+			array(
+				CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES,
+				CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES,
+			),
 			CronRegistrar::recurring_hooks()
 		);
+	}
+
+	/**
+	 * @covers ArchivedPostStatus\Schedule\CronRegistrar
+	 */
+	public function test_hook_apply_auto_archive_rules_constant_value() {
+		$this->assertSame( 'aps_apply_auto_archive_rules', CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES );
 	}
 
 	// -----------------------------------------------------------------------
@@ -108,8 +123,10 @@ class CronRegistrarTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * A missing event is scheduled -- the self-repair path a site relies on
-	 * after a bad deactivate or a host that flushed the cron option.
+	 * A missing sweep event is scheduled -- the self-repair path a site
+	 * relies on after a bad deactivate or a host that flushed the cron
+	 * option. The stamp event is already on the calendar in this test, so
+	 * only the sweep event's own wp_schedule_event() call is expected.
 	 *
 	 * @covers ArchivedPostStatus\Schedule\CronRegistrar::maybe_schedule_events
 	 */
@@ -117,6 +134,9 @@ class CronRegistrarTest extends TestCase {
 		\WP_Mock::userFunction( 'wp_next_scheduled' )
 			->with( CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES )
 			->andReturn( false );
+		\WP_Mock::userFunction( 'wp_next_scheduled' )
+			->with( CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES )
+			->andReturn( time() + 100 );
 
 		\WP_Mock::userFunction( 'wp_schedule_event' )
 			->once()
@@ -129,14 +149,42 @@ class CronRegistrarTest extends TestCase {
 	}
 
 	/**
-	 * An event already on the calendar is left alone -- scheduling it again
-	 * would reset its next-run time every request.
+	 * A missing stamp event is scheduled on WordPress core's built-in
+	 * `daily` recurrence -- no custom `cron_schedules` entry is needed for
+	 * it, unlike the sweep event's filterable interval.
+	 *
+	 * @covers ArchivedPostStatus\Schedule\CronRegistrar::maybe_schedule_events
+	 */
+	public function test_maybe_schedule_events_schedules_a_missing_stamp_event_on_the_daily_recurrence() {
+		\WP_Mock::userFunction( 'wp_next_scheduled' )
+			->with( CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES )
+			->andReturn( time() + 100 );
+		\WP_Mock::userFunction( 'wp_next_scheduled' )
+			->with( CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES )
+			->andReturn( false );
+
+		\WP_Mock::userFunction( 'wp_schedule_event' )
+			->once()
+			->with( \Mockery::type( 'int' ), 'daily', CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES )
+			->andReturn( true );
+
+		$this->registrar->maybe_schedule_events();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Both events already on the calendar are left alone -- scheduling
+	 * either again would reset its next-run time every request.
 	 *
 	 * @covers ArchivedPostStatus\Schedule\CronRegistrar::maybe_schedule_events
 	 */
 	public function test_maybe_schedule_events_does_not_reschedule_an_existing_event() {
 		\WP_Mock::userFunction( 'wp_next_scheduled' )
 			->with( CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES )
+			->andReturn( time() + 100 );
+		\WP_Mock::userFunction( 'wp_next_scheduled' )
+			->with( CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES )
 			->andReturn( time() + 100 );
 
 		\WP_Mock::userFunction( 'wp_schedule_event' )->never();

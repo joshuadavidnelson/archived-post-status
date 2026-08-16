@@ -13,6 +13,7 @@ namespace ArchivedPostStatus;
 
 use ArchivedPostStatus\Admin;
 use ArchivedPostStatus\Archive\ArchiveMetaListener;
+use ArchivedPostStatus\AutoArchive;
 use ArchivedPostStatus\CLI\ArchiveCommand;
 use ArchivedPostStatus\CLI\CommandRunner;
 use ArchivedPostStatus\CLI\Registrar;
@@ -126,25 +127,42 @@ final class Plugin {
 	}
 
 	/**
-	 * The unconditional schedule/cron hookables: the sweep queue runner,
-	 * cron self-repair, per-post-type schedule meta registration, and the
-	 * archived-post schedule cleanup listener.
+	 * The unconditional schedule/cron hookables: the sweep queue runner, the
+	 * auto-archive stamp queue runner, cron self-repair, per-post-type
+	 * schedule meta registration, and the archived-post schedule cleanup
+	 * listener.
 	 *
-	 * All four fire on cron and REST requests, which are neither
+	 * All five fire on cron and REST requests, which are neither
 	 * `is_admin()` nor `WP_CLI`, so none of them can live inside either
 	 * gated block above -- gating any of them there would mean the sweeper
-	 * never actually runs.
+	 * (or the stamper) never actually runs.
+	 *
+	 * The stamp runner drives a {@see AutoArchive\RuleStamper} over a
+	 * {@see AutoArchive\RuleChain} of exactly one level today --
+	 * {@see AutoArchive\Provider\SiteRuleProvider} -- the same single-level
+	 * cascade {@see AutoArchive\RuleQuery}'s `$min_days` warning documents.
+	 * Phases 7-9 append network, term, and post providers to this same
+	 * array; nothing else about how the runner is built changes.
 	 *
 	 * @since 0.5.0
 	 * @return Contracts\HookableInterface[]
 	 */
 	private function schedule_hookables(): array {
 		$sweep_runner = $this->build_queue_runner( new Schedule\Sweeper() );
+		$stamp_runner = $this->build_queue_runner(
+			new AutoArchive\RuleStamper(
+				new AutoArchive\RuleChain( array( new AutoArchive\Provider\SiteRuleProvider() ) )
+			)
+		);
 
 		$hookables = array();
 
 		if ( $sweep_runner instanceof Contracts\HookableInterface ) {
 			$hookables[] = $sweep_runner;
+		}
+
+		if ( $stamp_runner instanceof Contracts\HookableInterface ) {
+			$hookables[] = $stamp_runner;
 		}
 
 		$hookables[] = new Schedule\CronRegistrar();

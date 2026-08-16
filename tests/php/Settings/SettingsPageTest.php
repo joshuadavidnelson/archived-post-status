@@ -12,6 +12,7 @@
  * appears when aps_last_sweep is stale and not when it is fresh.
  */
 
+use ArchivedPostStatus\AutoArchive\MatchCountPreview;
 use ArchivedPostStatus\Settings\Sanitizer;
 use ArchivedPostStatus\Settings\SettingsPage;
 use ArchivedPostStatus\Settings\Store;
@@ -365,5 +366,103 @@ class SettingsPageTest extends TestCase {
 		foreach ( array( 'is_read_only', 'scheduled_archive_enabled', 'scheduled_archive_post_types', 'auto_archive_enabled', 'auto_archive_types', 'auto_archive_taxonomies', 'auto_archive_age_basis', 'auto_archive_grace_days' ) as $key ) {
 			$this->assertStringContainsString( "name=\"{$key}", $output, "field for '{$key}'" );
 		}
+	}
+
+	// -----------------------------------------------------------------------
+	// maybe_render_match_count_preview() (plan risk #2)
+	// -----------------------------------------------------------------------
+
+	/**
+	 * With auto-archive enabled and a days value stored, the preview shows
+	 * the injected MatchCountPreview's count -- the settings screen's
+	 * safety valve before a rule is ever enabled to fire.
+	 *
+	 * @covers ArchivedPostStatus\Settings\SettingsPage::maybe_render_match_count_preview
+	 */
+	public function test_render_page_shows_the_match_count_preview_when_enabled_with_days_set() {
+		\WP_Mock::userFunction( 'current_user_can' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_option' )
+			->with( 'aps_last_sweep', 0 )
+			->andReturn( time() );
+		\WP_Mock::userFunction( 'get_option' )
+			->with( Store::OPTION_KEY, array() )
+			->andReturn( array( 'auto_archive_enabled' => true, 'auto_archive_days' => 30 ) );
+		\WP_Mock::userFunction( 'settings_fields' )->once();
+		\WP_Mock::userFunction( 'submit_button' )->once();
+		\WP_Mock::userFunction( 'get_taxonomies' )->with( array(), 'objects' )->andReturn( array() );
+		$this->stubSupportedPostTypesBoundary();
+
+		\WP_Mock::userFunction( '_n' )->andReturn( '%s posts currently match this rule and will be scheduled to archive.' );
+		\WP_Mock::userFunction( 'number_format_i18n' )->with( 8412 )->andReturn( '8,412' );
+		\WP_Mock::userFunction( 'esc_html' )->andReturnUsing( static fn( $text ) => $text );
+
+		$preview = new MatchCountPreview( static fn( array $args ) => (object) array( 'found_posts' => 8412 ) );
+		$page    = new SettingsPage( $preview );
+
+		ob_start();
+		$page->render_page();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '8,412', $output );
+	}
+
+	/**
+	 * Silent when auto-archive is off — there is nothing to preview, and
+	 * the injected MatchCountPreview's query_factory must never even run.
+	 *
+	 * @covers ArchivedPostStatus\Settings\SettingsPage::maybe_render_match_count_preview
+	 */
+	public function test_render_page_omits_the_match_count_preview_when_auto_archive_is_disabled() {
+		$this->stubFullRenderBoundary( true, time() );
+
+		$factory_called = false;
+		$preview        = new MatchCountPreview(
+			static function ( array $args ) use ( &$factory_called ) {
+				$factory_called = true;
+				return (object) array( 'found_posts' => 0 );
+			}
+		);
+		$page = new SettingsPage( $preview );
+
+		ob_start();
+		$page->render_page();
+		ob_get_clean();
+
+		$this->assertFalse( $factory_called, 'The count query must not run when auto-archive is disabled.' );
+	}
+
+	/**
+	 * Silent when auto-archive is enabled but no `auto_archive_days` value
+	 * is stored yet — there is no rule to preview.
+	 *
+	 * @covers ArchivedPostStatus\Settings\SettingsPage::maybe_render_match_count_preview
+	 */
+	public function test_render_page_omits_the_match_count_preview_when_enabled_but_no_days_stored() {
+		\WP_Mock::userFunction( 'current_user_can' )->andReturn( true );
+		\WP_Mock::userFunction( 'get_option' )
+			->with( 'aps_last_sweep', 0 )
+			->andReturn( time() );
+		\WP_Mock::userFunction( 'get_option' )
+			->with( Store::OPTION_KEY, array() )
+			->andReturn( array( 'auto_archive_enabled' => true ) );
+		\WP_Mock::userFunction( 'settings_fields' )->once();
+		\WP_Mock::userFunction( 'submit_button' )->once();
+		\WP_Mock::userFunction( 'get_taxonomies' )->with( array(), 'objects' )->andReturn( array() );
+		$this->stubSupportedPostTypesBoundary();
+
+		$factory_called = false;
+		$preview        = new MatchCountPreview(
+			static function ( array $args ) use ( &$factory_called ) {
+				$factory_called = true;
+				return (object) array( 'found_posts' => 0 );
+			}
+		);
+		$page = new SettingsPage( $preview );
+
+		ob_start();
+		$page->render_page();
+		ob_get_clean();
+
+		$this->assertFalse( $factory_called, 'The count query must not run when no auto_archive_days value is stored.' );
 	}
 }

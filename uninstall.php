@@ -31,29 +31,33 @@ function aps_uninstall_site() {
 	delete_option( 'aps_settings' );
 
 	// Mirrors CronQueueRunner's per-queue "aps_last_{$queue}" bookkeeping
-	// option. Only the sweep queue exists as of the 0.5.0 cron wiring, so
-	// this is the only variant to delete today; a future queue gets its own
-	// delete_option() line here, alongside its own entry in
-	// CronRegistrar::RECURRING_EVENTS -- same duplicate-literal reasoning
-	// as the class-constant mirrors throughout this function.
+	// option. Two queues exist as of the 0.5.0 stamp-queue wiring -- sweep
+	// and stamp -- each with its own delete_option() line here, alongside
+	// its own entry in CronRegistrar::RECURRING_EVENTS -- same
+	// duplicate-literal reasoning as the class-constant mirrors throughout
+	// this function.
 	delete_option( 'aps_last_sweep' );
+	delete_option( 'aps_last_stamp' );
 
 	// Mirrors RulesVersion::OPTION_KEY, same duplicate-literal reasoning as
 	// the aps_settings option key above.
 	delete_option( 'aps_rules_version' );
 
-	// Mirrors CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES and
+	// Mirrors CronRegistrar::HOOK_RUN_SCHEDULED_ARCHIVES,
+	// CronRegistrar::HOOK_APPLY_AUTO_ARCHIVE_RULES, and
 	// CronQueueRunner::CONTINUE_HOOK. Literals duplicated on purpose, same
 	// reasoning as the aps_settings option key above.
 	wp_clear_scheduled_hook( 'aps_run_scheduled_archives' );
+	wp_clear_scheduled_hook( 'aps_apply_auto_archive_rules' );
 	wp_clear_scheduled_hook( 'aps_continue_queue' );
 
 	// Mirrors QueueLock's per-queue "aps_queue_lock_{$queue}" transient.
 	// delete_transient() removes both the value and its paired timeout row
-	// in one call. Only the sweep queue exists as of the 0.5.0 cron wiring,
-	// same one-variant-today reasoning as the aps_last_sweep option above --
-	// a future queue gets its own delete_transient() line here.
+	// in one call. Two queues exist as of the 0.5.0 stamp-queue wiring,
+	// same two-variant reasoning as the aps_last_sweep/aps_last_stamp
+	// options above.
 	delete_transient( 'aps_queue_lock_sweep' );
+	delete_transient( 'aps_queue_lock_stamp' );
 
 	// One query per postmeta namespace rather than loading every affected
 	// post into memory. A direct DB call is right here: it runs once during
