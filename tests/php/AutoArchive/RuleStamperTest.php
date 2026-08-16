@@ -21,6 +21,7 @@ use ArchivedPostStatus\AutoArchive\RuleProviderInterface;
 use ArchivedPostStatus\AutoArchive\RuleStamper;
 use ArchivedPostStatus\Schedule\Queue\Budget;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
+use ArchivedPostStatus\Schedule\ScheduleSource;
 
 /**
  * @since 0.5.0
@@ -32,15 +33,52 @@ class RuleStamperTest extends TestCase {
 	 * NetworkStore carries a static in-memory cache -- flush it on both
 	 * sides so a network-settings stub in one test can never leak into the
 	 * next, symmetric with StoreTest's / NetworkStoreTest's own discipline.
+	 *
+	 * A default `$wpdb` double is installed for every test in this file:
+	 * {@see \ArchivedPostStatus\AutoArchive\RuleQuery::post_min_days()} has
+	 * no opt-in gate, unlike the term level's opted-in taxonomy list, so it
+	 * runs unconditionally every time `process_batch()` calls
+	 * {@see \ArchivedPostStatus\AutoArchive\RuleQuery::min_days()} -- which
+	 * is every call in this file. Every test here uses `stubSiteSettings()`'s
+	 * default empty `auto_archive_taxonomies`, so the term aggregate never
+	 * fires; only the post one does, always answering null (no post-level
+	 * override contributes anything), the neutral default that keeps every
+	 * existing test's network/site-only intent unchanged.
 	 */
 	public function set_up() {
 		parent::set_up();
 		\ArchivedPostStatus\Settings\NetworkStore::flush_cache();
+		$GLOBALS['wpdb'] = $this->defaultAggregateWpdbDouble();
 	}
 
 	public function tear_down() {
+		unset( $GLOBALS['wpdb'] );
 		\ArchivedPostStatus\Settings\NetworkStore::flush_cache();
 		parent::tear_down();
+	}
+
+	/**
+	 * A `$wpdb` double answering both of {@see \ArchivedPostStatus\AutoArchive\RuleQuery::min_days()}'s
+	 * meta aggregate queries with null -- mirrors
+	 * {@see \ArchivedPostStatus\AutoArchive\RuleQueryTest}'s own
+	 * `minDaysAggregateWpdbDouble()`, kept as a separate minimal copy here
+	 * since this file only ever needs the neutral "nothing contributes"
+	 * case.
+	 */
+	private function defaultAggregateWpdbDouble(): object {
+		return new class() {
+			public string $termmeta      = 'wp_termmeta';
+			public string $term_taxonomy = 'wp_term_taxonomy';
+			public string $postmeta      = 'wp_postmeta';
+
+			public function prepare( $query, ...$args ) {
+				return $query;
+			}
+
+			public function get_var( $query ) {
+				return null;
+			}
+		};
 	}
 
 	// -----------------------------------------------------------------------
@@ -371,13 +409,17 @@ class RuleStamperTest extends TestCase {
 	}
 
 	/**
-	 * A post already carrying a schedule of ANY source is never stamped by
-	 * the candidate pass, even if a misbehaving `aps_auto_archive_query_args`
+	 * A post already carrying a `rule` or `exempt` schedule is never stamped
+	 * by the candidate pass, even if a misbehaving `aps_auto_archive_query_args`
 	 * filter loosened the candidates query enough to return it -- RuleStamper
 	 * checks for an existing ScheduleMeta record itself, independent of the
-	 * query's own `META_SOURCE NOT EXISTS` clause. The mirror of
-	 * test_manual_and_exempt_posts_are_never_touched_by_the_stale_pass, for
-	 * the candidate pass instead.
+	 * query's own `meta_query` (which admits only never-stamped and
+	 * `manual`-sourced posts -- see {@see RuleQuery::candidates()}). The
+	 * mirror of test_manual_and_exempt_posts_are_never_touched_by_the_stale_pass,
+	 * for the candidate pass instead. This case uses `manual` deliberately
+	 * (the only non-empty source the real query can even hand the candidate
+	 * pass) to prove the PHP-level re-check still applies its own guard
+	 * rather than trusting the SQL clause alone.
 	 *
 	 * @covers ArchivedPostStatus\AutoArchive\RuleStamper::process_batch
 	 */
@@ -408,6 +450,164 @@ class RuleStamperTest extends TestCase {
 		$this->assertSame( 0, $result->processed );
 		$this->assertSame( 0, $result->failed );
 		$this->assertSame( 1, $result->remaining );
+	}
+
+	// -----------------------------------------------------------------------
+	// process_batch() — the absolute date short-circuit (plan §4.3, phase 9)
+	// -----------------------------------------------------------------------
+
+	/**
+	 * THE §4.3 CASE, BY NAME, EXPLICITLY: a post with a manually-set absolute
+	 * date keeps that exact timestamp even though the cascade -- resolving
+	 * through a `Locked` term rule that would otherwise freeze and win over
+	 * everything below it -- would happily produce a different one. Default
+	 * `aps_schedule_absolute_date_wins` is true, so the candidate pass never
+	 * even reaches the point of resolving the chain for this post: no
+	 * `get_post()`, no meta write, and — asserted explicitly rather than
+	 * relying on those structural absences alone — the post's own schedule
+	 * record, read back afterward, is byte-identical to what it was before
+	 * this batch ran.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleStamper::process_batch
+	 */
+	public function test_a_manual_absolute_date_beats_a_locked_term_rule_and_keeps_its_own_timestamp() {
+		$this->stubSiteSettings(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 30,
+				'auto_archive_types'   => array( 'post' ),
+			)
+		);
+		\WP_Mock::userFunction( 'get_option' )->with( 'aps_rules_version', 0 )->andReturn( 1 );
+
+		// A Locked rule -- if the cascade were ever consulted for this post,
+		// it would freeze and win outright. It must never get the chance.
+		$this->stubExistingSchedule( 121, 'manual' );
+
+		$chain   = $this->chainReturning( new Rule( 'term', 3, ChildMode::Locked, 'Category: News' ) );
+		$stamper = $this->stamperWithQueryResults(
+			$chain,
+			array( 'posts' => array( 121 ), 'found_posts' => 1 ),
+			array( 'posts' => array(), 'found_posts' => 0 )
+		);
+
+		\WP_Mock::userFunction( 'get_post' )->never();
+		\WP_Mock::userFunction( 'update_post_meta' )->never();
+
+		$result = $stamper->process_batch( $this->neverExceededBudget() );
+
+		$this->assertSame( 0, $result->processed );
+		$this->assertSame( 1, $result->remaining, 'The manual-dated post stays in the candidate set -- it was never touched, not dropped.' );
+
+		// Explicit §4.3 assertion: read the schedule back and confirm the
+		// exact timestamp {@see stubExistingSchedule()} stored is unchanged.
+		$after = ScheduleMeta::for_post( 121 );
+		$this->assertSame( ScheduleSource::Manual, $after->source );
+		$this->assertSame( 1000, $after->time, "The post's manual timestamp must be exactly what it was before this batch ran." );
+	}
+
+	/**
+	 * §4.3 VIA THE FILTER: `aps_schedule_absolute_date_wins` returning false
+	 * lets the cascade win instead, overwriting the post's manual date with
+	 * the resolved rule -- source flips to `rule`, and the stored timestamp
+	 * changes to the cascade's own computed instant. The filter receives the
+	 * post's own manually-set timestamp as its third argument.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleStamper::process_batch
+	 */
+	public function test_absolute_date_wins_filter_returning_false_lets_the_cascade_override_the_manual_date() {
+		$this->stubSiteSettings(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 30,
+				'auto_archive_types'   => array( 'post' ),
+			)
+		);
+		\WP_Mock::userFunction( 'get_option' )->with( 'aps_rules_version', 0 )->andReturn( 9 );
+
+		$this->stubExistingSchedule( 131, 'manual' );
+
+		\WP_Mock::onFilter( 'aps_schedule_absolute_date_wins' )
+			->with( true, 131, 1000 )
+			->reply( false );
+
+		$chain   = $this->chainReturning( new Rule( 'term', 3, ChildMode::Locked, 'Category: News' ) );
+		$stamper = $this->stamperWithQueryResults(
+			$chain,
+			array( 'posts' => array( 131 ), 'found_posts' => 1 ),
+			array( 'posts' => array(), 'found_posts' => 0 )
+		);
+
+		$post = $this->createMockPost( array( 'ID' => 131, 'post_type' => 'post' ) );
+		\WP_Mock::userFunction( 'get_post' )->with( 131 )->andReturn( $post );
+		\WP_Mock::userFunction( 'get_current_user_id' )->andReturn( 0 );
+		\WP_Mock::userFunction( 'get_post_modified_time' )->with( 'U', true, 131 )->andReturn( time() - DAY_IN_SECONDS );
+
+		$captured = array();
+		\WP_Mock::userFunction( 'update_post_meta' )
+			->andReturnUsing(
+				function ( $post_id, $key, $value ) use ( &$captured ) {
+					$captured[ $key ] = $value;
+					return true;
+				}
+			);
+
+		$result = $stamper->process_batch( $this->neverExceededBudget() );
+
+		$this->assertSame( 1, $result->processed, 'The cascade overrides the manual date once the filter opts out.' );
+		$this->assertSame( 'rule', $captured[ ScheduleMeta::META_SOURCE ] );
+		$this->assertSame( 9, $captured[ ScheduleMeta::META_RULE_VERSION ] );
+		$this->assertNotSame( 1000, $captured[ ScheduleMeta::META_TIME ], 'The stored timestamp must actually change, not just the source label.' );
+	}
+
+	/**
+	 * A `rule`- or `exempt`-sourced record reaching the candidate pass (a
+	 * hypothetical a misbehaving `aps_auto_archive_query_args` filter could
+	 * produce) is unconditionally ineligible -- `aps_schedule_absolute_date_wins`
+	 * governs only the Manual-versus-cascade question and must never even
+	 * apply to either.
+	 *
+	 * Proven, not merely exercised: the filter is forced to reply `false`
+	 * (\"let the cascade win\") for both posts' exact arguments. If the
+	 * non-manual early-return guard were ever removed -- so every source
+	 * reached the filter check -- this reply would flip both posts
+	 * eligible and they would get stamped. They must not; a registered
+	 * `onFilter()` reply that is simply never consulted is not an error in
+	 * WP_Mock's non-strict mode, so this is safe to leave in place whether
+	 * or not the guard fires.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleStamper::process_batch
+	 */
+	public function test_a_non_manual_existing_schedule_is_never_touched_by_the_candidate_pass_regardless_of_the_filter() {
+		$this->stubSiteSettings(
+			array(
+				'auto_archive_enabled' => true,
+				'auto_archive_days'    => 30,
+				'auto_archive_types'   => array( 'post' ),
+			)
+		);
+		\WP_Mock::userFunction( 'get_option' )->with( 'aps_rules_version', 0 )->andReturn( 1 );
+
+		$this->stubExistingSchedule( 141, 'rule' );
+		$this->stubExistingSchedule( 142, 'exempt' );
+
+		\WP_Mock::onFilter( 'aps_schedule_absolute_date_wins' )->with( true, 141, 1000 )->reply( false );
+		\WP_Mock::onFilter( 'aps_schedule_absolute_date_wins' )->with( true, 142, 1000 )->reply( false );
+
+		$chain   = $this->chainReturning( new Rule( 'site', 30, ChildMode::Open, 'Site default' ) );
+		$stamper = $this->stamperWithQueryResults(
+			$chain,
+			array( 'posts' => array( 141, 142 ), 'found_posts' => 2 ),
+			array( 'posts' => array(), 'found_posts' => 0 )
+		);
+
+		\WP_Mock::userFunction( 'get_post' )->never();
+		\WP_Mock::userFunction( 'update_post_meta' )->never();
+
+		$result = $stamper->process_batch( $this->neverExceededBudget() );
+
+		$this->assertSame( 0, $result->processed );
+		$this->assertSame( 2, $result->remaining );
 	}
 
 	// -----------------------------------------------------------------------

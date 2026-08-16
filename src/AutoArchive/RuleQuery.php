@@ -7,6 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
 use ArchivedPostStatus\Archive\ArchivableStatuses;
 use ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider;
+use ArchivedPostStatus\AutoArchive\Provider\PostRuleProvider;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleSource;
 use ArchivedPostStatus\Settings\Schema;
@@ -25,17 +26,15 @@ use ArchivedPostStatus\Settings\Schema;
  * MUST be the smallest `days` value ANY cascade level could currently
  * produce for ANY post the query might match — never one level's value in
  * isolation. {@see self::min_days()} is where this class computes that
- * number for {@see RuleStamper} to pass in; as of phase 8 it takes the
- * minimum across {@see \ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider},
- * the site level's own settings, and the smallest `days` value stored in
- * TERM META across every opted-in taxonomy — see {@see self::term_min_days()}
- * for the query and the deliberate choices behind it. **Phase 9, which adds
- * the post level, must extend {@see self::min_days()} further**: a post
- * override of 1 day can be smaller than every level already checked here,
- * and the caller computing `$min_days` must take the minimum across every
- * level that could apply, not just the ones already covered. Getting this
- * wrong does not throw or log anything — a post whose effective rule is
- * smaller than the `$min_days` this method was called with is silently
+ * number for {@see RuleStamper} to pass in; it takes the minimum across
+ * {@see \ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider}, the
+ * site level's own settings, the smallest `days` value stored in TERM META
+ * across every opted-in taxonomy (see {@see self::term_min_days()} for the
+ * query and the deliberate choices behind it), and — as of phase 9, the
+ * final extension this method needs — the smallest `_aps_auto_archive_days`
+ * stored anywhere in POSTMETA (see {@see self::post_min_days()}). Getting
+ * this wrong does not throw or log anything — a post whose effective rule
+ * is smaller than the `$min_days` this method was called with is silently
  * invisible to `date_query`, and simply never archives. There is no
  * correctness check inside this class that can catch that mistake; it can
  * only be caught by whoever computes the right number.
@@ -55,13 +54,26 @@ final class RuleQuery {
 	/**
 	 * Query args for posts eligible to be newly stamped by the cascade.
 	 *
-	 * `META_SOURCE NOT EXISTS` is this query's own manual/exempt exclusion: a
-	 * post that already carries ANY source — `manual`, `rule`, or the
-	 * `exempt` tombstone — never matches, by construction. {@see RuleStamper}
-	 * does not trust this clause alone, though: its candidate pass
-	 * independently re-checks for an existing {@see ScheduleMeta} record
-	 * before ever writing, the same defense-in-depth its stale-refresh pass
-	 * applies against its own query — see that class's docblock.
+	 * The `meta_query` admits two kinds of post: one with **no** `META_SOURCE`
+	 * at all (never stamped or scheduled), OR one already carrying
+	 * `source = manual`. A `Rule`- or `Exempt`-sourced post is excluded by
+	 * construction — a `Rule` record belongs to {@see self::stale_refreshes()}
+	 * instead, and the `Exempt` tombstone has no opt-out (plan §4.3).
+	 *
+	 * The `manual` branch exists so {@see RuleStamper::eligible_as_candidate()}
+	 * actually gets a chance to run its per-post
+	 * `aps_schedule_absolute_date_wins` check (plan §4.3/§5.11) against real
+	 * candidates — excluding every manual-sourced post here, the way the
+	 * no-source case alone would, made that filter permanently unreachable in
+	 * production: a site flipping it would see no behavior change, because no
+	 * manual-sourced post could ever reach the code that consults it. The
+	 * default outcome is unchanged (the PHP-level check still keeps a manual
+	 * date in place unless the filter says otherwise); only reachability
+	 * changes. {@see RuleStamper} does not trust this clause alone, either
+	 * way: its candidate pass independently re-checks each post's actual
+	 * {@see ScheduleMeta} record before ever writing, the same defense-in-
+	 * depth its stale-refresh pass applies against its own query — see that
+	 * class's docblock.
 	 *
 	 * The `date_query` cutoff is `$min_days` before `$now`, on the column
 	 * `auto_archive_age_basis` names (`post_modified_gmt` for `modified`,
@@ -87,10 +99,16 @@ final class RuleQuery {
 		$args = array(
 			'post_type'           => self::post_types(),
 			'post_status'         => ArchivableStatuses::all(),
-			'meta_query'          => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- a NOT EXISTS clause on the schedule source is this query's whole purpose; there is no meta-free way to express "never been stamped or scheduled".
+			'meta_query'          => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- "never stamped" OR "manually scheduled" is this query's whole purpose; there is no meta-free way to express either half.
+				'relation' => 'OR',
 				array(
 					'key'     => ScheduleMeta::META_SOURCE,
 					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => ScheduleMeta::META_SOURCE,
+					'value'   => ScheduleSource::Manual->value,
+					'compare' => '=',
 				),
 			),
 			'date_query'          => array(
@@ -176,7 +194,7 @@ final class RuleQuery {
 	 */
 	public static function min_days(): ?int {
 		$candidates = array_filter(
-			array( self::network_min_days(), self::site_min_days(), self::term_min_days() ),
+			array( self::network_min_days(), self::site_min_days(), self::term_min_days(), self::post_min_days() ),
 			static fn ( ?int $days ): bool => null !== $days
 		);
 
@@ -261,6 +279,40 @@ final class RuleQuery {
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return null === $min ? null : (int) $min;
+	}
+
+	/**
+	 * The post level's own contribution to {@see self::min_days()}: the
+	 * smallest {@see PostRuleProvider::META_DAYS} stored across ANY post's
+	 * own override, network-wide within this site — a genuine `MIN()`
+	 * aggregate, the same shape as {@see self::term_min_days()}'s, not a
+	 * per-post walk.
+	 *
+	 * Unlike the term aggregate, there is no opt-in taxonomy list to join
+	 * against: a post-level override is meaningful the moment it is stored,
+	 * regardless of that post's own type or status, so no `WHERE` clause
+	 * beyond the meta key itself is correct here — narrowing it (e.g. to
+	 * `auto_archive_types`) would risk excluding a post whose type was
+	 * opted in after the override was already written.
+	 *
+	 * Null when no post anywhere has ever stored an override.
+	 *
+	 * @since 0.5.0
+	 * @return ?int
+	 */
+	private static function post_min_days(): ?int {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- a MIN() aggregate across every post's own override has no WP_Query equivalent; called once per stamp batch (see the class docblock), never per post.
+		$min = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT MIN( meta_value + 0 ) FROM {$wpdb->postmeta} WHERE meta_key = %s",
+				PostRuleProvider::META_DAYS
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		return null === $min ? null : (int) $min;
 	}

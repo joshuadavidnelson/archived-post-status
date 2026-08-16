@@ -149,31 +149,25 @@ final class Plugin {
 	 * gated block above -- gating any of them there would mean the sweeper
 	 * (or the stamper) never actually runs.
 	 *
-	 * The stamp runner drives a {@see AutoArchive\RuleStamper} over a
-	 * {@see AutoArchive\RuleChain} of three levels today --
-	 * {@see AutoArchive\Provider\NetworkRuleProvider},
-	 * {@see AutoArchive\Provider\SiteRuleProvider}, then
-	 * {@see AutoArchive\Provider\TermRuleProvider}, general to specific, per
-	 * the resolver's own ordering requirement -- the same cascade
-	 * {@see AutoArchive\RuleQuery}'s `$min_days` warning documents. Phase 9
-	 * appends the post provider to this same array; nothing else about how
-	 * the runner is built changes.
+	 * The stamp runner drives a {@see AutoArchive\RuleStamper} over
+	 * {@see AutoArchive\RuleChain::default()} — the canonical four-level
+	 * cascade (network, site, term, post), general to specific, per the
+	 * resolver's own ordering requirement -- the same cascade
+	 * {@see AutoArchive\RuleQuery}'s `$min_days` warning documents. Building
+	 * the chain through that one factory, rather than assembling the
+	 * provider list here directly, is what keeps this wiring and
+	 * {@see \aps_get_auto_archive_rule()}'s public read API from ever
+	 * drifting apart on which levels exist or in what order.
 	 *
 	 * @since 0.5.0
 	 * @return Contracts\HookableInterface[]
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- RuleChain::default() is the canonical chain-factory accessor.
 	 */
 	private function schedule_hookables(): array {
 		$sweep_runner = $this->build_queue_runner( new Schedule\Sweeper() );
 		$stamp_runner = $this->build_queue_runner(
-			new AutoArchive\RuleStamper(
-				new AutoArchive\RuleChain(
-					array(
-						new AutoArchive\Provider\NetworkRuleProvider(),
-						new AutoArchive\Provider\SiteRuleProvider(),
-						new AutoArchive\Provider\TermRuleProvider(),
-					)
-				)
-			)
+			new AutoArchive\RuleStamper( AutoArchive\RuleChain::default() )
 		);
 
 		$hookables = array();

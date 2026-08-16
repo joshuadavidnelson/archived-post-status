@@ -34,21 +34,23 @@ use ArchivedPostStatus\Settings\Schema;
  * {@see RuleQuery::min_days()}.** Living there rather than here is
  * deliberate: `RuleStamper` already depends on `RuleQuery` for both
  * passes' query args, so resolving `$min_days` there too adds no
- * additional coupling to the network or term level's own classes. As of
- * phase 8, `$min_days` covers network, site, AND term meta across the
- * opted-in taxonomies. **Phase 9 must extend `RuleQuery::min_days()`
- * further** to also cover any post-level override, or a post whose
- * effective rule is smaller than every level already checked there
- * becomes invisible to the candidate query and silently never archives.
+ * additional coupling to the network, term, or post level's own classes.
+ * `$min_days` covers network, site, term meta across the opted-in
+ * taxonomies, AND any post-level override — the complete cascade this
+ * release ships.
  *
  * Neither pass trusts its query's filtering alone, and both re-check the
  * same way: the stale-refresh pass independently reads each post's existing
  * {@see ScheduleMeta} and refuses to touch anything whose `source` is not
  * {@see ScheduleSource::Rule}; the candidate pass independently refuses to
  * touch anything that already has a {@see ScheduleMeta} record at all,
- * regardless of source. An editor's manual date, and an editor's deliberate
- * exemption, both outrank any rule, and that guarantee must hold even if a
- * future `aps_auto_archive_query_args` filter loosens either query.
+ * regardless of source — UNLESS that record is manual and a site has
+ * explicitly opted out of plan §4.3's absolute-date short-circuit via
+ * `aps_schedule_absolute_date_wins` (see {@see self::eligible_as_candidate()}).
+ * An editor's deliberate exemption always outranks any rule, with no such
+ * opt-out — only the manual-date guarantee is filterable, per the plan.
+ * This must hold even if a future `aps_auto_archive_query_args` filter
+ * loosens either query.
  *
  * @since 0.5.0
  */
@@ -272,10 +274,18 @@ final class RuleStamper implements BatchProcessorInterface {
 
 	/**
 	 * Whether a fresh candidate is actually eligible to be stamped: it must
-	 * have no existing {@see ScheduleMeta} record at all, of any source —
-	 * see the class docblock. This is the candidate pass's twin of
+	 * have no existing {@see ScheduleMeta} record at all — see the class
+	 * docblock. This is the candidate pass's twin of
 	 * {@see eligible_for_refresh()}, checked independently of
 	 * {@see RuleQuery::candidates()}'s own `META_SOURCE NOT EXISTS` clause.
+	 *
+	 * An `Exempt` or `Rule`-sourced record is unconditionally ineligible —
+	 * the exempt tombstone has no opt-out, and a `Rule`-sourced record
+	 * belongs to the stale-refresh pass instead. A `Manual` record is the
+	 * one case plan §4.3 makes filterable: {@see self::absolute_date_wins()}
+	 * decides whether the editor's direct instruction keeps outranking the
+	 * cascade outright, including a `Locked` ancestor rule the chain would
+	 * otherwise never even get to consult for this post.
 	 *
 	 * @since 0.5.0
 	 * @param int $post_id The post ID.
@@ -284,7 +294,49 @@ final class RuleStamper implements BatchProcessorInterface {
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical value-object accessor.
 	 */
 	private function eligible_as_candidate( int $post_id ): bool {
-		return null === ScheduleMeta::for_post( $post_id );
+		$existing = ScheduleMeta::for_post( $post_id );
+
+		if ( null === $existing ) {
+			return true;
+		}
+
+		if ( ScheduleSource::Manual !== $existing->source ) {
+			return false;
+		}
+
+		return ! $this->absolute_date_wins( $post_id, $existing->time );
+	}
+
+	/**
+	 * Whether a post's manually-set absolute archive date outranks the
+	 * auto-archive cascade outright (plan §4.3) — the decision point behind
+	 * {@see self::eligible_as_candidate()}'s manual-source branch.
+	 *
+	 * @since 0.5.0
+	 * @param int $post_id   The post ID.
+	 * @param int $timestamp The manually-set UTC epoch this post is
+	 *                       currently scheduled for.
+	 * @return bool
+	 */
+	private function absolute_date_wins( int $post_id, int $timestamp ): bool {
+
+		/**
+		 * Filters whether a post's manually-set absolute archive date
+		 * outranks the auto-archive cascade outright (plan §4.3) —
+		 * including a `Locked` ancestor rule, which the cascade would
+		 * otherwise never even be consulted for on this post at all.
+		 *
+		 * Default true: an editor's direct instruction wins. A site
+		 * returning false here lets a `Locked` (or `Off`) rule above this
+		 * post override its manual date on the next stamp run.
+		 *
+		 * @since 0.5.0
+		 * @param bool $wins      Whether the manual date wins outright. Default true.
+		 * @param int  $post_id   The post ID.
+		 * @param int  $timestamp The manually-set UTC epoch this post is
+		 *                        currently scheduled for.
+		 */
+		return (bool) apply_filters( 'aps_schedule_absolute_date_wins', true, $post_id, $timestamp );
 	}
 
 	/**

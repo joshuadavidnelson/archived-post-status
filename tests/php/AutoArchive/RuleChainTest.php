@@ -45,6 +45,10 @@
  */
 
 use ArchivedPostStatus\AutoArchive\ChildMode;
+use ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider;
+use ArchivedPostStatus\AutoArchive\Provider\PostRuleProvider;
+use ArchivedPostStatus\AutoArchive\Provider\SiteRuleProvider;
+use ArchivedPostStatus\AutoArchive\Provider\TermRuleProvider;
 use ArchivedPostStatus\AutoArchive\ResolvedRule;
 use ArchivedPostStatus\AutoArchive\Rule;
 use ArchivedPostStatus\AutoArchive\RuleChain;
@@ -546,5 +550,29 @@ class RuleChainTest extends TestCase {
 		$resolved = ( new RuleChain( array( $site ) ) )->resolve_for( 42 );
 
 		$this->assertFalse( $resolved->is_scheduled() );
+	}
+
+	// -----------------------------------------------------------------------
+	// default() -- the canonical four-level chain factory (0.5.0 phase 9).
+	// Plugin::schedule_hookables() and aps_get_auto_archive_rule() both build
+	// their RuleChain through this one factory rather than each keeping its
+	// own copy of the provider list.
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @covers ArchivedPostStatus\AutoArchive\RuleChain::default
+	 */
+	public function test_default_assembles_the_canonical_four_level_chain_in_order() {
+		$chain = RuleChain::default();
+
+		$providers_property = new ReflectionProperty( RuleChain::class, 'providers' );
+		$providers_property->setAccessible( true );
+		$providers = $providers_property->getValue( $chain );
+
+		$this->assertCount( 4, $providers );
+		$this->assertInstanceOf( NetworkRuleProvider::class, $providers[0], 'The network level must be first -- general to specific.' );
+		$this->assertInstanceOf( SiteRuleProvider::class, $providers[1] );
+		$this->assertInstanceOf( TermRuleProvider::class, $providers[2] );
+		$this->assertInstanceOf( PostRuleProvider::class, $providers[3], 'The post level must be last -- most specific of the four.' );
 	}
 }

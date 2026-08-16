@@ -5,26 +5,29 @@ namespace ArchivedPostStatus\Schedule;
 // Exit if accessed directly, prevent direct access to this file.
 if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
 
+use ArchivedPostStatus\AutoArchive\Provider\PostRuleProvider;
 use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 
 /**
- * Registers {@see ScheduleMeta::META_TIME} as REST-visible post meta, and
- * keeps {@see ScheduleMeta::META_SOURCE} in sync with it however it is
+ * Registers {@see ScheduleMeta::META_TIME} and
+ * {@see PostRuleProvider::META_DAYS} as REST-visible post meta, and keeps
+ * {@see ScheduleMeta::META_SOURCE} in sync with META_TIME however it is
  * written.
  *
- * Only META_TIME is registered with `register_post_meta()` -- the other
- * four {@see ScheduleMeta} keys are internal bookkeeping and deliberately
- * stay out of REST. `show_in_rest` is what lets the block editor panel
- * (phase 11) save a schedule through the ordinary post save with no custom
- * AJAX endpoint.
+ * Only these two keys are registered with `register_post_meta()` -- the
+ * other four {@see ScheduleMeta} keys are internal bookkeeping and
+ * deliberately stay out of REST. `show_in_rest` is what lets the block
+ * editor panel (phase 11) save a schedule, and a post-level auto-archive
+ * override, through the ordinary post save with no custom AJAX endpoint.
  *
- * The `auth_callback` checks the archive capability for the specific post
- * being saved, not a type-level `edit_posts`: scheduling a post is
- * pre-authorizing its eventual archive, so it takes the same capability
- * {@see \ArchivedPostStatus\Archive\ArchiveCapability} already grants for
- * archiving that post outright. A type-level check would let a Contributor
- * pass it for a post they cannot touch.
+ * Both keys share the same `auth_callback`: it checks the archive
+ * capability for the specific post being saved, not a type-level
+ * `edit_posts`. Scheduling a post, and setting its own auto-archive
+ * override, are both pre-authorizing its eventual archive, so both take the
+ * same capability {@see \ArchivedPostStatus\Archive\ArchiveCapability}
+ * already grants for archiving that post outright. A type-level check would
+ * let a Contributor pass it for a post they cannot touch.
  *
  * `added_post_meta` / `updated_post_meta` close the gap between the two
  * ways a schedule's "does this post have a schedule at all" question gets
@@ -56,7 +59,8 @@ final class MetaRegistrar implements HookableInterface {
 	}
 
 	/**
-	 * `init` callback: registers META_TIME for every supported post type.
+	 * `init` callback: registers META_TIME and the post-level auto-archive
+	 * override for every supported post type.
 	 *
 	 * @since 0.5.0
 	 * @return void
@@ -64,13 +68,15 @@ final class MetaRegistrar implements HookableInterface {
 	public function register_meta(): void {
 		foreach ( aps_get_supported_post_types() as $post_type ) {
 			register_post_meta( $post_type, ScheduleMeta::META_TIME, self::meta_args() );
+			register_post_meta( $post_type, PostRuleProvider::META_DAYS, self::meta_args() );
 		}
 	}
 
 	/**
-	 * The `register_post_meta()` args shared by every supported post type.
-	 * Its own method so a test can inspect the exact array a live
-	 * `register_post_meta()` call receives.
+	 * The `register_post_meta()` args shared by both keys, for every
+	 * supported post type -- both are single integer values gated on the
+	 * same per-post auth_callback. Its own method so a test can inspect the
+	 * exact array a live `register_post_meta()` call receives.
 	 *
 	 * @since 0.5.0
 	 * @return array<string, mixed>
@@ -85,14 +91,14 @@ final class MetaRegistrar implements HookableInterface {
 	}
 
 	/**
-	 * The `auth_callback` for META_TIME's REST registration.
+	 * The shared `auth_callback` for both keys' REST registration.
 	 *
 	 * @since 0.5.0
 	 * @param bool   $allowed Whether the meta key is currently allowed
 	 *                        (unused; part of the locked auth_callback signature).
 	 * @param string $meta_key The meta key being authorized (unused; part
 	 *                         of the locked auth_callback signature).
-	 * @param int    $post_id  The post this schedule would apply to.
+	 * @param int    $post_id  The post this schedule or override would apply to.
 	 * @return bool
 	 *
 	 * @SuppressWarnings("PHPMD.UnusedFormalParameter") -- locked auth_callback signature.

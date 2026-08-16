@@ -34,6 +34,8 @@
 
 use ArchivedPostStatus\Archive\ArchiveMeta;
 use ArchivedPostStatus\Archive\ArchiveMetaListener;
+use ArchivedPostStatus\AutoArchive\Provider\PostRuleProvider;
+use ArchivedPostStatus\AutoArchive\ResolvedRule;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleSource;
 
@@ -756,6 +758,59 @@ class PublicApiTest extends TestCase {
 			->with( 129, ScheduleMeta::META_ATTEMPTS, true )->andReturn( '0' );
 
 		$this->assertNull( aps_get_scheduled_archive_time( 129 ) );
+	}
+
+	// -----------------------------------------------------------------------
+	// aps_get_auto_archive_rule
+	// -----------------------------------------------------------------------
+
+	/**
+	 * aps_get_auto_archive_rule() consults the real four-level cascade
+	 * ({@see \ArchivedPostStatus\AutoArchive\RuleChain::default()}) and
+	 * returns a ResolvedRule carrying `origin_label` -- the UI provenance
+	 * phase 11's editor panel renders directly. Only the post level
+	 * contributes here (network not activated, site disabled, no opted-in
+	 * taxonomy), so the resolved outcome is exactly the post's own
+	 * override.
+	 *
+	 * @covers ::aps_get_auto_archive_rule
+	 */
+	public function test_aps_get_auto_archive_rule_returns_a_resolved_rule_carrying_origin_label() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		\WP_Mock::onFilter( 'aps_auto_archive_enabled' )->with( false )->reply( false );
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )->with( array( 'category' ) )->reply( array() );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 42, PostRuleProvider::META_DAYS, true )
+			->andReturn( '6' );
+
+		$resolved = aps_get_auto_archive_rule( 42 );
+
+		$this->assertInstanceOf( ResolvedRule::class, $resolved );
+		$this->assertSame( 6, $resolved->days );
+		$this->assertSame( 'post', $resolved->origin_level );
+		$this->assertSame( 'Post override', $resolved->origin_label );
+		$this->assertNull( $resolved->frozen_by );
+	}
+
+	/**
+	 * No level in the chain sets anything: the ResolvedRule is still a real
+	 * instance, not null -- `ResolvedRule::is_scheduled()` is how a caller
+	 * tells "nothing to auto-archive" apart from "the cascade errored".
+	 *
+	 * @covers ::aps_get_auto_archive_rule
+	 */
+	public function test_aps_get_auto_archive_rule_returns_an_unscheduled_resolved_rule_when_no_level_sets_anything() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		\WP_Mock::onFilter( 'aps_auto_archive_enabled' )->with( false )->reply( false );
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )->with( array( 'category' ) )->reply( array() );
+		\WP_Mock::userFunction( 'get_post_meta' )
+			->with( 43, PostRuleProvider::META_DAYS, true )
+			->andReturn( '' );
+
+		$resolved = aps_get_auto_archive_rule( 43 );
+
+		$this->assertInstanceOf( ResolvedRule::class, $resolved );
+		$this->assertFalse( $resolved->is_scheduled() );
 	}
 
 	// -----------------------------------------------------------------------

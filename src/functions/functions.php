@@ -18,6 +18,7 @@ use ArchivedPostStatus\Archive\ArchiveOperation;
 use ArchivedPostStatus\Archive\ReadOnlyPolicy;
 use ArchivedPostStatus\Archive\UnarchiveOperation;
 use ArchivedPostStatus\Archive\ViewCapability;
+use ArchivedPostStatus\AutoArchive\RuleChain;
 use ArchivedPostStatus\Frontend\ArchivedPostLink;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleOperation;
@@ -345,6 +346,36 @@ function aps_get_scheduled_archive_time( $post_id = 0 ) {
 	}
 
 	return $meta->time;
+}
+
+/**
+ * Get the resolved auto-archive outcome for a post: whether it will be
+ * auto-archived, in how many days, and which cascade level's rule decided
+ * it (plan §4). `origin_label` carries UI provenance -- e.g. "Category:
+ * News" -- so a caller like the block editor panel (0.5.0 phase 11) can
+ * render "3 March 2027 — from Category: News" without recomputing anything
+ * against the cascade itself.
+ *
+ * Always returns a real ResolvedRule, never null -- "nothing to
+ * auto-archive" is represented WITHIN the object (`is_scheduled()` false,
+ * `days` null), the same way {@see RuleChain::resolve_for()} itself never
+ * returns null for an empty chain. Check `ResolvedRule::is_scheduled()`
+ * before treating `days` as meaningful.
+ *
+ * Consults the SAME four-level chain {@see \ArchivedPostStatus\Plugin}
+ * wires the stamp queue over -- {@see RuleChain::default()} is the one
+ * place that provider list is assembled, so this function and the stamper
+ * can never drift apart on which levels exist or in what order.
+ *
+ * @since 0.5.0
+ * @param int $post_id The post ID.
+ * @return \ArchivedPostStatus\AutoArchive\ResolvedRule
+ *
+ * @SuppressWarnings("PHPMD.StaticAccess") -- delegate to
+ * {@see RuleChain::default()} / {@see RuleChain::resolve_for()}.
+ */
+function aps_get_auto_archive_rule( $post_id = 0 ) {
+	return RuleChain::default()->resolve_for( (int) $post_id );
 }
 
 /**

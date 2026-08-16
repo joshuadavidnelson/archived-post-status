@@ -7,6 +7,7 @@
  * @covers ArchivedPostStatus\Schedule\MetaRegistrar
  */
 
+use ArchivedPostStatus\AutoArchive\Provider\PostRuleProvider;
 use ArchivedPostStatus\Hooks\HookDescriptor;
 use ArchivedPostStatus\Schedule\MetaRegistrar;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
@@ -58,13 +59,14 @@ class MetaRegistrarTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * META_TIME is registered, with REST enabled, for every supported post
-	 * type -- and only META_TIME; the other four ScheduleMeta keys are
+	 * META_TIME and the post-level auto-archive override (0.5.0 phase 9)
+	 * are both registered, with REST enabled, for every supported post
+	 * type -- and only those two; the other four ScheduleMeta keys are
 	 * internal bookkeeping that must stay out of REST entirely.
 	 *
 	 * @covers ArchivedPostStatus\Schedule\MetaRegistrar::register_meta
 	 */
-	public function test_register_meta_registers_time_key_for_every_supported_post_type() {
+	public function test_register_meta_registers_both_keys_for_every_supported_post_type() {
 		\WP_Mock::userFunction( 'get_post_types' )
 			->with( array( 'public' => true ) )
 			->andReturn( array( 'post' => 'post', 'page' => 'page' ) );
@@ -84,16 +86,30 @@ class MetaRegistrarTest extends TestCase {
 
 		$this->registrar->register_meta();
 
-		$this->assertCount( 2, $registered );
+		$this->assertCount( 4, $registered, 'two keys x two post types' );
 
+		$by_post_type = array();
 		foreach ( $registered as $call ) {
 			$this->assertContains( $call[0], array( 'post', 'page' ) );
-			$this->assertSame( ScheduleMeta::META_TIME, $call[1] );
+			$this->assertContains( $call[1], array( ScheduleMeta::META_TIME, PostRuleProvider::META_DAYS ) );
 			$this->assertSame( 'integer', $call[2]['type'] );
 			$this->assertTrue( $call[2]['single'] );
 			$this->assertTrue( $call[2]['show_in_rest'] );
 			$this->assertIsCallable( $call[2]['auth_callback'] );
+
+			$by_post_type[ $call[0] ][] = $call[1];
 		}
+
+		$this->assertSame(
+			array( ScheduleMeta::META_TIME, PostRuleProvider::META_DAYS ),
+			$by_post_type['post'],
+			'Both keys must be registered for the "post" post type, in order.'
+		);
+		$this->assertSame(
+			array( ScheduleMeta::META_TIME, PostRuleProvider::META_DAYS ),
+			$by_post_type['page'],
+			'Both keys must be registered for the "page" post type, in order.'
+		);
 	}
 
 	// -----------------------------------------------------------------------

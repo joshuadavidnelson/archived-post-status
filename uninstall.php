@@ -80,6 +80,18 @@ function aps_uninstall_site() {
 		)
 	);
 
+	// Mirrors PostRuleProvider::META_DAYS, the post-level cascade override --
+	// the SAME _aps_auto_archive_days literal the termmeta DELETE below
+	// clears, but on postmeta: a post has no child_mode of its own, so this
+	// is a one-key family, unlike TermMeta's two-key one, but still a LIKE
+	// DELETE for consistency with every other namespace this function clears.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( '_aps_auto_archive_' ) . '%'
+		)
+	);
+
 	// Mirrors TermMeta's two _aps_auto_archive_* keys (days, child_mode) --
 	// term meta, unlike every other row this function deletes, lives in
 	// wp_termmeta, a per-site table like postmeta, so this runs inside

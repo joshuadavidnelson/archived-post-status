@@ -151,10 +151,11 @@ class PluginTest extends TestCase {
 
 	/**
 	 * The second `CronQueueRunner` instance wraps a `RuleStamper`
-	 * constructed over a `RuleChain` of three providers, general to specific
-	 * per the resolver's own ordering requirement -- `NetworkRuleProvider`,
-	 * `SiteRuleProvider`, then `TermRuleProvider` -- the three-level cascade
-	 * this phase ships. Reflection is required because both
+	 * constructed over `RuleChain::default()` -- the canonical four-level
+	 * cascade, general to specific per the resolver's own ordering
+	 * requirement -- `NetworkRuleProvider`, `SiteRuleProvider`,
+	 * `TermRuleProvider`, then `PostRuleProvider`, the full cascade this
+	 * release ships (0.5.0 phase 9). Reflection is required because both
 	 * `CronQueueRunner::$processor` and `RuleStamper::$chain` are private
 	 * readonly properties with no public accessor, and `RuleChain::$providers`
 	 * likewise -- same pattern as the other private-property pins in this file.
@@ -162,7 +163,7 @@ class PluginTest extends TestCase {
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 * @covers ArchivedPostStatus\Plugin::schedule_hookables
 	 */
-	public function test_hookables_wires_the_stamp_runner_with_a_rule_stamper_over_a_network_then_site_then_term_rule_provider_chain() {
+	public function test_hookables_wires_the_stamp_runner_with_a_rule_stamper_over_a_network_then_site_then_term_then_post_rule_provider_chain() {
 		\WP_Mock::onFilter( 'aps_enable_archive_meta' )->with( true )->reply( true );
 		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
 
@@ -196,10 +197,11 @@ class PluginTest extends TestCase {
 		$providers_property->setAccessible( true );
 		$providers = $providers_property->getValue( $chain );
 
-		$this->assertCount( 3, $providers );
+		$this->assertCount( 4, $providers );
 		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider::class, $providers[0], 'The network level must be first -- general to specific.' );
 		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\SiteRuleProvider::class, $providers[1] );
-		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\TermRuleProvider::class, $providers[2], 'The term level must be last -- most specific of the three.' );
+		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\TermRuleProvider::class, $providers[2] );
+		$this->assertInstanceOf( ArchivedPostStatus\AutoArchive\Provider\PostRuleProvider::class, $providers[3], 'The post level must be last -- most specific of the four.' );
 	}
 
 	/**

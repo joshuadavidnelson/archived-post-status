@@ -52,6 +52,33 @@ final class RuleChain {
 	public function __construct( private readonly array $providers ) {}
 
 	/**
+	 * The canonical cascade, general to specific: network, site, term, post
+	 * — the four levels this release ships, in the order
+	 * {@see RuleResolver::resolve()}'s own "last explicit value wins" rule
+	 * requires to produce "most specific wins" (plan §4.1).
+	 *
+	 * The single place this provider list is assembled. Both
+	 * {@see \ArchivedPostStatus\Plugin::schedule_hookables()} (the stamp
+	 * queue's chain) and {@see \aps_get_auto_archive_rule()} (the public
+	 * read API) build their `RuleChain` through this factory rather than
+	 * each keeping — and risking drifting from — their own copy of the
+	 * provider list.
+	 *
+	 * @since 0.5.0
+	 * @return self
+	 */
+	public static function default(): self {
+		return new self(
+			array(
+				new Provider\NetworkRuleProvider(),
+				new Provider\SiteRuleProvider(),
+				new Provider\TermRuleProvider(),
+				new Provider\PostRuleProvider(),
+			)
+		);
+	}
+
+	/**
 	 * Resolve the cascade for one post: assemble the chain, then resolve it.
 	 *
 	 * @since 0.5.0
