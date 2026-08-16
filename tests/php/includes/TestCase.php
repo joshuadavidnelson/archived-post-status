@@ -72,4 +72,24 @@ class TestCase extends BaseTestCase {
 		return $post;
 	}
 
+	/**
+	 * Build a plain WP_Term double with overridable defaults. A real
+	 * (non-Mockery) instance, since term fixtures in this suite are read
+	 * purely for their public properties — mirrors {@see createMockPost()}'s
+	 * shape without the mocking-framework overhead it exists for.
+	 *
+	 * @param array<string, mixed> $args Overrides for the default attributes.
+	 * @return WP_Term
+	 */
+	protected function createMockTerm( array $args = [] ) {
+		$defaults = [
+			'term_id'  => 10,
+			'name'     => 'Test Term',
+			'slug'     => 'test-term',
+			'taxonomy' => 'category',
+		];
+
+		return new WP_Term( array_merge( $defaults, $args ) );
+	}
+
 }

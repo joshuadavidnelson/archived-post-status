@@ -25,18 +25,20 @@ use ArchivedPostStatus\Settings\Schema;
  * MUST be the smallest `days` value ANY cascade level could currently
  * produce for ANY post the query might match — never one level's value in
  * isolation. {@see self::min_days()} is where this class computes that
- * number for {@see RuleStamper} to pass in; as of phase 7 it takes the
- * minimum across {@see \ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider}
- * and the site level's own settings. **Phases 8 and 9, which add the term
- * and post levels, must extend {@see self::min_days()} further**: a term
- * rule of 3 days or a post override of 1 day can each be smaller than either
- * level phase 7 already checks, and the caller computing `$min_days` must
- * take the minimum across every level that could apply, not just the ones
- * already covered. Getting this wrong does not throw or log anything — a
- * post whose effective rule is smaller than the `$min_days` this method was
- * called with is silently invisible to `date_query`, and simply never
- * archives. There is no correctness check inside this class that can catch
- * that mistake; it can only be caught by whoever computes the right number.
+ * number for {@see RuleStamper} to pass in; as of phase 8 it takes the
+ * minimum across {@see \ArchivedPostStatus\AutoArchive\Provider\NetworkRuleProvider},
+ * the site level's own settings, and the smallest `days` value stored in
+ * TERM META across every opted-in taxonomy — see {@see self::term_min_days()}
+ * for the query and the deliberate choices behind it. **Phase 9, which adds
+ * the post level, must extend {@see self::min_days()} further**: a post
+ * override of 1 day can be smaller than every level already checked here,
+ * and the caller computing `$min_days` must take the minimum across every
+ * level that could apply, not just the ones already covered. Getting this
+ * wrong does not throw or log anything — a post whose effective rule is
+ * smaller than the `$min_days` this method was called with is silently
+ * invisible to `date_query`, and simply never archives. There is no
+ * correctness check inside this class that can catch that mistake; it can
+ * only be caught by whoever computes the right number.
  *
  * @since 0.5.0
  */
@@ -165,12 +167,16 @@ final class RuleQuery {
 	 * schedule anything, in which case {@see RuleStamper}'s candidate pass
 	 * does not run at all that batch.
 	 *
+	 * Called once per stamp batch by {@see RuleStamper::process_batch()},
+	 * never inside a per-post loop — {@see self::term_min_days()}'s own
+	 * query cost depends on this.
+	 *
 	 * @since 0.5.0
 	 * @return ?int
 	 */
 	public static function min_days(): ?int {
 		$candidates = array_filter(
-			array( self::network_min_days(), self::site_min_days() ),
+			array( self::network_min_days(), self::site_min_days(), self::term_min_days() ),
 			static fn ( ?int $days ): bool => null !== $days
 		);
 
@@ -210,6 +216,67 @@ final class RuleQuery {
 		$rules = ( new NetworkRuleProvider() )->rules_for( 0 );
 
 		return array() === $rules ? null : $rules[0]->days;
+	}
+
+	/**
+	 * The term level's own contribution to {@see self::min_days()}: the
+	 * smallest {@see TermMeta::META_DAYS} stored across every term of every
+	 * opted-in taxonomy — a genuine `MIN()` aggregate, not a per-term walk.
+	 *
+	 * A direct query is required: there is no `WP_Term_Query` equivalent for
+	 * "smallest numeric meta value across every term of several taxonomies",
+	 * and re-deriving it from {@see \ArchivedPostStatus\AutoArchive\Provider\TermRuleProvider}
+	 * would mean loading and reducing every opted-in term on every stamp
+	 * batch instead of one indexed aggregate. `wp_termmeta` is indexed on
+	 * `meta_key`, so the `MIN()` itself is cheap; the `INNER JOIN` against
+	 * `wp_term_taxonomy` is what keeps a term meta row belonging to a
+	 * NON-opted-in taxonomy from contributing — a plugin using term meta for
+	 * something else entirely must never leak into this number.
+	 *
+	 * Null when no opted-in taxonomy is configured, or when no term in any
+	 * opted-in taxonomy has ever stored a days value.
+	 *
+	 * @since 0.5.0
+	 * @return ?int
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical settings-table/term-meta accessors.
+	 */
+	private static function term_min_days(): ?int {
+		$taxonomies = self::taxonomies();
+
+		if ( array() === $taxonomies ) {
+			return null;
+		}
+
+		global $wpdb;
+
+		$placeholders = implode( ', ', array_fill( 0, count( $taxonomies ), '%s' ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- a MIN() aggregate across every opted-in taxonomy's term meta has no WP_Term_Query equivalent; called once per stamp batch (see the class docblock), never per post.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a string of exactly count($taxonomies) "%s" tokens built by this method, never user input; every actual bound value passes through $wpdb->prepare()'s own args below.
+		$min = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT MIN( tm.meta_value + 0 ) FROM {$wpdb->termmeta} tm INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_id = tm.term_id WHERE tm.meta_key = %s AND tt.taxonomy IN ( {$placeholders} )",
+				array_merge( array( TermMeta::META_DAYS ), $taxonomies )
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return null === $min ? null : (int) $min;
+	}
+
+	/**
+	 * The configured `auto_archive_taxonomies` opt-in list, read the same
+	 * way {@see \ArchivedPostStatus\AutoArchive\Provider\TermRuleProvider}
+	 * reads its own settings.
+	 *
+	 * @since 0.5.0
+	 * @return string[]
+	 */
+	private static function taxonomies(): array {
+		$taxonomies = self::setting( 'auto_archive_taxonomies' );
+
+		return is_array( $taxonomies ) ? $taxonomies : array();
 	}
 
 	/**

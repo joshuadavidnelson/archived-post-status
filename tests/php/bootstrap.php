@@ -53,6 +53,23 @@ if ( ! class_exists( 'WP_Post' ) ) {
 	}
 }
 
+if ( ! class_exists( 'WP_Term' ) ) {
+	class WP_Term {
+		public $term_id;
+		public $name;
+		public $slug;
+		public $taxonomy;
+
+		public function __construct( array $data = [] ) {
+			foreach ( $data as $key => $value ) {
+				if ( property_exists( $this, $key ) ) {
+					$this->$key = $value;
+				}
+			}
+		}
+	}
+}
+
 if ( ! class_exists( 'WP_Query' ) ) {
 	class WP_Query {
 		public $posts = [];

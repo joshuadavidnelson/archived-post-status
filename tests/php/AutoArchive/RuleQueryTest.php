@@ -12,6 +12,7 @@
  */
 
 use ArchivedPostStatus\AutoArchive\RuleQuery;
+use ArchivedPostStatus\AutoArchive\TermMeta;
 use ArchivedPostStatus\Schedule\ScheduleMeta;
 use ArchivedPostStatus\Schedule\ScheduleSource;
 use ArchivedPostStatus\Settings\NetworkStore;
@@ -54,6 +55,50 @@ class RuleQueryTest extends TestCase {
 	private function stubSiteMinDays( bool $enabled, ?int $days ): void {
 		\WP_Mock::onFilter( 'aps_auto_archive_enabled' )->with( false )->reply( $enabled );
 		\WP_Mock::onFilter( 'aps_auto_archive_days' )->with( null )->reply( $days );
+	}
+
+	/**
+	 * No opted-in taxonomies — {@see RuleQuery::min_days()}'s term half
+	 * short-circuits before ever touching `$wpdb`. Called explicitly by
+	 * every pre-phase-8 min_days() test below so those tests continue to
+	 * pin network+site interaction alone, unaffected by the term level's
+	 * arrival.
+	 */
+	private function stubNoTermContribution(): void {
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )->with( array( 'category' ) )->reply( array() );
+	}
+
+	/**
+	 * Build an inline $wpdb double for {@see RuleQuery::min_days()}'s term
+	 * aggregate query — mirrors the ArchiveColumnSortSqlTest / PluginTest
+	 * idiom of a bare anonymous double rather than the global `wpdb` stub.
+	 *
+	 * @param ?string $min_value What `get_var()` returns — a numeric string,
+	 *                            or null for "no matching row".
+	 */
+	private function termMinDaysWpdbDouble( ?string $min_value ): object {
+		return new class( $min_value ) {
+			public string $termmeta      = 'wp_termmeta';
+			public string $term_taxonomy = 'wp_term_taxonomy';
+			public array $prepared_queries = array();
+			private ?string $min_value;
+
+			public function __construct( ?string $min_value ) {
+				$this->min_value = $min_value;
+			}
+
+			public function prepare( $query, ...$args ) {
+				$this->prepared_queries[] = array(
+					'query' => $query,
+					'args'  => $args,
+				);
+				return $query;
+			}
+
+			public function get_var( $query ) {
+				return $this->min_value;
+			}
+		};
 	}
 
 	/**
@@ -293,6 +338,7 @@ class RuleQueryTest extends TestCase {
 			)
 		);
 		$this->stubSiteMinDays( true, 365 );
+		$this->stubNoTermContribution();
 
 		$this->assertSame( 30, RuleQuery::min_days() );
 	}
@@ -311,6 +357,7 @@ class RuleQueryTest extends TestCase {
 			)
 		);
 		$this->stubSiteMinDays( true, 30 );
+		$this->stubNoTermContribution();
 
 		$this->assertSame( 30, RuleQuery::min_days() );
 	}
@@ -329,6 +376,7 @@ class RuleQueryTest extends TestCase {
 			)
 		);
 		$this->stubSiteMinDays( false, null );
+		$this->stubNoTermContribution();
 
 		$this->assertSame( 30, RuleQuery::min_days() );
 	}
@@ -342,6 +390,7 @@ class RuleQueryTest extends TestCase {
 	public function test_min_days_uses_the_site_value_alone_when_not_network_activated() {
 		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
 		$this->stubSiteMinDays( true, 12 );
+		$this->stubNoTermContribution();
 
 		$this->assertSame( 12, RuleQuery::min_days() );
 	}
@@ -355,7 +404,121 @@ class RuleQueryTest extends TestCase {
 	public function test_min_days_is_null_when_neither_level_has_a_value() {
 		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
 		$this->stubSiteMinDays( false, null );
+		$this->stubNoTermContribution();
 
 		$this->assertNull( RuleQuery::min_days() );
+	}
+
+	/**
+	 * §4.6 non-negotiable case, exact wording: term 30 + site 365 + network
+	 * null must yield 30. A term rule can be smaller than every ancestor
+	 * level — the whole reason this phase's `$min_days` extension exists.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_takes_the_minimum_including_the_term_level() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		$this->stubSiteMinDays( true, 365 );
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )->with( array( 'category' ) )->reply( array( 'category' ) );
+
+		$GLOBALS['wpdb'] = $this->termMinDaysWpdbDouble( '30' );
+
+		try {
+			$this->assertSame( 30, RuleQuery::min_days() );
+		} finally {
+			unset( $GLOBALS['wpdb'] );
+		}
+	}
+
+	/**
+	 * A term rule can also be LARGER than the site/network value without
+	 * changing the outcome — min_days() must still pick the smaller
+	 * non-term value, proving this is a genuine three-way min(), not "prefer
+	 * the term value".
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_ignores_a_larger_term_value_when_site_is_smaller() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		$this->stubSiteMinDays( true, 5 );
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )->with( array( 'category' ) )->reply( array( 'category' ) );
+
+		$GLOBALS['wpdb'] = $this->termMinDaysWpdbDouble( '200' );
+
+		try {
+			$this->assertSame( 5, RuleQuery::min_days() );
+		} finally {
+			unset( $GLOBALS['wpdb'] );
+		}
+	}
+
+	/**
+	 * No opted-in taxonomies: the term level contributes null without ever
+	 * touching `$wpdb` — asserted by never installing a $wpdb double at all;
+	 * a stray query attempt would fatal on a call to a method on null.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_term_contribution_is_null_with_no_opted_in_taxonomies() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		$this->stubSiteMinDays( true, 30 );
+		$this->stubNoTermContribution();
+
+		$this->assertSame( 30, RuleQuery::min_days() );
+	}
+
+	/**
+	 * No term has ever stored a days value in any opted-in taxonomy:
+	 * `get_var()` returns null, and the term level contributes nothing.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_term_contribution_is_null_when_no_term_has_a_stored_value() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		$this->stubSiteMinDays( true, 30 );
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )->with( array( 'category' ) )->reply( array( 'category' ) );
+
+		$GLOBALS['wpdb'] = $this->termMinDaysWpdbDouble( null );
+
+		try {
+			$this->assertSame( 30, RuleQuery::min_days() );
+		} finally {
+			unset( $GLOBALS['wpdb'] );
+		}
+	}
+
+	/**
+	 * The term aggregate query targets exactly `_aps_auto_archive_days` and
+	 * every opted-in taxonomy — never a non-opted-in one. Pins the prepared
+	 * statement's bound args, which is the only defense against a term
+	 * meta row from an unrelated taxonomy silently lowering the whole
+	 * site's floor.
+	 *
+	 * @covers ArchivedPostStatus\AutoArchive\RuleQuery::min_days
+	 */
+	public function test_min_days_term_query_binds_the_days_meta_key_and_every_opted_in_taxonomy() {
+		\WP_Mock::userFunction( 'is_multisite' )->andReturn( false );
+		$this->stubSiteMinDays( false, null );
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )
+			->with( array( 'category' ) )
+			->reply( array( 'category', 'post_tag' ) );
+
+		$wpdb             = $this->termMinDaysWpdbDouble( null );
+		$GLOBALS['wpdb'] = $wpdb;
+
+		try {
+			RuleQuery::min_days();
+		} finally {
+			unset( $GLOBALS['wpdb'] );
+		}
+
+		$this->assertCount( 1, $wpdb->prepared_queries, 'expected exactly one prepared term aggregate query' );
+		$this->assertStringContainsString( 'MIN( tm.meta_value + 0 )', $wpdb->prepared_queries[0]['query'] );
+		$this->assertStringContainsString( 'INNER JOIN wp_term_taxonomy', $wpdb->prepared_queries[0]['query'] );
+		$this->assertSame(
+			array( TermMeta::META_DAYS, 'category', 'post_tag' ),
+			$wpdb->prepared_queries[0]['args'][0],
+			'The bound args must be exactly the days meta key followed by the opted-in taxonomies, in order.'
+		);
 	}
 }

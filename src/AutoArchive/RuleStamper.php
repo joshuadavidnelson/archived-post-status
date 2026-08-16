@@ -34,10 +34,11 @@ use ArchivedPostStatus\Settings\Schema;
  * {@see RuleQuery::min_days()}.** Living there rather than here is
  * deliberate: `RuleStamper` already depends on `RuleQuery` for both
  * passes' query args, so resolving `$min_days` there too adds no
- * additional coupling to the network level's own classes. **Phases 8 and 9
- * must extend `RuleQuery::min_days()` further** to also cover term meta
- * across the opted-in taxonomies and any post-level override, or a post
- * whose effective rule is smaller than every level already checked there
+ * additional coupling to the network or term level's own classes. As of
+ * phase 8, `$min_days` covers network, site, AND term meta across the
+ * opted-in taxonomies. **Phase 9 must extend `RuleQuery::min_days()`
+ * further** to also cover any post-level override, or a post whose
+ * effective rule is smaller than every level already checked there
  * becomes invisible to the candidate query and silently never archives.
  *
  * Neither pass trusts its query's filtering alone, and both re-check the

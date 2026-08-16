@@ -113,6 +113,13 @@ class RuleStamperTest extends TestCase {
 	 * RuleStamper read directly, with Schema's own defaults as each filter's
 	 * incoming value — overridable per test.
 	 *
+	 * `auto_archive_taxonomies` is stubbed separately, replying `[]` by
+	 * default (not Schema's own `['category']` default) so
+	 * {@see \ArchivedPostStatus\AutoArchive\RuleQuery::min_days()}'s
+	 * term-level aggregate short-circuits before ever touching `$wpdb` --
+	 * this file's fixtures exercise the network/site interaction, not the
+	 * term level, which has its own dedicated coverage in RuleQueryTest.
+	 *
 	 * @param array<string, mixed> $overrides Key => value overrides.
 	 */
 	private function stubSiteSettings( array $overrides = array() ): void {
@@ -124,9 +131,13 @@ class RuleStamperTest extends TestCase {
 			'auto_archive_grace_days' => 7,
 		);
 
-		foreach ( array_merge( $defaults, $overrides ) as $key => $value ) {
+		foreach ( array_merge( $defaults, array_diff_key( $overrides, array( 'auto_archive_taxonomies' => null ) ) ) as $key => $value ) {
 			\WP_Mock::onFilter( "aps_{$key}" )->with( $defaults[ $key ] )->reply( $value );
 		}
+
+		\WP_Mock::onFilter( 'aps_auto_archive_taxonomies' )
+			->with( array( 'category' ) )
+			->reply( $overrides['auto_archive_taxonomies'] ?? array() );
 	}
 
 	/**

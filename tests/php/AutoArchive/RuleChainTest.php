@@ -217,6 +217,99 @@ class RuleChainTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
+	// §5.11: aps_auto_archive_term_rule_days and
+	// aps_auto_archive_term_rule_child_mode let a site override either half
+	// of the term level's §4.2 tie-break independently -- the generic
+	// aps_auto_archive_term_rule filter only ever sees the two already
+	// combined into one Rule, so it cannot express "change the days
+	// tie-break without also touching the freeze" or the reverse.
+	// -----------------------------------------------------------------------
+
+	public function test_aps_auto_archive_term_rule_days_overrides_just_the_days_half_of_the_tie() {
+		// News: 6d Locked. Features: 3d Open. §4.2 alone resolves this to
+		// 3d, Locked. The filter replaces only the days half with 1 -- if
+		// the freeze half were reachable from here too, this test could not
+		// tell the difference from the child_mode filter below.
+		\WP_Mock::onFilter( 'aps_auto_archive_term_rule_days' )->with( 3, 42 )->reply( 1 );
+
+		$term = $this->fakeProvider(
+			'term',
+			array(
+				new Rule( 'term', 6, ChildMode::Locked, 'Category: News' ),
+				new Rule( 'term', 3, ChildMode::Open, 'Category: Features' ),
+			)
+		);
+
+		$resolved = ( new RuleChain( array( $term ) ) )->resolve_for( 42 );
+
+		$this->assertSame( 1, $resolved->days );
+		// The freeze half is untouched by this filter -- still frozen by
+		// the term level, per News's Locked mode.
+		$this->assertSame( 'term', $resolved->frozen_by );
+	}
+
+	public function test_aps_auto_archive_term_rule_child_mode_overrides_just_the_freeze_half_of_the_tie() {
+		// Both terms Open -- §4.2 alone resolves this to Open, unfrozen.
+		// The filter forces the freeze half to Locked without touching the
+		// days half, which the generic per-level filter cannot express.
+		\WP_Mock::onFilter( 'aps_auto_archive_term_rule_child_mode' )->with( ChildMode::Open, 42 )->reply( ChildMode::Locked );
+
+		$term = $this->fakeProvider(
+			'term',
+			array(
+				new Rule( 'term', 6, ChildMode::Open, 'Category: News' ),
+				new Rule( 'term', 3, ChildMode::Open, 'Category: Features' ),
+			)
+		);
+
+		$resolved = ( new RuleChain( array( $term ) ) )->resolve_for( 42 );
+
+		// The days half is untouched -- still 3, the §4.2 minimum.
+		$this->assertSame( 3, $resolved->days );
+		$this->assertSame( 'term', $resolved->frozen_by );
+	}
+
+	public function test_term_tie_filters_do_not_fire_for_a_non_term_level() {
+		// Registered against the site level's reduced Rule; if this class
+		// fired the term-only filters regardless of $level, this would
+		// intercept the site level's value too and the assertion below
+		// would see 999 instead of 12.
+		\WP_Mock::onFilter( 'aps_auto_archive_term_rule_days' )->with( 12, 42 )->reply( 999 );
+
+		$resolved = ( new RuleChain(
+			array( $this->fakeProvider( 'site', array( new Rule( 'site', 12, ChildMode::Open, 'Site default' ) ) ) )
+		) )->resolve_for( 42 );
+
+		$this->assertSame( 12, $resolved->days );
+	}
+
+	public function test_a_non_int_reply_from_aps_auto_archive_term_rule_days_falls_back_to_null_not_a_fatal() {
+		\WP_Mock::onFilter( 'aps_auto_archive_term_rule_days' )->with( 3, 42 )->reply( 'not an int' );
+
+		$resolved = ( new RuleChain(
+			array( $this->fakeProvider( 'term', array( new Rule( 'term', 3, ChildMode::Open, 'Category: News' ) ) ) )
+		) )->resolve_for( 42 );
+
+		$this->assertNull( $resolved->days );
+	}
+
+	public function test_a_non_childmode_reply_from_aps_auto_archive_term_rule_child_mode_falls_back_to_the_reduced_value() {
+		\WP_Mock::onFilter( 'aps_auto_archive_term_rule_child_mode' )->with( ChildMode::Locked, 42 )->reply( 'not a ChildMode' );
+
+		$resolved = ( new RuleChain(
+			array(
+				$this->fakeProvider( 'term', array( new Rule( 'term', 3, ChildMode::Locked, 'Category: News' ) ) ),
+				$this->fakeProvider( 'post', array( new Rule( 'post', 9, ChildMode::Open, 'Post override' ) ) ),
+			)
+		) )->resolve_for( 42 );
+
+		// The junk reply is discarded in favour of the reduced Locked mode,
+		// which still freezes the post level below it.
+		$this->assertSame( 3, $resolved->days );
+		$this->assertSame( 'term', $resolved->frozen_by );
+	}
+
+	// -----------------------------------------------------------------------
 	// A provider returning an empty array contributes nothing and does not
 	// break the walk.
 	// -----------------------------------------------------------------------

@@ -11,8 +11,9 @@
  * stamper's `aps_last_stamp` options, the cascade's `aps_rules_version`
  * option, the `aps_queue_lock_sweep` and `aps_queue_lock_stamp` transients,
  * all three cron events, every `_aps_archive_meta_*` / `_aps_schedule_meta_*`
- * postmeta row, and — on multisite, exactly once, never per site — the
- * `aps_network_settings` network option.
+ * postmeta row, every `_aps_auto_archive_*` termmeta row, and — on
+ * multisite, exactly once, never per site — the `aps_network_settings` /
+ * `aps_network_rules_version` network options.
  *
  * Implementation notes
  *
@@ -181,10 +182,11 @@ class UninstallTest extends TestCase {
 		// scope and persists for the remainder of the PHP process.
 		include self::UNINSTALL_FILE;
 
-		// Verify the prepared LIKE patterns are exactly _aps_archive_meta_%
-		// and _aps_schedule_meta_% -- the 0.4.0 archive metadata namespace
-		// and the 0.5.0 schedule metadata namespace.
-		$this->assertCount( 2, $wpdb->prepared_queries, 'expected exactly two prepared DELETEs' );
+		// Verify the prepared LIKE patterns are exactly _aps_archive_meta_%,
+		// _aps_schedule_meta_%, and _aps_auto_archive_% -- the 0.4.0 archive
+		// metadata namespace, the 0.5.0 schedule metadata namespace, and the
+		// 0.5.0 phase-8 term-level cascade meta namespace.
+		$this->assertCount( 3, $wpdb->prepared_queries, 'expected exactly three prepared DELETEs' );
 
 		$this->assertStringContainsString( 'DELETE FROM', $wpdb->prepared_queries[0]['query'] );
 		$this->assertStringContainsString( 'meta_key LIKE %s', $wpdb->prepared_queries[0]['query'] );
@@ -202,7 +204,15 @@ class UninstallTest extends TestCase {
 			'LIKE pattern must target the 0.5.0 _aps_schedule_meta_ namespace'
 		);
 
-		$this->assertSame( 2, $wpdb->query_calls, 'wpdb::query must be called exactly twice' );
+		$this->assertStringContainsString( 'DELETE FROM', $wpdb->prepared_queries[2]['query'] );
+		$this->assertStringContainsString( 'meta_key LIKE %s', $wpdb->prepared_queries[2]['query'] );
+		$this->assertSame(
+			'_aps_auto_archive_%',
+			$wpdb->prepared_queries[2]['args'][0],
+			'LIKE pattern must target the 0.5.0 phase-8 _aps_auto_archive_ termmeta namespace'
+		);
+
+		$this->assertSame( 3, $wpdb->query_calls, 'wpdb::query must be called exactly three times' );
 	}
 
 	/**
@@ -248,7 +258,7 @@ class UninstallTest extends TestCase {
 
 		aps_uninstall_site();
 
-		$this->assertSame( 2, $wpdb->query_calls, 'two DELETEs per call' );
+		$this->assertSame( 3, $wpdb->query_calls, 'three DELETEs per call' );
 		$this->assertSame(
 			'_aps_archive_meta_%',
 			$wpdb->prepared_queries[0]['args'][0]
@@ -256,6 +266,10 @@ class UninstallTest extends TestCase {
 		$this->assertSame(
 			'_aps_schedule_meta_%',
 			$wpdb->prepared_queries[1]['args'][0]
+		);
+		$this->assertSame(
+			'_aps_auto_archive_%',
+			$wpdb->prepared_queries[2]['args'][0]
 		);
 	}
 
@@ -348,7 +362,7 @@ class UninstallTest extends TestCase {
 		include self::UNINSTALL_FILE;
 
 		$this->assertSame( array( 1, 2, 3 ), $switched, 'switch_to_blog called once per site in order' );
-		$this->assertSame( 6, $wpdb->query_calls, 'wpdb::query called twice per site' );
+		$this->assertSame( 9, $wpdb->query_calls, 'wpdb::query called three times per site' );
 	}
 
 	/**

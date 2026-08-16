@@ -79,6 +79,19 @@ function aps_uninstall_site() {
 			$wpdb->esc_like( '_aps_schedule_meta_' ) . '%'
 		)
 	);
+
+	// Mirrors TermMeta's two _aps_auto_archive_* keys (days, child_mode) --
+	// term meta, unlike every other row this function deletes, lives in
+	// wp_termmeta, a per-site table like postmeta, so this runs inside
+	// aps_uninstall_site() (once per site on multisite) exactly like the two
+	// DELETEs above, not once for the whole network the way the network
+	// options below are.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->termmeta} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( '_aps_auto_archive_' ) . '%'
+		)
+	);
 	// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 }
 

@@ -100,6 +100,7 @@ final class Plugin {
 			new Frontend\AccessGuard(),
 			new Admin\PostEditorGuard(),
 			new Settings\HookAdapter(),
+			new Settings\TermMetaRegistrar(),
 		);
 
 		if ( apply_filters( 'aps_enable_archive_meta', true ) ) {
@@ -119,6 +120,7 @@ final class Plugin {
 			$hookables[] = new Admin\ArchiveColumnSort();
 			$hookables[] = new Admin\PluginScreen();
 			$hookables[] = new Settings\SettingsPage();
+			$hookables[] = new Settings\TermFields();
 
 			if ( Settings\NetworkActivation::active() ) {
 				$hookables[] = new Settings\NetworkSettingsPage();
@@ -148,13 +150,14 @@ final class Plugin {
 	 * (or the stamper) never actually runs.
 	 *
 	 * The stamp runner drives a {@see AutoArchive\RuleStamper} over a
-	 * {@see AutoArchive\RuleChain} of two levels today --
-	 * {@see AutoArchive\Provider\NetworkRuleProvider} then
-	 * {@see AutoArchive\Provider\SiteRuleProvider}, general to specific, per
-	 * the resolver's own ordering requirement -- the same two-level cascade
-	 * {@see AutoArchive\RuleQuery}'s `$min_days` warning documents. Phases
-	 * 8-9 append term and post providers to this same array; nothing else
-	 * about how the runner is built changes.
+	 * {@see AutoArchive\RuleChain} of three levels today --
+	 * {@see AutoArchive\Provider\NetworkRuleProvider},
+	 * {@see AutoArchive\Provider\SiteRuleProvider}, then
+	 * {@see AutoArchive\Provider\TermRuleProvider}, general to specific, per
+	 * the resolver's own ordering requirement -- the same cascade
+	 * {@see AutoArchive\RuleQuery}'s `$min_days` warning documents. Phase 9
+	 * appends the post provider to this same array; nothing else about how
+	 * the runner is built changes.
 	 *
 	 * @since 0.5.0
 	 * @return Contracts\HookableInterface[]
@@ -167,6 +170,7 @@ final class Plugin {
 					array(
 						new AutoArchive\Provider\NetworkRuleProvider(),
 						new AutoArchive\Provider\SiteRuleProvider(),
+						new AutoArchive\Provider\TermRuleProvider(),
 					)
 				)
 			)

@@ -74,7 +74,7 @@ class PluginHookablesParityTest extends TestCase {
 
 	/**
 	 * The hookable list under the canonical (admin + archive-meta-enabled,
-	 * no WP-CLI) composition is exactly 20 hookables today. This is a
+	 * no WP-CLI) composition is exactly 22 hookables today. This is a
 	 * parity snapshot — a delta here means something slipped into (or was
 	 * silently dropped from) the composition root.
 	 *
@@ -84,7 +84,7 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			20,
+			22,
 			$hookables,
 			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
@@ -122,6 +122,10 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Frontend\AccessGuard::class,
 			ArchivedPostStatus\Admin\PostEditorGuard::class,
 			ArchivedPostStatus\Settings\HookAdapter::class,
+			// TermMetaRegistrar: registers term meta for REST, unconditional
+			// like MetaRegistrar below -- a cron or REST request is neither
+			// admin nor CLI (0.5.0 phase 8).
+			ArchivedPostStatus\Settings\TermMetaRegistrar::class,
 			ArchivedPostStatus\Archive\ArchiveMetaListener::class,
 			// The unconditional schedule/cron block: fires on cron and REST
 			// requests, neither is_admin() nor WP_CLI, so none of it can live
@@ -155,8 +159,12 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Admin\ArchiveColumnSort::class,
 			ArchivedPostStatus\Admin\PluginScreen::class,
 			// SettingsPage: the site settings screen (0.5.0) -- genuinely
-			// admin-only, unlike the schedule/cron block above.
+			// admin-only, unlike the schedule/cron block above. TermFields
+			// (0.5.0 phase 8) is admin-only too -- its own hooks() defers
+			// further, to wp_loaded, but the hookable itself is constructed
+			// here just like every other admin-only-set member.
 			ArchivedPostStatus\Settings\SettingsPage::class,
+			ArchivedPostStatus\Settings\TermFields::class,
 		);
 
 		$actual_fqcn_order = array_map( static fn( $row ) => $row['class'], $snapshot );

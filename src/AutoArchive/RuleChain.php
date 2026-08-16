@@ -30,6 +30,13 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * gets at `Archive\ArchiveOperation::perform()`, and a site replacing it
  * wholesale is expected to return the type it was handed.
  *
+ * When the level under consultation is `term`, this class also fires
+ * `aps_auto_archive_term_rule_days` and `aps_auto_archive_term_rule_child_mode`
+ * (plan §4.2/§5.11) on the two independent halves of {@see RuleReducer}'s
+ * already-collapsed result, before the generic per-level filter below sees
+ * it — the only seam that lets a site override just the days-minimum tie-
+ * break, or just the child_mode-strictest one, without replacing the other.
+ *
  * @since 0.5.0
  */
 final class RuleChain {
@@ -158,6 +165,10 @@ final class RuleChain {
 		$level   = $provider->level();
 		$reduced = RuleReducer::reduce( $provider->rules_for( $post_id ), $level );
 
+		if ( 'term' === $level && $reduced instanceof Rule ) {
+			$reduced = self::apply_term_tie_filters( $reduced, $post_id );
+		}
+
 		/**
 		 * Filters one cascade level's own contribution to the rule chain.
 		 *
@@ -184,6 +195,94 @@ final class RuleChain {
 		$rule = apply_filters( "aps_auto_archive_{$level}_rule", $reduced, $post_id );
 
 		return $rule instanceof Rule ? $rule : null;
+	}
+
+	/**
+	 * Let a site override the two halves of the term level's §4.2 tie-break
+	 * independently, before the generic `aps_auto_archive_term_rule` filter
+	 * sees the result.
+	 *
+	 * {@see RuleReducer::reduce()} already collapsed every applicable term's
+	 * `Rule` to the winning `days` (the minimum among terms that set one)
+	 * and the winning `child_mode` (the strictest present) — this only
+	 * exposes each half as its own filter. The generic per-level filter
+	 * cannot do this: it only ever sees the single already-combined `Rule`,
+	 * so a site wanting to change just the tie-break for days (e.g. "sum"
+	 * instead of "min") without also touching the child_mode strictness, or
+	 * the reverse, has no seam without this.
+	 *
+	 * @since 0.5.0
+	 * @param Rule $reduced The term level's Rule, already reduced from every
+	 *                       applicable term.
+	 * @param int  $post_id The post ID being resolved.
+	 * @return Rule
+	 */
+	private static function apply_term_tie_filters( Rule $reduced, int $post_id ): Rule {
+
+		/**
+		 * Filters the term level's resolved `days` value (plan §4.2): the
+		 * minimum among every applicable term across every opted-in
+		 * taxonomy that sets one.
+		 *
+		 * @since 0.5.0
+		 * @param ?int $days    The minimum `days` among applicable terms, or
+		 *                      null if no applicable term set one.
+		 * @param int  $post_id The post ID being resolved.
+		 */
+		$days = apply_filters( 'aps_auto_archive_term_rule_days', $reduced->days, $post_id );
+
+		/**
+		 * Filters the term level's resolved `child_mode` (plan §4.2): the
+		 * strictest mode among every applicable term — `Off` > `Locked` >
+		 * `Open`.
+		 *
+		 * @since 0.5.0
+		 * @param ChildMode $child_mode The strictest `child_mode` among
+		 *                              applicable terms.
+		 * @param int       $post_id    The post ID being resolved.
+		 */
+		$child_mode = apply_filters( 'aps_auto_archive_term_rule_child_mode', $reduced->child_mode, $post_id );
+
+		return new Rule(
+			$reduced->level,
+			self::only_days( $days ),
+			self::only_child_mode( $child_mode, $reduced->child_mode ),
+			$reduced->label
+		);
+	}
+
+	/**
+	 * Retype whatever `aps_auto_archive_term_rule_days` returned down to a
+	 * valid `?int`, dropping anything else silently — see the class
+	 * docblock's rationale for the same treatment of the array-typed
+	 * filters. A dedicated method, not an inline check, because PHPStan
+	 * treats the hook docblock immediately above an `apply_filters()` call
+	 * as authoritative for that call's return type; losing that narrowed
+	 * type across a `mixed`-typed method boundary is what makes the
+	 * fallback check meaningful to it, not a redundant `instanceof`/`is_int`
+	 * against a type already known to be correct.
+	 *
+	 * @since 0.5.0
+	 * @param mixed $days Whatever `aps_auto_archive_term_rule_days` returned.
+	 * @return ?int
+	 */
+	private static function only_days( mixed $days ): ?int {
+		return is_int( $days ) ? $days : null;
+	}
+
+	/**
+	 * Retype whatever `aps_auto_archive_term_rule_child_mode` returned down
+	 * to a valid `ChildMode`, falling back to the pre-filter value — see
+	 * {@see self::only_days()} for why this is a dedicated method rather
+	 * than an inline check.
+	 *
+	 * @since 0.5.0
+	 * @param mixed     $child_mode Whatever `aps_auto_archive_term_rule_child_mode` returned.
+	 * @param ChildMode $fallback   The reduced value to use when `$child_mode` is not a `ChildMode`.
+	 * @return ChildMode
+	 */
+	private static function only_child_mode( mixed $child_mode, ChildMode $fallback ): ChildMode {
+		return $child_mode instanceof ChildMode ? $child_mode : $fallback;
 	}
 
 	/**

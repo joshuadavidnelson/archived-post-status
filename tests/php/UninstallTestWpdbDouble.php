@@ -5,8 +5,10 @@
  * Captures `prepare()` and `query()` calls so the test can assert that
  * uninstall.php issues exactly one DELETE per postmeta namespace it owns
  * (`_aps_archive_meta_%`, `_aps_schedule_meta_%`) against the postmeta
- * table. Subclasses the bootstrap-defined `wpdb` stub so type checks and
- * `$wpdb->postmeta` lookups continue to work.
+ * table, plus one DELETE against the termmeta table for
+ * `_aps_auto_archive_%`. Subclasses the bootstrap-defined `wpdb` stub so
+ * type checks and `$wpdb->postmeta`/`$wpdb->termmeta` lookups continue to
+ * work.
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
@@ -33,17 +35,21 @@ class UninstallTestWpdbDouble extends \wpdb {
 	public array $prepared_queries = array();
 
 	/**
-	 * Explicit declaration so PHP 8.4 doesn't emit a dynamic-property
-	 * deprecation when the constructor populates it. The bootstrap-
-	 * defined wpdb stub declares `$posts` but not `$postmeta`.
+	 * Explicit declarations so PHP 8.4 doesn't emit a dynamic-property
+	 * deprecation when the constructor populates them. The bootstrap-
+	 * defined wpdb stub declares `$posts` but not `$postmeta`/`$termmeta`.
 	 *
 	 * @var string
 	 */
 	public string $postmeta = '';
 
+	/** @var string */
+	public string $termmeta = '';
+
 	public function __construct() {
 		parent::__construct();
 		$this->postmeta = $this->prefix . 'postmeta';
+		$this->termmeta = $this->prefix . 'termmeta';
 	}
 
 	/**
