@@ -29,6 +29,10 @@ namespace {
 			public static array $successes = array();
 			/** @var array<int, string> */
 			public static array $warnings  = array();
+			/** @var array<int, string> */
+			public static array $logs      = array();
+			/** @var array<int, string> */
+			public static array $errors    = array();
 
 			public static function add_command( $name, $callable, $args = array() ) {
 				self::$commands[] = array( $name, $callable );
@@ -42,10 +46,29 @@ namespace {
 				self::$warnings[] = $message;
 			}
 
+			public static function log( $message ) {
+				self::$logs[] = $message;
+			}
+
+			/**
+			 * Real WP_CLI::error() halts the process (exit(1)) unless told
+			 * otherwise. This stub deliberately does NOT exit — the harness
+			 * runs inside the PHPUnit process itself, so every caller in
+			 * this codebase follows a WP_CLI::error() call with its own
+			 * `return;` rather than relying on the real function's halt,
+			 * exactly as it must for this stub to observe the same
+			 * "processing stops here" behavior.
+			 */
+			public static function error( $message ) {
+				self::$errors[] = $message;
+			}
+
 			public static function reset() {
 				self::$commands  = array();
 				self::$successes = array();
 				self::$warnings  = array();
+				self::$logs      = array();
+				self::$errors    = array();
 			}
 		}
 	}
@@ -61,6 +84,20 @@ namespace WP_CLI\Utils {
 		 */
 		function get_flag_value( $assoc_args, $flag, $default = null ) {
 			return $assoc_args[ $flag ] ?? $default;
+		}
+	}
+
+	if ( ! function_exists( 'WP_CLI\\Utils\\format_items' ) ) {
+		/**
+		 * Polyfill for `WP_CLI\Utils\format_items()`. Records the call's
+		 * arguments into the `$aps_test_format_items_calls` global so a test
+		 * can assert on the format, items, and fields a command passed,
+		 * without depending on the real wp-cli/wp-cli package (not a dev
+		 * dependency of this plugin).
+		 */
+		function format_items( $format, $items, $fields ) {
+			global $aps_test_format_items_calls;
+			$aps_test_format_items_calls[] = array( $format, $items, $fields );
 		}
 	}
 

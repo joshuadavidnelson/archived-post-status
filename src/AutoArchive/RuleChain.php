@@ -81,13 +81,39 @@ final class RuleChain {
 	/**
 	 * Resolve the cascade for one post: assemble the chain, then resolve it.
 	 *
+	 * A thin wrapper over {@see explain_for()}, keeping only the outcome —
+	 * see that method for why the two live together.
+	 *
 	 * @since 0.5.0
 	 * @param int $post_id The post ID.
 	 * @return ResolvedRule
+	 */
+	public function resolve_for( int $post_id ): ResolvedRule {
+		return $this->explain_for( $post_id )[1];
+	}
+
+	/**
+	 * Both the fully-filtered chain AND the resolved outcome it produces,
+	 * computed together in one pass.
+	 *
+	 * {@see resolve_for()} is this method with only the outcome kept; the
+	 * pair exists for a caller that needs to show BOTH — e.g.
+	 * {@see \ArchivedPostStatus\CLI\ExplainCommand} (`wp post archive-rule`),
+	 * the plan's §6 debugging tool, which prints each level's own
+	 * contribution alongside the level that won. Computing them together,
+	 * rather than calling {@see assemble_chain()} once for the chain and
+	 * {@see resolve_for()} again for the outcome, is what guarantees the two
+	 * can never drift apart because a third party's
+	 * `aps_auto_archive_rule_chain` filter (which can add or remove levels)
+	 * ran between two separate calls.
+	 *
+	 * @since 0.5.0
+	 * @param int $post_id The post ID.
+	 * @return array{0: Rule[], 1: ResolvedRule}
 	 *
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical pure-resolver accessor.
 	 */
-	public function resolve_for( int $post_id ): ResolvedRule {
+	public function explain_for( int $post_id ): array {
 		$chain = $this->assemble_chain( $post_id );
 
 		/**
@@ -124,7 +150,9 @@ final class RuleChain {
 		 * @param ResolvedRule $resolved The resolved outcome.
 		 * @param int          $post_id  The post ID being resolved.
 		 */
-		return apply_filters( 'aps_auto_archive_resolved_rule', $resolved, $post_id );
+		$resolved = apply_filters( 'aps_auto_archive_resolved_rule', $resolved, $post_id );
+
+		return array( $chain, $resolved );
 	}
 
 	/**

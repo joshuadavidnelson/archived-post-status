@@ -3,8 +3,11 @@
  * CLI registration surface tests.
  *
  * Only the WP-CLI registration surface: `hooks()` returning the `cli_init`
- * descriptor and `cli()` registering the two commands. Command behavior is
- * covered in ArchiveCommandTest / UnarchiveCommandTest.
+ * descriptor, `cli()` registering every command, and each thin delegate
+ * method forwarding to its command object. Command behavior itself is
+ * covered in each command's own test file (ArchiveCommandTest,
+ * UnarchiveCommandTest, ScheduleCommandTest, UnscheduleCommandTest,
+ * ExplainCommandTest, SettingsCommandTest, QueueCommandTest).
  *
  * @since 0.4.0
  * @package ArchivedPostStatus
@@ -15,11 +18,18 @@ namespace {
 	// Shared WP_CLI in-memory stub + get_flag_value polyfill.
 	require_once __DIR__ . '/Support/WpCliStub.php';
 
+	use ArchivedPostStatus\AutoArchive\RuleChain;
 	use ArchivedPostStatus\CLI\ArchiveCommand;
 	use ArchivedPostStatus\CLI\CommandRunner;
+	use ArchivedPostStatus\CLI\ExplainCommand;
+	use ArchivedPostStatus\CLI\QueueCommand;
 	use ArchivedPostStatus\CLI\Registrar;
+	use ArchivedPostStatus\CLI\ScheduleCommand;
+	use ArchivedPostStatus\CLI\SettingsCommand;
 	use ArchivedPostStatus\CLI\UnarchiveCommand;
+	use ArchivedPostStatus\CLI\UnscheduleCommand;
 	use ArchivedPostStatus\Hooks\HookDescriptor;
+	use ArchivedPostStatus\Schedule\Queue\BatchProcessorInterface;
 
 	/**
 	 * @since 0.4.0
@@ -28,13 +38,32 @@ namespace {
 	class RegistrarTest extends TestCase {
 
 		private Registrar $cli;
+		private ExplainCommand $explain_command;
+		private SettingsCommand $settings_command;
+		private QueueCommand $queue_command;
 
 		public function set_up() {
 			parent::set_up();
+
+			global $aps_test_format_items_calls;
+			$aps_test_format_items_calls = array();
+
+			$this->explain_command  = new ExplainCommand( new RuleChain( array() ) );
+			$this->settings_command = new SettingsCommand();
+			$this->queue_command    = new QueueCommand(
+				\Mockery::mock( BatchProcessorInterface::class ),
+				\Mockery::mock( BatchProcessorInterface::class )
+			);
+
 			$this->cli = new Registrar(
 				new CommandRunner(),
 				new ArchiveCommand(),
 				new UnarchiveCommand(),
+				new ScheduleCommand(),
+				new UnscheduleCommand(),
+				$this->explain_command,
+				$this->settings_command,
+				$this->queue_command,
 			);
 			\WP_CLI::reset();
 		}
@@ -57,25 +86,192 @@ namespace {
 		}
 
 		/**
-		 * cli() registers `wp post archive` and `wp post unarchive` with
-		 * WP_CLI::add_command(). These are the only two public CLI surfaces
-		 * the plugin exposes, and each name must bind to its own method —
-		 * `post archive` to archive(), `post unarchive` to unarchive() —
-		 * not the other way around.
+		 * cli() registers every `wp post ...` / `wp aps ...` command this
+		 * plugin exposes, each bound to its own dedicated method — never a
+		 * name bound to the wrong callback.
 		 *
 		 * @covers ArchivedPostStatus\CLI\Registrar::cli
 		 */
-		public function test_cli_registers_archive_and_unarchive_commands() {
+		public function test_cli_registers_every_command_with_its_own_callback() {
 			$this->cli->cli();
 
 			$names     = array_column( \WP_CLI::$commands, 0 );
 			$callbacks = array_column( \WP_CLI::$commands, 1, 0 );
 
-			$this->assertContains( 'post archive', $names );
-			$this->assertContains( 'post unarchive', $names );
-			$this->assertCount( 2, \WP_CLI::$commands );
-			$this->assertSame( array( $this->cli, 'archive' ), $callbacks['post archive'] );
-			$this->assertSame( array( $this->cli, 'unarchive' ), $callbacks['post unarchive'] );
+			$expected = array(
+				'post archive'            => 'archive',
+				'post unarchive'          => 'unarchive',
+				'post schedule-archive'   => 'schedule_archive',
+				'post unschedule-archive' => 'unschedule_archive',
+				'post archive-rule'       => 'archive_rule',
+				'aps settings list'       => 'settings_list',
+				'aps settings get'        => 'settings_get',
+				'aps settings update'     => 'settings_update',
+				'aps queue run'           => 'queue_run',
+			);
+
+			$this->assertCount( count( $expected ), \WP_CLI::$commands );
+
+			foreach ( $expected as $name => $method ) {
+				$this->assertContains( $name, $names );
+				$this->assertSame( array( $this->cli, $method ), $callbacks[ $name ] );
+			}
+		}
+
+		/**
+		 * archive() delegates straight to CommandRunner with the injected
+		 * ArchiveCommand — this pre-existing method had no direct Registrar-
+		 * level test before phase 13 (only ArchiveCommand's own behavior was
+		 * covered elsewhere); adding it here alongside the new delegate tests
+		 * closes that gap using the same pattern.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Registrar::archive
+		 */
+		public function test_archive_delegates_to_the_command_runner() {
+			$runner = new class() extends CommandRunner {
+				protected function terminate( int $code ): void {
+					// No-op: keep the test process alive.
+				}
+			};
+			$cli = new Registrar(
+				$runner,
+				new ArchiveCommand(),
+				new UnarchiveCommand(),
+				new ScheduleCommand(),
+				new UnscheduleCommand(),
+				$this->explain_command,
+				$this->settings_command,
+				$this->queue_command,
+			);
+
+			\WP_Mock::userFunction( '_prime_post_caches' );
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'unsupported' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'unsupported' )->andReturn( false );
+
+			$cli->archive( array( 42 ), array() );
+
+			$this->assertCount( 1, \WP_CLI::$warnings );
+		}
+
+		/**
+		 * schedule_archive() delegates straight to CommandRunner with the
+		 * injected ScheduleCommand, mirroring archive()/unarchive()'s own
+		 * shape. Proven by a real run() call against a stubbed post — the
+		 * override-terminate() seam used elsewhere in this suite lets run()
+		 * return instead of exiting the test process.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Registrar::schedule_archive
+		 */
+		public function test_schedule_archive_delegates_to_the_command_runner() {
+			$runner = new class() extends CommandRunner {
+				protected function terminate( int $code ): void {
+					// No-op: keep the test process alive.
+				}
+			};
+			$cli = new Registrar(
+				$runner,
+				new ArchiveCommand(),
+				new UnarchiveCommand(),
+				new ScheduleCommand(),
+				new UnscheduleCommand(),
+				$this->explain_command,
+				$this->settings_command,
+				$this->queue_command,
+			);
+
+			\WP_Mock::userFunction( '_prime_post_caches' );
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'unsupported' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'unsupported' )->andReturn( false );
+
+			$cli->schedule_archive( array( 42 ), array( 'at' => '2027-03-03 14:30:00' ) );
+
+			$this->assertCount( 1, \WP_CLI::$warnings, 'the unsupported-post-type failure must reach the runner and be reported' );
+		}
+
+		/**
+		 * unschedule_archive() delegates straight to CommandRunner with the
+		 * injected UnscheduleCommand.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Registrar::unschedule_archive
+		 */
+		public function test_unschedule_archive_delegates_to_the_command_runner() {
+			$runner = new class() extends CommandRunner {
+				protected function terminate( int $code ): void {
+					// No-op: keep the test process alive.
+				}
+			};
+			$cli = new Registrar(
+				$runner,
+				new ArchiveCommand(),
+				new UnarchiveCommand(),
+				new ScheduleCommand(),
+				new UnscheduleCommand(),
+				$this->explain_command,
+				$this->settings_command,
+				$this->queue_command,
+			);
+
+			\WP_Mock::userFunction( '_prime_post_caches' );
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'unsupported' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'unsupported' )->andReturn( false );
+
+			$cli->unschedule_archive( array( 42 ), array() );
+
+			$this->assertCount( 1, \WP_CLI::$warnings );
+		}
+
+		/**
+		 * archive_rule() delegates to ExplainCommand::explain() with the
+		 * same args/assoc_args it received.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Registrar::archive_rule
+		 */
+		public function test_archive_rule_delegates_to_explain_command() {
+			\WP_Mock::userFunction( 'get_post_type' )->with( 42 )->andReturn( 'unsupported' );
+			\WP_Mock::userFunction( 'aps_is_supported_post_type' )->with( 'unsupported' )->andReturn( false );
+			\WP_Mock::userFunction( 'absint' )->with( 42 )->andReturn( 42 );
+
+			$this->cli->archive_rule( array( 42 ), array() );
+
+			$this->assertCount( 1, \WP_CLI::$errors );
+			$this->assertStringContainsString( '42', \WP_CLI::$errors[0] );
+		}
+
+		/**
+		 * settings_list()/settings_get()/settings_update() each delegate to
+		 * their SettingsCommand counterpart method.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Registrar::settings_list
+		 * @covers ArchivedPostStatus\CLI\Registrar::settings_get
+		 * @covers ArchivedPostStatus\CLI\Registrar::settings_update
+		 */
+		public function test_settings_subcommands_delegate_to_settings_command() {
+			\WP_Mock::userFunction( 'get_option' )->andReturn( array() );
+
+			$this->cli->settings_list( array(), array() );
+			global $aps_test_format_items_calls;
+			$this->assertNotEmpty( $aps_test_format_items_calls );
+
+			$this->cli->settings_get( array( 'not_a_real_key' ), array() );
+			$this->assertCount( 1, \WP_CLI::$errors );
+
+			\WP_CLI::reset();
+			\WP_Mock::userFunction( 'is_user_logged_in' )->andReturn( false );
+			$this->cli->settings_update( array( 'not_a_real_key', 'x' ), array() );
+			$this->assertCount( 1, \WP_CLI::$errors );
+		}
+
+		/**
+		 * queue_run() delegates to QueueCommand::run() with the same
+		 * args/assoc_args it received.
+		 *
+		 * @covers ArchivedPostStatus\CLI\Registrar::queue_run
+		 */
+		public function test_queue_run_delegates_to_queue_command() {
+			$this->cli->queue_run( array( 'nonsense' ), array() );
+
+			$this->assertCount( 1, \WP_CLI::$errors );
+			$this->assertStringContainsString( 'Unknown queue', \WP_CLI::$errors[0] );
 		}
 
 		/**
@@ -97,7 +293,16 @@ namespace {
 					// No-op: keep the test process alive.
 				}
 			};
-			$cli = new Registrar( $runner, new ArchiveCommand(), new UnarchiveCommand() );
+			$cli = new Registrar(
+				$runner,
+				new ArchiveCommand(),
+				new UnarchiveCommand(),
+				new ScheduleCommand(),
+				new UnscheduleCommand(),
+				$this->explain_command,
+				$this->settings_command,
+				$this->queue_command,
+			);
 
 			$removed_hook     = null;
 			$removed_callback = null;
@@ -151,7 +356,16 @@ namespace {
 					// No-op: keep the test process alive.
 				}
 			};
-			$cli = new Registrar( $runner, new ArchiveCommand(), new UnarchiveCommand() );
+			$cli = new Registrar(
+				$runner,
+				new ArchiveCommand(),
+				new UnarchiveCommand(),
+				new ScheduleCommand(),
+				new UnscheduleCommand(),
+				$this->explain_command,
+				$this->settings_command,
+				$this->queue_command,
+			);
 
 			\WP_Mock::userFunction( 'remove_filter' )->never();
 

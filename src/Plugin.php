@@ -16,8 +16,13 @@ use ArchivedPostStatus\Archive\ArchiveMetaListener;
 use ArchivedPostStatus\AutoArchive;
 use ArchivedPostStatus\CLI\ArchiveCommand;
 use ArchivedPostStatus\CLI\CommandRunner;
+use ArchivedPostStatus\CLI\ExplainCommand;
+use ArchivedPostStatus\CLI\QueueCommand;
 use ArchivedPostStatus\CLI\Registrar;
+use ArchivedPostStatus\CLI\ScheduleCommand;
+use ArchivedPostStatus\CLI\SettingsCommand;
 use ArchivedPostStatus\CLI\UnarchiveCommand;
+use ArchivedPostStatus\CLI\UnscheduleCommand;
 use ArchivedPostStatus\Frontend;
 use ArchivedPostStatus\Hooks\HookLoader;
 use ArchivedPostStatus\Schedule;
@@ -133,14 +138,39 @@ final class Plugin {
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			$hookables[] = new Registrar(
-				new CommandRunner(),
-				new ArchiveCommand(),
-				new UnarchiveCommand(),
-			);
+			$hookables[] = $this->cli_registrar();
 		}
 
 		return $hookables;
+	}
+
+	/**
+	 * Build the WP-CLI `Registrar`, wiring its own {@see AutoArchive\RuleChain}
+	 * and queue processors — separate instances from
+	 * {@see schedule_hookables()}'s, since a `WP_CLI` request never runs
+	 * that method's cron-runner branch, but built through the same
+	 * {@see AutoArchive\RuleChain::default()} factory so the CLI's view of
+	 * the cascade can never drift from cron's.
+	 *
+	 * @since 0.5.0
+	 * @return Registrar
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- RuleChain::default() is the canonical chain-factory accessor.
+	 */
+	private function cli_registrar(): Registrar {
+		return new Registrar(
+			new CommandRunner(),
+			new ArchiveCommand(),
+			new UnarchiveCommand(),
+			new ScheduleCommand(),
+			new UnscheduleCommand(),
+			new ExplainCommand( AutoArchive\RuleChain::default() ),
+			new SettingsCommand(),
+			new QueueCommand(
+				new Schedule\Sweeper(),
+				new AutoArchive\RuleStamper( AutoArchive\RuleChain::default() )
+			),
+		);
 	}
 
 	/**
