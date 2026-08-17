@@ -255,6 +255,42 @@ namespace {
 		}
 
 		/**
+		 * Two CONSECUTIVE zero-progress batches are only a stall when
+		 * `remaining` also stayed exactly the same between them. Here it
+		 * legitimately drops (10 -> 6) with processed=0 and failed=0 both
+		 * times — the sweeper dropping stale/abandoned posts from the due
+		 * set, per the class docblock — so the loop must keep going rather
+		 * than warn. Bounded to exactly three process_batch() calls via
+		 * Mockery's ->times(3): a premature stop after batch two, which a
+		 * two-part (processed/failed only) stall check would produce, fails
+		 * this expectation on its own.
+		 *
+		 * @covers ArchivedPostStatus\CLI\QueueCommand::run
+		 */
+		public function test_two_consecutive_zero_progress_batches_with_falling_remaining_is_not_a_stall() {
+			$this->mockLockFree( 'sweep' );
+			$this->sweeper->shouldReceive( 'process_batch' )
+				->once()
+				->andReturn( new BatchResult( 0, 0, 10, false ) )
+				->ordered();
+			$this->sweeper->shouldReceive( 'process_batch' )
+				->once()
+				->andReturn( new BatchResult( 0, 0, 6, false ) )
+				->ordered();
+			$this->sweeper->shouldReceive( 'process_batch' )
+				->once()
+				->andReturn( new BatchResult( 4, 0, 0, false ) )
+				->ordered();
+
+			$this->cmd->run( array( 'sweep' ), array( 'all' => true ) );
+
+			$this->assertCount( 0, \WP_CLI::$warnings, 'a falling remaining count must not be mistaken for a stall' );
+			$this->assertCount( 1, \WP_CLI::$successes );
+			$this->assertStringContainsString( 'drained', $this->lastMessage( \WP_CLI::$successes ) );
+			$this->assertStringContainsString( '3 batch', $this->lastMessage( \WP_CLI::$successes ) );
+		}
+
+		/**
 		 * Failures count as progress too — a batch that only fails items
 		 * (no successes) but changes nothing about `remaining` staying the
 		 * same as a PRIOR batch must still not be treated as a stall on its

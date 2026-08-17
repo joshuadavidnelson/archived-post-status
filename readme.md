@@ -116,6 +116,7 @@ use ArchivedPostStatus\Schedule\Queue\BatchProcessorInterface;
 use ArchivedPostStatus\Schedule\Queue\BudgetFactory;
 use ArchivedPostStatus\Schedule\Queue\QueueLock;
 use ArchivedPostStatus\Schedule\Queue\QueueRunnerInterface;
+use ArchivedPostStatus\Schedule\Queue\QueueTelemetry;
 
 final class My_Action_Scheduler_Queue_Runner implements QueueRunnerInterface {
 
@@ -168,13 +169,11 @@ final class My_Action_Scheduler_Queue_Runner implements QueueRunnerInterface {
                 $lock->release();
             }
 
-            // Mirrors CronQueueRunner::run_batch()'s own bookkeeping. Neither
-            // of these is automatic for a replacement runner - see the note
-            // below - so a runner that wants the settings screen's cron
-            // health notice and the queue observability hooks to keep working
-            // has to reproduce them itself.
-            do_action( 'aps_queue_batch_completed', $result, $queue );
-            update_option( "aps_last_{$queue}", time(), false );
+            // The same bookkeeping CronQueueRunner::run_batch() calls after
+            // its own process_batch() - fires aps_queue_batch_completed and
+            // records the per-queue last-run timestamp the settings screen's
+            // cron health notice reads. Nothing else does this for you.
+            QueueTelemetry::batch_completed( $result, $queue );
 
             // should_continue_now(): true only when work remains AND this
             // batch did not hit its budget. An Action Scheduler worker
@@ -188,12 +187,9 @@ final class My_Action_Scheduler_Queue_Runner implements QueueRunnerInterface {
             // Budget ran out with work still queued: get another worker on
             // it right away rather than waiting for the next recurring tick.
             as_enqueue_async_action( $this->continue_hook(), array(), self::GROUP );
+        } else {
+            QueueTelemetry::drained( $queue );
         }
-
-        // Otherwise the queue is dry; do_action( 'aps_queue_drained', $queue )
-        // if your own monitoring needs that signal too - CronQueueRunner
-        // fires it in the equivalent branch, and this adapter has already
-        // established the pattern above for staying compatible with it.
     }
 
     private function recurring_hook(): string {
@@ -215,7 +211,7 @@ add_filter(
 );
 ```
 
-**A finding worth knowing before you build on this, not just a footnote:** `aps_queue_batch_completed`, `aps_queue_drained`, and the `aps_last_sweep` / `aps_last_stamp` option updates that the settings screen's cron health notice reads are all implemented inside `CronQueueRunner` itself, not inside `Sweeper`, `RuleStamper`, `Budget`, or `BatchResult`. `QueueRunnerInterface` and `BatchProcessorInterface` are genuinely sufficient to write a correct, working replacement runner without touching a single shipped class - the adapter above is proof, and everything in the plugin that consumes a processor (the cron tick, `wp aps queue run`) goes through the interface, nothing concrete. But a replacement runner that skips the two `do_action()` calls and the `update_option()` line loses the cron health notice (it will report the sweep queue as stale forever, even while Action Scheduler is actively draining it) and any monitoring hooked onto the two observability actions, silently - nothing errors, the archiving itself keeps working correctly, only the diagnostics go dark. There is no reusable helper for this bookkeeping to call instead of copying it; the adapter above copies it inline for exactly that reason.
+**A finding worth knowing before you build on this, not just a footnote:** `aps_queue_batch_completed`, `aps_queue_drained`, and the per-queue last-run timestamp the settings screen's cron health notice reads all live in `ArchivedPostStatus\Schedule\Queue\QueueTelemetry` - a small static facade purpose-built to be the reusable helper any runner calls, not inside `CronQueueRunner`, `Sweeper`, `RuleStamper`, `Budget`, or `BatchResult`. `QueueRunnerInterface` and `BatchProcessorInterface` are genuinely sufficient to write a correct, working replacement runner without touching a single shipped class - the adapter above is proof, and everything in the plugin that consumes a processor (the cron tick, `wp aps queue run`) goes through the interface, nothing concrete. Call `QueueTelemetry::batch_completed( $result, $queue )` once per batch and `QueueTelemetry::drained( $queue )` when the queue empties, exactly as the adapter above does, and a replacement runner gets the identical bookkeeping `CronQueueRunner` gets. Skip both calls and you lose the cron health notice (it will report the sweep queue as stale forever, even while Action Scheduler is actively draining it) and any monitoring hooked onto the two observability actions, silently - nothing errors, the archiving itself keeps working correctly, only the diagnostics go dark.
 
 `Plugin::build_queue_runner()` only adds the returned runner to the plugin's own hook registration when it implements `HookableInterface`; a runner driven entirely by an external scheduler, like the one above, is free to implement neither that interface nor any cron hook of its own; the CLI's `wp aps queue run` command bypasses the runner layer entirely and always drives `Sweeper`/`RuleStamper` directly, so it keeps working unmodified regardless of which runner is filtered in.
 

@@ -123,6 +123,28 @@ class RuleReducerTest extends TestCase {
 		$this->assertSame( 'Category: Features', $reduced->label );
 	}
 
+	/**
+	 * Two rules at the same level can share the identical minimum `days` (a
+	 * genuine tie, not one rule beating another) — a post filed in two
+	 * categories both set to the same shortest countdown. `days` itself is
+	 * unaffected by which one wins, but `label` is: this pins first-wins,
+	 * matching the strict `<` comparison, so the provenance a user reads in
+	 * `wp post archive-rule` or the editor's cascade line is deterministic
+	 * and doesn't depend on foreach's iteration order changing which rule
+	 * happened to be seen last.
+	 */
+	public function test_reduce_label_on_a_days_tie_keeps_the_first_rules_label() {
+		$rules = array(
+			new Rule( 'term', 5, ChildMode::Open, 'Category: News' ),
+			new Rule( 'term', 5, ChildMode::Open, 'Category: Features' ),
+		);
+
+		$reduced = RuleReducer::reduce( $rules, 'term' );
+
+		$this->assertSame( 5, $reduced->days );
+		$this->assertSame( 'Category: News', $reduced->label );
+	}
+
 	public function test_reduce_label_falls_back_to_first_rules_label_when_no_rule_has_days() {
 		$rules = array(
 			new Rule( 'term', null, ChildMode::Locked, 'Category: News' ),
