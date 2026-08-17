@@ -74,7 +74,7 @@ class PluginHookablesParityTest extends TestCase {
 
 	/**
 	 * The hookable list under the canonical (admin + archive-meta-enabled,
-	 * no WP-CLI) composition is exactly 22 hookables today. This is a
+	 * no WP-CLI) composition is exactly 27 hookables today. This is a
 	 * parity snapshot — a delta here means something slipped into (or was
 	 * silently dropped from) the composition root.
 	 *
@@ -84,7 +84,7 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			25,
+			27,
 			$hookables,
 			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
@@ -170,6 +170,12 @@ class PluginHookablesParityTest extends TestCase {
 			// list-table column additions.
 			ArchivedPostStatus\Admin\ScheduleColumn::class,
 			ArchivedPostStatus\Admin\ScheduleColumnSort::class,
+			// ScheduleQuickEdit / ScheduleBulkEdit (0.5.0 phase 12): the
+			// list-table Quick Edit and Bulk Edit schedule controls, placed
+			// alongside the Scheduled column pair since all four are the
+			// same list-table surface's schedule-related additions.
+			ArchivedPostStatus\Admin\ScheduleQuickEdit::class,
+			ArchivedPostStatus\Admin\ScheduleBulkEdit::class,
 			ArchivedPostStatus\Admin\PluginScreen::class,
 			// SettingsPage: the site settings screen (0.5.0) -- genuinely
 			// admin-only, unlike the schedule/cron block above. TermFields

@@ -536,7 +536,10 @@ class ScheduleColumnTest extends TestCase {
 		$this->column->render_cell( 'aps_scheduled', 42 );
 		$output = ob_get_clean();
 
-		$this->assertSame( '<span>—</span>', $output );
+		$this->assertSame(
+			'<span>—</span><span class="aps-schedule-inline-data" data-local="" aria-hidden="true" style="display:none"></span>',
+			$output
+		);
 	}
 
 	/**
@@ -568,6 +571,7 @@ class ScheduleColumnTest extends TestCase {
 			static fn( $key ) => 'date_format' === $key ? 'F j, Y' : 'g:i a'
 		);
 		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'March 3, 2027 at 9:00 am' );
+		\WP_Mock::userFunction( 'wp_timezone' )->andReturn( new \DateTimeZone( 'UTC' ) );
 
 		$user               = new \stdClass();
 		$user->display_name = 'Alice Editor';
@@ -578,7 +582,8 @@ class ScheduleColumnTest extends TestCase {
 		$output = ob_get_clean();
 
 		$this->assertSame(
-			'<span>Scheduled by Alice Editor</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>',
+			'<span>Scheduled by Alice Editor</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>'
+			. '<span class="aps-schedule-inline-data" data-local="2027-01-15T08:00" aria-hidden="true" style="display:none"></span>',
 			$output
 		);
 	}

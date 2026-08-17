@@ -289,11 +289,12 @@ class PluginTest extends TestCase {
 	 * column's meta-aware sorting), ScheduleColumn (the Scheduled column,
 	 * 0.5.0 phase 10), ScheduleColumnSort (its meta-aware sorting),
 	 * ScheduleMetaBox (the classic-editor scheduling metabox, 0.5.0 phase
-	 * 11), and PluginScreen (the deactivation warning) — only matter on
-	 * admin page loads. Gating them via is_admin() avoids hooking
-	 * front-end/CLI requests with admin-only hooks (admin_enqueue_scripts,
-	 * post_submitbox_start, admin_notices, etc.) that would never fire there
-	 * anyway.
+	 * 11), ScheduleQuickEdit / ScheduleBulkEdit (the list-table Quick Edit
+	 * and Bulk Edit schedule controls, 0.5.0 phase 12), and PluginScreen
+	 * (the deactivation warning) — only matter on admin page loads. Gating
+	 * them via is_admin() avoids hooking front-end/CLI requests with
+	 * admin-only hooks (admin_enqueue_scripts, post_submitbox_start,
+	 * admin_notices, etc.) that would never fire there anyway.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -312,6 +313,8 @@ class PluginTest extends TestCase {
 		$this->assertContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ScheduleColumn::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\ScheduleColumnSort::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\ScheduleQuickEdit::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\ScheduleBulkEdit::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 		$this->assertContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
 		$this->assertContains( ArchivedPostStatus\Settings\TermFields::class, $names );
@@ -470,10 +473,10 @@ class PluginTest extends TestCase {
 	 * Mirror: under a non-admin request (front-end page view, REST API
 	 * call, etc.), none of PostEditor, ScheduleMetaBox, Notices, PostList,
 	 * PostActionHandler, ArchiveColumn, ArchiveColumnSort, ScheduleColumn,
-	 * ScheduleColumnSort, or PluginScreen should appear. Every hook they
-	 * register only fires on an actual wp-admin page load, so composing them
-	 * anyway burns autoloader cycles and makes the dependency graph less
-	 * honest.
+	 * ScheduleColumnSort, ScheduleQuickEdit, ScheduleBulkEdit, or
+	 * PluginScreen should appear. Every hook they register only fires on an
+	 * actual wp-admin page load, so composing them anyway burns autoloader
+	 * cycles and makes the dependency graph less honest.
 	 *
 	 * @covers ArchivedPostStatus\Plugin::hookables
 	 */
@@ -492,6 +495,8 @@ class PluginTest extends TestCase {
 		$this->assertNotContains( ArchivedPostStatus\Admin\ArchiveColumnSort::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ScheduleColumn::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\ScheduleColumnSort::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\ScheduleQuickEdit::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\ScheduleBulkEdit::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PluginScreen::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Settings\SettingsPage::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Settings\TermFields::class, $names );

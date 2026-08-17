@@ -33,6 +33,15 @@ use ArchivedPostStatus\Schedule\ScheduleSource;
 class ScheduleColumnCellRendererTest extends TestCase {
 
 	/**
+	 * The hidden per-row Quick Edit data span every cell carries, for the
+	 * common "no manual schedule to pre-fill" case (no record, Exempt,
+	 * Rule -- everything except Manual).
+	 *
+	 * @var string
+	 */
+	private const INLINE_DATA_EMPTY = '<span class="aps-schedule-inline-data" data-local="" aria-hidden="true" style="display:none"></span>';
+
+	/**
 	 * Build a ScheduleMeta value object directly.
 	 *
 	 * @param int             $time         UTC epoch.
@@ -63,7 +72,7 @@ class ScheduleColumnCellRendererTest extends TestCase {
 	public function test_render_returns_a_bare_dash_for_no_record() {
 		$result = ScheduleColumnCellRenderer::render( null );
 
-		$this->assertSame( '<span>—</span>', $result );
+		$this->assertSame( '<span>—</span>' . self::INLINE_DATA_EMPTY, $result );
 	}
 
 	/**
@@ -97,7 +106,7 @@ class ScheduleColumnCellRendererTest extends TestCase {
 		$result = ScheduleColumnCellRenderer::render( $this->meta( 0, ScheduleSource::Exempt ) );
 
 		$this->assertSame(
-			'<span class="aps-schedule-exempt" title="Exempt from automatic archiving">—</span>',
+			'<span class="aps-schedule-exempt" title="Exempt from automatic archiving">—</span>' . self::INLINE_DATA_EMPTY,
 			$result
 		);
 	}
@@ -117,7 +126,8 @@ class ScheduleColumnCellRendererTest extends TestCase {
 		$result = ScheduleColumnCellRenderer::render( $this->meta( 0, ScheduleSource::Exempt ) );
 
 		$this->assertSame(
-			'<span class="aps-schedule-exempt" title="((Exempt from automatic archiving))">—</span>',
+			'<span class="aps-schedule-exempt" title="((Exempt from automatic archiving))">—</span>'
+			. '<span class="aps-schedule-inline-data" data-local="(())" aria-hidden="true" style="display:none"></span>',
 			$result
 		);
 	}
@@ -154,6 +164,7 @@ class ScheduleColumnCellRendererTest extends TestCase {
 			static fn( $key ) => 'date_format' === $key ? 'F j, Y' : 'g:i a'
 		);
 		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'March 3, 2027 at 9:00 am' );
+		\WP_Mock::userFunction( 'wp_timezone' )->andReturn( new \DateTimeZone( 'UTC' ) );
 
 		$user               = new \stdClass();
 		$user->display_name = 'Alice Editor';
@@ -162,7 +173,8 @@ class ScheduleColumnCellRendererTest extends TestCase {
 		$result = ScheduleColumnCellRenderer::render( $this->meta( 1800000000, ScheduleSource::Manual, 7 ) );
 
 		$this->assertSame(
-			'<span>Scheduled by Alice Editor</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>',
+			'<span>Scheduled by Alice Editor</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>'
+			. '<span class="aps-schedule-inline-data" data-local="2027-01-15T08:00" aria-hidden="true" style="display:none"></span>',
 			$result
 		);
 	}
@@ -179,12 +191,14 @@ class ScheduleColumnCellRendererTest extends TestCase {
 			static fn( $key ) => 'date_format' === $key ? 'F j, Y' : 'g:i a'
 		);
 		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'March 3, 2027 at 9:00 am' );
+		\WP_Mock::userFunction( 'wp_timezone' )->andReturn( new \DateTimeZone( 'UTC' ) );
 		\WP_Mock::userFunction( 'get_userdata' )->never();
 
 		$result = ScheduleColumnCellRenderer::render( $this->meta( 1800000000, ScheduleSource::Manual, 0 ) );
 
 		$this->assertSame(
-			'<span>Scheduled by system</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>',
+			'<span>Scheduled by system</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>'
+			. '<span class="aps-schedule-inline-data" data-local="2027-01-15T08:00" aria-hidden="true" style="display:none"></span>',
 			$result
 		);
 	}
@@ -199,6 +213,7 @@ class ScheduleColumnCellRendererTest extends TestCase {
 	public function test_render_escapes_html_in_the_user_display_name_for_a_manual_schedule() {
 		\WP_Mock::userFunction( 'get_option' )->andReturn( 'F j, Y' );
 		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'March 3, 2027' );
+		\WP_Mock::userFunction( 'wp_timezone' )->andReturn( new \DateTimeZone( 'UTC' ) );
 		\WP_Mock::userFunction( 'esc_html' )->andReturnUsing(
 			static fn( $s ) => htmlspecialchars( (string) $s, ENT_QUOTES, 'UTF-8' )
 		);
@@ -222,6 +237,7 @@ class ScheduleColumnCellRendererTest extends TestCase {
 	public function test_render_does_not_resolve_the_cascade_for_a_manual_schedule() {
 		\WP_Mock::userFunction( 'get_option' )->andReturn( 'F j, Y' );
 		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'March 3, 2027' );
+		\WP_Mock::userFunction( 'wp_timezone' )->andReturn( new \DateTimeZone( 'UTC' ) );
 		\WP_Mock::userFunction( 'get_userdata' )->andReturn( false );
 		\WP_Mock::userFunction( 'get_the_terms' )->never();
 
@@ -252,7 +268,7 @@ class ScheduleColumnCellRendererTest extends TestCase {
 		$result = ScheduleColumnCellRenderer::render( $this->meta( 1800000000, ScheduleSource::Rule, 0, 3 ) );
 
 		$this->assertSame(
-			'<span>Scheduled by rule</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>',
+			'<span>Scheduled by rule</span><br><span class="aps-schedule-datetime">March 3, 2027 at 9:00 am</span>' . self::INLINE_DATA_EMPTY,
 			$result
 		);
 	}
@@ -279,6 +295,50 @@ class ScheduleColumnCellRendererTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
+	// render() -- the hidden Quick Edit data span
+	// -----------------------------------------------------------------------
+
+	/**
+	 * The manual-schedule local wall-clock value written into the hidden
+	 * data span must be escaped for the HTML attribute context via
+	 * esc_attr() -- a distinguishable esc_attr() marker proves the escaping
+	 * call actually ran on this value, not just on the visible cell markup.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ScheduleColumnCellRenderer::render
+	 */
+	public function test_render_escapes_the_inline_edit_data_span_local_value_with_esc_attr() {
+		\WP_Mock::userFunction( 'get_option' )->andReturn( 'F j, Y' );
+		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'March 3, 2027' );
+		\WP_Mock::userFunction( 'wp_timezone' )->andReturn( new \DateTimeZone( 'UTC' ) );
+		\WP_Mock::userFunction( 'get_userdata' )->andReturn( false );
+		\WP_Mock::userFunction( 'esc_attr' )->andReturnUsing(
+			static fn( $s ) => "(({$s}))"
+		);
+
+		$result = ScheduleColumnCellRenderer::render( $this->meta( 1800000000, ScheduleSource::Manual, 7 ) );
+
+		$this->assertStringContainsString( 'data-local="((2027-01-15T08:00))"', $result );
+	}
+
+	/**
+	 * Every non-Manual state (no record, Exempt, Rule) carries an empty
+	 * `data-local` -- so Quick Edit's row hydration always finds a span to
+	 * read and always starts the field blank rather than stale, per
+	 * {@see \ArchivedPostStatus\Admin\ScheduleMetaBox::render_date_field()}'s
+	 * identical "never pre-fill from a rule stamp" rule.
+	 *
+	 * @covers ArchivedPostStatus\Admin\ScheduleColumnCellRenderer::render
+	 */
+	public function test_render_includes_an_empty_inline_edit_data_span_for_a_rule_schedule() {
+		\WP_Mock::userFunction( 'get_option' )->andReturn( 'F j, Y' );
+		\WP_Mock::userFunction( 'wp_date' )->andReturn( 'March 3, 2027' );
+
+		$result = ScheduleColumnCellRenderer::render( $this->meta( 1800000000, ScheduleSource::Rule, 0, 3 ) );
+
+		$this->assertStringContainsString( 'data-local=""', $result );
+	}
+
+	// -----------------------------------------------------------------------
 	// aps_schedule_cell_content filter
 	// -----------------------------------------------------------------------
 
@@ -291,7 +351,7 @@ class ScheduleColumnCellRendererTest extends TestCase {
 	 */
 	public function test_render_applies_the_cell_content_filter() {
 		\WP_Mock::onFilter( 'aps_schedule_cell_content' )
-			->with( '<span>—</span>', null )
+			->with( '<span>—</span>' . self::INLINE_DATA_EMPTY, null )
 			->reply( '<span>custom</span>' );
 
 		$result = ScheduleColumnCellRenderer::render( null );

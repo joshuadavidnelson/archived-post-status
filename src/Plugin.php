@@ -121,6 +121,8 @@ final class Plugin {
 			$hookables[] = new Admin\ArchiveColumnSort();
 			$hookables[] = new Admin\ScheduleColumn();
 			$hookables[] = new Admin\ScheduleColumnSort();
+			$hookables[] = new Admin\ScheduleQuickEdit();
+			$hookables[] = new Admin\ScheduleBulkEdit();
 			$hookables[] = new Admin\PluginScreen();
 			$hookables[] = new Settings\SettingsPage();
 			$hookables[] = new Settings\TermFields();
