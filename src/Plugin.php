@@ -113,6 +113,7 @@ final class Plugin {
 			$bulk_handler = new Admin\BulkActionHandler();
 
 			$hookables[] = new Admin\PostEditor();
+			$hookables[] = new Admin\ScheduleMetaBox();
 			$hookables[] = new Admin\Notices( new Admin\NoticeBuilder() );
 			$hookables[] = new Admin\PostList( $bulk_handler );
 			$hookables[] = new Admin\PostActionHandler( $bulk_handler );

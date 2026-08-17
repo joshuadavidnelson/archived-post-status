@@ -84,7 +84,7 @@ class PluginHookablesParityTest extends TestCase {
 		$hookables = $this->invoke_hookables_under_admin_and_archive_meta();
 
 		$this->assertCount(
-			24,
+			25,
 			$hookables,
 			'Count delta indicates a composition change slipped into Plugin::hookables().'
 		);
@@ -138,9 +138,9 @@ class PluginHookablesParityTest extends TestCase {
 			ArchivedPostStatus\Schedule\CronRegistrar::class,
 			ArchivedPostStatus\Schedule\MetaRegistrar::class,
 			ArchivedPostStatus\Schedule\ScheduleMetaListener::class,
-			// PostEditor, Notices, PostList, PostActionHandler, ArchiveColumn,
-			// ArchiveColumnSort, ScheduleColumn, ScheduleColumnSort, and
-			// PluginScreen are the is_admin()-gated admin-only block.
+			// PostEditor, ScheduleMetaBox, Notices, PostList, PostActionHandler,
+			// ArchiveColumn, ArchiveColumnSort, ScheduleColumn, ScheduleColumnSort,
+			// and PluginScreen are the is_admin()-gated admin-only block.
 			// PostEditor and Notices moved here in the perf
 			// fix that gated them on is_admin() -- every hook either one
 			// registers only fires on an actual wp-admin page load, so
@@ -153,6 +153,11 @@ class PluginHookablesParityTest extends TestCase {
 			// PluginTest::test_hookables_construct_post_list_and_post_action_handler_with_the_same_bulk_action_handler_instance())
 			// but owns the single-post action hooks independently.
 			ArchivedPostStatus\Admin\PostEditor::class,
+			// ScheduleMetaBox (0.5.0 phase 11): the classic-editor scheduling
+			// metabox, alongside PostEditor since both are post-editor
+			// surfaces -- PostEditor also enqueues the block editor's own
+			// scheduling panel, so no separate hookable exists for that half.
+			ArchivedPostStatus\Admin\ScheduleMetaBox::class,
 			ArchivedPostStatus\Admin\Notices::class,
 			ArchivedPostStatus\Admin\PostList::class,
 			ArchivedPostStatus\Admin\PostActionHandler::class,

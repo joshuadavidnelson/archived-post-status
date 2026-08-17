@@ -287,10 +287,11 @@ class PluginTest extends TestCase {
 	 * PostActionHandler (the single-post archive/unarchive admin actions),
 	 * ArchiveColumn (the archive metadata column), ArchiveColumnSort (the
 	 * column's meta-aware sorting), ScheduleColumn (the Scheduled column,
-	 * 0.5.0 phase 10), ScheduleColumnSort (its meta-aware sorting), and
-	 * PluginScreen (the deactivation warning) — only matter on admin page
-	 * loads. Gating them via is_admin() avoids hooking front-end/CLI
-	 * requests with admin-only hooks (admin_enqueue_scripts,
+	 * 0.5.0 phase 10), ScheduleColumnSort (its meta-aware sorting),
+	 * ScheduleMetaBox (the classic-editor scheduling metabox, 0.5.0 phase
+	 * 11), and PluginScreen (the deactivation warning) — only matter on
+	 * admin page loads. Gating them via is_admin() avoids hooking
+	 * front-end/CLI requests with admin-only hooks (admin_enqueue_scripts,
 	 * post_submitbox_start, admin_notices, etc.) that would never fire there
 	 * anyway.
 	 *
@@ -303,6 +304,7 @@ class PluginTest extends TestCase {
 		$names = $this->class_names( $this->invoke_hookables() );
 
 		$this->assertContains( ArchivedPostStatus\Admin\PostEditor::class, $names );
+		$this->assertContains( ArchivedPostStatus\Admin\ScheduleMetaBox::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertContains( ArchivedPostStatus\Admin\PostActionHandler::class, $names );
@@ -466,7 +468,7 @@ class PluginTest extends TestCase {
 
 	/**
 	 * Mirror: under a non-admin request (front-end page view, REST API
-	 * call, etc.), none of PostEditor, Notices, PostList,
+	 * call, etc.), none of PostEditor, ScheduleMetaBox, Notices, PostList,
 	 * PostActionHandler, ArchiveColumn, ArchiveColumnSort, ScheduleColumn,
 	 * ScheduleColumnSort, or PluginScreen should appear. Every hook they
 	 * register only fires on an actual wp-admin page load, so composing them
@@ -482,6 +484,7 @@ class PluginTest extends TestCase {
 		$names = $this->class_names( $this->invoke_hookables() );
 
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostEditor::class, $names );
+		$this->assertNotContains( ArchivedPostStatus\Admin\ScheduleMetaBox::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\Notices::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostList::class, $names );
 		$this->assertNotContains( ArchivedPostStatus\Admin\PostActionHandler::class, $names );
