@@ -9,192 +9,465 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-03T19:35:10+00:00\n"
+"POT-Creation-Date: 2026-08-17T05:50:22+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI 2.12.0\n"
+"X-Generator: WP-CLI 2.4.0\n"
 "X-Domain: archived-post-status\n"
 
 #. Plugin Name of the plugin
-#: archived-post-status.php
+#: src/Settings/NetworkSettingsPage.php:88
+#: src/Settings/NetworkSettingsPage.php:89
+#: src/Settings/NetworkSettingsPage.php:168
+#: src/Settings/SettingsPage.php:96
+#: src/Settings/SettingsPage.php:97
+#: src/Settings/SettingsPage.php:165
 msgid "Archived Post Status"
 msgstr ""
 
 #. Plugin URI of the plugin
-#: archived-post-status.php
 msgid "https://archivedpoststat.us/"
 msgstr ""
 
 #. Description of the plugin
-#: archived-post-status.php
 msgid "Allows posts and pages to be archived so you can unpublish content without having to trash it."
 msgstr ""
 
 #. Author of the plugin
-#: archived-post-status.php
 msgid "Joshua David Nelson"
 msgstr ""
 
 #. Author URI of the plugin
-#: archived-post-status.php
 msgid "https://joshuadnelson.com"
 msgstr ""
 
 #. translators: attribution shown when a post was archived with no user context (anonymous WP-CLI, cron).
-#: src/Admin/ArchiveColumn.php:61
+#: src/Admin/ArchiveColumnCellRenderer.php:45
 msgctxt "archive agent"
 msgid "system"
 msgstr ""
 
 #. translators: attribution shown when the archiving user's account no longer exists.
-#: src/Admin/ArchiveColumn.php:74
+#: src/Admin/ArchiveColumnCellRenderer.php:56
 msgid "Unknown"
 msgstr ""
 
 #. translators: %1$s: user display name
-#: src/Admin/ArchiveColumn.php:87
-#, php-format
+#: src/Admin/ArchiveColumnCellRenderer.php:67
 msgid "Archived by %1$s"
 msgstr ""
 
 #. translators: label for the undo link appended to the archive success notice.
-#: src/Admin/NoticeBuilder.php:63
+#: src/Admin/NoticeBuilder.php:56
 msgid "Undo"
 msgstr ""
 
 #. translators: %s: Number of locked posts
-#: src/Admin/NoticeBuilder.php:120
-#, php-format
+#: src/Admin/NoticeBuilder.php:109
 msgid "%s post not archived, somebody is editing it."
 msgid_plural "%s posts not archived, somebody is editing them."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts skipped because the user lacks the capability
-#: src/Admin/NoticeBuilder.php:123
-#, php-format
+#: src/Admin/NoticeBuilder.php:112
 msgid "%s post skipped: you are not allowed to perform this action on it."
 msgid_plural "%s posts skipped: you are not allowed to perform this action on them."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts skipped because they could not be located
-#: src/Admin/NoticeBuilder.php:126
-#, php-format
+#: src/Admin/NoticeBuilder.php:115
 msgid "%s post skipped: it no longer exists or its type is unsupported."
 msgid_plural "%s posts skipped: they no longer exist or their types are unsupported."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts skipped because their status disqualifies them
-#: src/Admin/NoticeBuilder.php:129
-#, php-format
+#: src/Admin/NoticeBuilder.php:118
 msgid "%s post skipped: its status is not eligible for this action."
 msgid_plural "%s posts skipped: their status is not eligible for this action."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts archived
-#: src/Admin/NoticeBuilder.php:150
-#, php-format
+#: src/Admin/NoticeBuilder.php:138
 msgid "%s post moved to the Archive."
 msgid_plural "%s posts moved to the Archive."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Number of posts unarchived
-#: src/Admin/NoticeBuilder.php:187
-#, php-format
+#: src/Admin/NoticeBuilder.php:174
 msgid "%s post restored from the Archive."
 msgid_plural "%s posts restored from the Archive."
 msgstr[0] ""
 msgstr[1] ""
 
-#. translators: label for the "Archive" row action link.
-#: src/Admin/PostEditor.php:62
-#: src/Admin/PostList.php:221
-#: src/Admin/RowActionPolicy.php:40
-#: assets/js/block-editor.js:51
-msgid "Archive"
-msgstr ""
-
-#. translators: wp_die() message shown when a direct edit attempt on an archived post is blocked.
-#: src/Admin/PostEditorGuard.php:120
-msgid "You can't edit this item because it has been Archived. Please change the post status and try again."
-msgstr ""
-
-#: src/Admin/PostEditorGuard.php:164
-msgid "WordPress &rsaquo; Error"
-msgstr ""
-
-#. translators: label for the "Unarchive" row action link.
-#: src/Admin/PostList.php:227
-#: src/Admin/RowActionPolicy.php:52
-msgid "Unarchive"
-msgstr ""
-
-#: src/Admin/PostList.php:332
+#: src/Admin/PostActionHandler.php:110
 msgid "Invalid post type."
 msgstr ""
 
 #. translators: fallback name shown when the post-lock holder's account no longer exists.
-#: src/Admin/PostList.php:339
+#: src/Admin/PostActionHandler.php:117
 msgid "Another user"
 msgstr ""
 
-#: src/Admin/RowActionPolicy.php:92
+#. translators: label for the "Archive" row action link.
+#: src/Admin/PostEditor.php:69
+#: src/Admin/PostList.php:159
+#: src/Admin/RowActionPolicy.php:30
+#: assets/js/block-editor.js:51
+msgid "Archive"
+msgstr ""
+
+#. translators: %s: the ancestor level that hid this setting, e.g. "Network".
+#: src/Admin/PostEditor.php:222
+#: src/Settings/CascadeField.php:160
+msgid "Hidden by %s."
+msgstr ""
+
+#. translators: 1: the locked number of days. 2: the ancestor level that locked it, e.g. "Network".
+#: src/Admin/PostEditor.php:230
+#: src/Settings/CascadeField.php:144
+msgid "%1$d days — locked by %2$s"
+msgstr ""
+
+#. translators: wp_die() message shown when a direct edit attempt on an archived post is blocked.
+#: src/Admin/PostEditorGuard.php:102
+msgid "You can't edit this item because it has been Archived. Please change the post status and try again."
+msgstr ""
+
+#: src/Admin/PostEditorGuard.php:135
+msgid "WordPress &rsaquo; Error"
+msgstr ""
+
+#. translators: label for the "Unarchive" row action link.
+#: src/Admin/PostList.php:163
+#: src/Admin/RowActionPolicy.php:41
+msgid "Unarchive"
+msgstr ""
+
+#: src/Admin/RowActionPolicy.php:79
 msgid "Archive this post"
 msgstr ""
 
-#: src/Admin/RowActionPolicy.php:116
+#: src/Admin/RowActionPolicy.php:103
 msgid "Unarchive this post"
 msgstr ""
 
+#: src/Admin/ScheduleBulkEdit.php:90
+#: src/Admin/ScheduleQuickEdit.php:143
+msgid "Scheduled archive"
+msgstr ""
+
+#: src/Admin/ScheduleBulkEdit.php:96
+msgid "— No change —"
+msgstr ""
+
+#: src/Admin/ScheduleBulkEdit.php:101
+msgid "Set scheduled archive date"
+msgstr ""
+
+#: src/Admin/ScheduleBulkEdit.php:106
+#: src/Admin/ScheduleQuickEdit.php:151
+msgid "Clear scheduled archive"
+msgstr ""
+
+#: src/Admin/ScheduleBulkEdit.php:114
+msgid "Date"
+msgstr ""
+
+#. translators: header of the column showing a post's pending scheduled archive date.
+#: src/Admin/ScheduleColumnCellRenderer.php:50
+msgid "Scheduled"
+msgstr ""
+
+#: src/Admin/ScheduleColumnCellRenderer.php:71
+msgid "Exempt from automatic archiving"
+msgstr ""
+
+#. translators: %1$s: user display name
+#: src/Admin/ScheduleColumnCellRenderer.php:82
+msgid "Scheduled by %1$s"
+msgstr ""
+
+#: src/Admin/ScheduleColumnCellRenderer.php:93
+msgid "Scheduled by rule"
+msgstr ""
+
+#: src/Admin/ScheduleMetaBox.php:95
+#: assets/js/schedule-panel.js:98
+msgid "Archive Schedule"
+msgstr ""
+
+#: src/Admin/ScheduleMetaBox.php:185
+#: assets/js/schedule-panel.js:158
+msgid "Clear schedule"
+msgstr ""
+
+#: src/Admin/ScheduleMetaBox.php:212
+#: assets/js/schedule-panel.js:112
+msgid "Exact date"
+msgstr ""
+
+#: src/Admin/ScheduleOutcome.php:49
+msgid "Exempt from automatic archiving."
+msgstr ""
+
+#. translators: %s: the formatted archive date and time.
+#: src/Admin/ScheduleOutcome.php:73
+msgid "Archiving on %s (set manually)."
+msgstr ""
+
+#. translators: %s: the formatted archive date and time.
+#: src/Admin/ScheduleOutcome.php:98
+msgid "Archiving on %s (from an automatic-archive rule)."
+msgstr ""
+
+#. translators: 1: the formatted archive date and time. 2: the cascade level/label that set the rule, e.g. "Category: News". 3: number of days.
+#: src/Admin/ScheduleOutcome.php:105
+msgid "Auto archive: %1$s — from %2$s (%3$d days)."
+msgstr ""
+
+#: src/Admin/ScheduleOutcome.php:123
+msgid "Not scheduled to archive."
+msgstr ""
+
+#. translators: 1: number of days. 2: the cascade level/label that set the rule, e.g. "Category: News".
+#: src/Admin/ScheduleOutcome.php:128
+msgid "Will auto archive %1$d days after publish/modified — from %2$s, once the schedule is next applied."
+msgstr ""
+
 #. translators: %s: display name of the user currently editing the post.
-#: src/Archive/ArchiveAction.php:68
-#, php-format
+#: src/Archive/ArchiveAction.php:73
 msgid "You cannot archive this item. %s is currently editing."
 msgstr ""
 
 #. translators: %s: display name of the user currently editing the post.
-#: src/Archive/ArchiveAction.php:71
-#, php-format
+#: src/Archive/ArchiveAction.php:76
 msgid "You cannot unarchive this item. %s is currently editing."
 msgstr ""
 
-#: src/Archive/ArchiveAction.php:83
+#: src/Archive/ArchiveAction.php:88
 msgid "Error in archiving this item."
 msgstr ""
 
-#: src/Archive/ArchiveAction.php:84
+#: src/Archive/ArchiveAction.php:89
 msgid "Error in unarchiving this item."
 msgstr ""
 
-#: src/Archive/ArchiveAction.php:97
+#: src/Archive/ArchiveAction.php:102
 msgid "You do not have permission to archive this item."
 msgstr ""
 
-#: src/Archive/ArchiveAction.php:98
+#: src/Archive/ArchiveAction.php:103
 msgid "You do not have permission to unarchive this item."
 msgstr ""
 
+#: src/AutoArchive/Provider/NetworkRuleProvider.php:79
+msgid "Network default"
+msgstr ""
+
+#: src/AutoArchive/Provider/PostRuleProvider.php:73
+msgid "Post override"
+msgstr ""
+
+#: src/AutoArchive/Provider/SiteRuleProvider.php:67
+#: src/Settings/TermInheritance.php:107
+msgid "Site default"
+msgstr ""
+
+#. translators: 1: Taxonomy singular name, e.g. "Category". 2: Term name, e.g. "News".
+#: src/AutoArchive/Provider/TermRuleProvider.php:118
+msgid "%1$s: %2$s"
+msgstr ""
+
 #. translators: progress message for the WP-CLI archive command.
-#: src/CLI/ArchiveCommand.php:51
+#: src/CLI/ArchiveCommand.php:49
 msgid "Archiving"
 msgstr ""
 
+#. translators: progress message for the WP-CLI schedule-archive command.
+#: src/CLI/ScheduleCommand.php:56
+msgid "Scheduling"
+msgstr ""
+
 #. translators: progress message for the WP-CLI unarchive command.
-#: src/CLI/UnarchiveCommand.php:42
+#: src/CLI/UnarchiveCommand.php:39
 msgid "Unarchiving"
 msgstr ""
 
+#. translators: progress message for the WP-CLI unschedule-archive command.
+#: src/CLI/UnscheduleCommand.php:43
+msgid "Unscheduling"
+msgstr ""
+
+#: src/Schedule/CronRegistrar.php:122
+msgid "Archived Post Status sweep interval"
+msgstr ""
+
+#: src/Settings/CascadeField.php:121
+msgid "No value is inherited from a higher level."
+msgstr ""
+
+#. translators: 1: the ancestor level that supplied the value, e.g. "Site". 2: the inherited number of days.
+#: src/Settings/CascadeField.php:127
+msgid "Inherited from %1$s: %2$d days"
+msgstr ""
+
+#: src/Settings/CascadeField.php:182
+msgid "Override for this level:"
+msgstr ""
+
+#: src/Settings/CascadeField.php:184
+msgid "days (leave blank to inherit)"
+msgstr ""
+
+#: src/Settings/CascadeField.php:209
+msgid "For the level below"
+msgstr ""
+
+#. translators: %s: capitalized plural label for the level below this one, e.g. "Sites".
+#: src/Settings/CascadeField.php:250
+msgid "%s may set their own"
+msgstr ""
+
+#. translators: %s: capitalized plural label for the level below this one, e.g. "Sites".
+#: src/Settings/CascadeField.php:255
+msgid "%s see this value, read-only"
+msgstr ""
+
+#. translators: %s: plural label for the level below this one, e.g. "sites".
+#: src/Settings/CascadeField.php:260
+msgid "Hide this from %s"
+msgstr ""
+
+#: src/Settings/NetworkSettingsPage.php:118
+msgid "You do not have permission to manage network settings."
+msgstr ""
+
+#: src/Settings/NetworkSettingsPage.php:195
+msgid "Network settings saved."
+msgstr ""
+
+#: src/Settings/NetworkSettingsPage.php:247
+msgid "sites"
+msgstr ""
+
+#: src/Settings/Schema.php:129
+msgid "Read-only archive"
+msgstr ""
+
+#: src/Settings/Schema.php:130
+msgid "Prevent edits to content while it is in the Archived status."
+msgstr ""
+
+#: src/Settings/Schema.php:136
+msgid "Per-post scheduling"
+msgstr ""
+
+#: src/Settings/Schema.php:137
+msgid "Let editors pick a date and time to archive an individual post."
+msgstr ""
+
+#: src/Settings/Schema.php:143
+msgid "Schedulable post types"
+msgstr ""
+
+#: src/Settings/Schema.php:144
+msgid "Post types that show the archive date picker. Leave empty to allow every supported post type."
+msgstr ""
+
+#: src/Settings/Schema.php:150
+msgid "Automatic archiving"
+msgstr ""
+
+#: src/Settings/Schema.php:151
+msgid "Archive posts automatically after a set number of days, with no editor needing to pick a date."
+msgstr ""
+
+#: src/Settings/Schema.php:157
+msgid "Archive after (days)"
+msgstr ""
+
+#: src/Settings/Schema.php:158
+msgid "Days after the archive basis (published or modified date) before a post is archived automatically."
+msgstr ""
+
+#: src/Settings/Schema.php:167
+msgid "Category and post control"
+msgstr ""
+
+#: src/Settings/Schema.php:168
+msgid "Whether categories and individual posts may set their own automatic-archive rule, or must use this one."
+msgstr ""
+
+#: src/Settings/Schema.php:174
+msgid "Automatically archived post types"
+msgstr ""
+
+#: src/Settings/Schema.php:175
+msgid "Post types the automatic-archive rule applies to."
+msgstr ""
+
+#: src/Settings/Schema.php:181
+msgid "Category-level rules"
+msgstr ""
+
+#: src/Settings/Schema.php:182
+msgid "Taxonomies that can set their own automatic-archive rule, overriding the site default."
+msgstr ""
+
+#: src/Settings/Schema.php:188
+msgid "Archive age basis"
+msgstr ""
+
+#: src/Settings/Schema.php:189
+msgid "Whether the automatic-archive countdown is measured from the publish date or the last-modified date."
+msgstr ""
+
+#: src/Settings/Schema.php:195
+msgid "Backlog grace period (days)"
+msgstr ""
+
+#: src/Settings/Schema.php:196
+msgid "Minimum days before an already-old post is archived after a rule newly applies to it, so enabling a rule never empties the site immediately."
+msgstr ""
+
+#: src/Settings/SettingsPage.php:228
+msgid "categories and posts"
+msgstr ""
+
+#: src/Settings/SettingsPage.php:270
+msgid "Last modified"
+msgstr ""
+
+#: src/Settings/SettingsPage.php:271
+msgid "Published"
+msgstr ""
+
+#. translators: %s: number of posts, already formatted for the current locale.
+#: src/Settings/SettingsPage.php:341
+msgid "%s post currently matches this rule and will be scheduled to archive."
+msgid_plural "%s posts currently match this rule and will be scheduled to archive."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Settings/SettingsPage.php:382
+msgid "The archive sweep has not run recently. If your host disables real WP-Cron, make sure a system cron job hits wp-cron.php on a schedule."
+msgstr ""
+
+#: src/Settings/TermFields.php:175
+msgid "posts"
+msgstr ""
+
 #. translators: The label used for the status.
-#: src/Status/ArchiveLabel.php:40
+#: src/Status/ArchiveLabel.php:29
 msgid "Archived"
 msgstr ""
 
 #. translators: %s: post count
-#: src/Status/PostStatus.php:173
-#, php-format
+#: src/Status/PostStatus.php:147
 msgid "Archived <span class=\"count\">(%s)</span>"
 msgid_plural "Archived <span class=\"count\">(%s)</span>"
 msgstr[0] ""
@@ -205,11 +478,15 @@ msgid "Are you sure you want to archive this post?"
 msgstr ""
 
 #. translators: warning shown on Network Admin's Plugins screen, where no single site can answer for the whole network.
-#: assets/js/plugin-screen.js:42
+#: assets/js/plugin-screen.js:33
 msgid "Warning! Deactivating Archived Post Status could impact content visibility. Any site on this network with archived content will no longer be able to access it."
 msgstr ""
 
 #. translators: warning about deactivating the plugin with archived content.
-#: assets/js/plugin-screen.js:49
+#: assets/js/plugin-screen.js:40
 msgid "Warning! Deactivating this plugin will remove the 'archive' status and all content in that status will be hidden. To keep that content visible, unarchive it first and then deactivate this plugin."
+msgstr ""
+
+#: assets/js/schedule-panel.js:129
+msgid "Auto archive after (days)"
 msgstr ""

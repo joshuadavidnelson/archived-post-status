@@ -1,6 +1,58 @@
 # Archived Post Status Changelog
 ---
 
+## 0.5.0 - Unreleased
+
+The feature this plugin has been asked for the longest: automatic archiving. You can now schedule an exact date for a single post, or set up rules that archive content on their own after a period you choose — per network, per site, per category, or per post, with each level able to override the ones above it. **None of this changes anything on an existing site by itself.** Scheduling a post is something an editor does deliberately, and the rule-based side of auto-archive is off until you turn it on.
+
+### Added
+
+- **Schedule an exact archive date** - both the block editor and the classic editor gain a date/time picker (an "Auto archive" panel in the block editor, a metabox field in the classic editor). Pick a date, save the post, and it archives itself when that time comes - no need to remember to come back and do it by hand. Clearing the date cancels the schedule.
+- **Automatic archiving by rule (the cascade)** - turn on "Auto archive" and set a number of days, and matching content archives itself that many days after it was published or last modified, on its own, forever. Rules can be set at four levels, each overriding the ones above it for the content it covers:
+  - **Network** (multisite, when network-activated) - a default and an on/off switch for every site.
+  - **Site** - `Settings → Archived Post Status`, the same screen the read-only setting has lived on since 0.4.0.
+  - **Category** (or any taxonomy you opt in) - a field on the term's own edit screen.
+  - **Post** - an override on the individual post.
+
+  A more specific level always wins over a more general one, and a parent level can lock its value so the levels below it can only see it, not change it, or hide the control from them entirely. **Auto archive is off by default and stays off until you turn it on** - see `== Upgrade Notice ==` in readme.txt for what that means for your existing content, and the cascade table further down in this file for exactly how the four levels combine.
+- **A grace period protects old content.** Turning on a rule over years of back-catalogue does not archive it all on the next run. Anything already past its due date is scheduled about a week out instead (configurable via the `auto_archive_grace_days` setting, default 7, or per post via the `aps_auto_archive_grace_period` filter) and shows up in the new "Scheduled" column first, so you have a chance to notice and adjust before anything actually archives.
+- **An editor's own date always wins.** Picking an exact date on a post is a direct instruction, and it beats the cascade outright - even a rule that a network or site admin has locked. The one exception is a post explicitly exempted from a rule (via the "Clear" action), which is never re-stamped by the cascade even if the rule that produced it changes later. A site that wants the opposite - a locked rule always overrides an editor's own date - can flip this with the `aps_schedule_absolute_date_wins` filter.
+- **A due post that's no longer archivable is skipped, not silently dropped.** If the sweep finds a scheduled post that's already been trashed, or otherwise no longer eligible, it clears the schedule by default (`aps_schedule_stale_action`, default `'clear'`). A failed archive attempt is retried up to 3 times (`aps_schedule_max_attempts`) before being abandoned - by default, exempted from future auto-archiving (`aps_schedule_abandon_action`, default `'exempt'`). **If you filter `aps_schedule_stale_action` to return `'keep'` for a post, use it only as an escape hatch for individual posts you intend to resolve by hand** - `'keep'` has no attempts counter by design, and enough posts left in that state will pile up at the front of the sweep queue and block everything behind them from ever being reached.
+- **"Scheduled" column** on the posts list, sortable, showing the pending archive date and how it was set (manually, or by which rule). Unlike the existing "Archived" column, this one shows on the normal list views, since a pending schedule is something you can still act on.
+- **Quick Edit and Bulk Edit** gain schedule controls. Quick Edit lets you set or clear a single post's exact date inline. Bulk Edit's schedule field defaults to "No change" - a genuine no-op that never touches a post's existing schedule unless you deliberately choose "Set" or "Clear," so bulk-editing a batch of posts for something unrelated (category, author, …) can never silently wipe out schedules that were already set. **This is not the 0.3.x status dropdown coming back to Quick Edit** - 0.4.0 removed that on purpose, and it is still gone. This is future-dated scheduling of an archive that has not happened yet, a different feature entirely.
+- **Settings screens**: a site screen at `Settings → Archived Post Status` (extending the existing 0.4.0 screen with the new scheduling and cascade options), and, on a network-activated multisite install, a matching Network Admin screen for the network-level defaults and locks.
+- **WP-CLI**: `wp post schedule-archive <id>... --at=<datetime>` and `wp post unschedule-archive <id>...`; `wp post archive-rule <id>` prints the resolved cascade for a post, level by level, so you can see exactly why (or when) a post will archive; `wp aps settings list|get|update [--network]` reads and writes settings from the command line; `wp aps queue run <sweep|stamp> [--all]` drains the sweep or stamp queue immediately, without waiting on cron - the tool to reach for right after turning on a rule over a large backlog.
+- **New `aps_*` functions**: `aps_schedule_archive()`, `aps_unschedule_archive()`, and `aps_get_scheduled_archive_time()` for the per-post schedule; `aps_get_auto_archive_rule()` returns the resolved cascade for a post (the same object the UI and CLI use); `aps_current_user_can_manage_settings()` and `aps_current_user_can_manage_network_settings()`, filterable via `aps_default_settings_capability` and `aps_default_network_settings_capability` (`manage_options` and `manage_network_options` by default).
+- **A cron health check.** If the sweep that turns due schedules into archives hasn't run in a while - most often because `DISABLE_WP_CRON` is set with no real system cron configured to replace it - the settings screen now says so, instead of posts simply never archiving with no explanation.
+- **A pluggable queue.** Both the sweep (archiving due posts) and the stamp (applying rules to newly-matching content) run in small, resumable batches, so a host with a tight `max_execution_time` or `memory_limit` never times out mid-run and never leaves a post half-archived - the next tick just picks up where the last one stopped. The `aps_queue_runner` filter lets a site swap the built-in WP-Cron-driven runner for a different scheduler entirely - see "Extending the queue" in readme.md for a complete, copy-pasteable Action Scheduler adapter.
+- **`aps_archived_post` fires for scheduled and rule-archived posts too**, not only manual ones, so anything you've already hooked onto it - including a notification email, which this plugin still does not send on its own - keeps working without changes. Two lines gets you an email on every scheduled archive:
+  ```php
+  add_action( 'aps_archived_post', function ( $post_id ) {
+      wp_mail( get_option( 'admin_email' ), 'Post archived', get_the_title( $post_id ) . ' was just archived.' );
+  } );
+  ```
+- Many more filters throughout the scheduling and cascade code - grace period (`aps_auto_archive_grace_period`), stale/retry/abandon handling (`aps_schedule_stale_action`, `aps_schedule_max_attempts`, `aps_schedule_abandon_action`), the absolute-date override (`aps_schedule_absolute_date_wins`), batch sizes, tie-breaking between terms, and every default described above. See the cascade table and "Extending the queue" section in readme.md, and the [documentation site](https://docs.archivedpoststat.us/) for the full reference.
+
+### Changed
+
+- The plugin's short description now mentions scheduled and automatic archiving alongside the manual "Archive" status.
+- `Settings → Archived Post Status` now has more on it than the single read-only toggle 0.4.0 shipped; the read-only setting itself is unchanged.
+
+### The cascade, worked
+
+This is the table that decides what actually happens. Reproduced in full in readme.txt and readme.md as well, since it is the part of this release most likely to need a second look.
+
+| Scenario | Walk (general → specific) | Result |
+|---|---|---|
+| Site 12d (Open), Category "News" 3d (Open), post override 6d | 12 → 3 → 6 | **6 days** — the most specific level with a value wins |
+| Site 12d (Open), Category "News" 3d (Open), no post override | 12 → 3 | **3 days** |
+| Site 12d (Open), Category "News" 3d (**Locked**), post override 6d | 12 → 3, then frozen | **3 days** — the lock holds; the post override is ignored |
+| Network 365d (**Locked**), site 12d | 365, then frozen | **365 days** — the site's own value is read-only |
+| Network 365d (**Off**), site controls hidden entirely | 365, then frozen | **365 days** — the site never even sees the field |
+| Site 12d (Open), no category rule, no post override | 12 | **12 days** |
+
+**The one case worth calling out specifically:** a post filed in two categories - "News" (6 days, Locked) and "Features" (3 days, Open) - resolves to **3 days, and frozen**. The soonest value among the post's categories wins, and the strictest lock among them wins, independently of each other and independently of which category supplied which. That is stricter than either category states on its own, and it is the one place someone who configured every individual rule correctly can still be surprised by the result. Both halves are filterable (`aps_auto_archive_term_rule_days` for the soonest-wins tie, `aps_auto_archive_term_rule_child_mode` for the strictest-lock tie) if your site needs different behavior.
+
 ## 0.4.0 - July 25, 2026
 
 The biggest release since the plugin was first published. Archiving is now available everywhere you work — the block editor, the classic editor, the posts list, bulk actions, and WP-CLI — and archived posts remember where they came from, so restoring one puts it back the way it was.

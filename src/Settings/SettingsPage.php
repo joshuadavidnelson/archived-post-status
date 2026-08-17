@@ -9,6 +9,7 @@ use ArchivedPostStatus\AutoArchive\ChildMode;
 use ArchivedPostStatus\AutoArchive\MatchCountPreview;
 use ArchivedPostStatus\Contracts\HookableInterface;
 use ArchivedPostStatus\Hooks\HookDescriptor;
+use ArchivedPostStatus\Schedule\Queue\QueueTelemetry;
 
 /**
  * The site settings screen: `Settings → Archived Post Status`.
@@ -360,7 +361,7 @@ final class SettingsPage implements HookableInterface {
 	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical cron-staleness judgment.
 	 */
 	private function maybe_render_cron_health_notice(): void {
-		$last_sweep      = (int) get_option( 'aps_last_sweep', 0 );
+		$last_sweep      = QueueTelemetry::last_run( 'sweep' );
 		$disable_wp_cron = defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON;
 		$interval        = (int) apply_filters( 'aps_schedule_sweep_interval', 300 );
 

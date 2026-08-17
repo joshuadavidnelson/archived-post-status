@@ -9,7 +9,7 @@ Stable tag:        0.4.0
 License:           GPL-2.0+
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
-Use an "Archive" status to unpublish content without having to trash it.
+Use an "Archive" status to unpublish content without having to trash it - by hand, on a schedule, or automatically by rule.
 
 == Description ==
 
@@ -39,6 +39,8 @@ Whatever the reason, incorporating the 'Archive' status can be a useful addition
 * Compatible with posts, pages, and public custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
 * Archive content is hidden from public view, only users with Editor or higher roles can see archived content.
+* Schedule an exact archive date on a single post, from either editor
+* Set up rules that archive matching content automatically after a period you choose - per network, per site, per category, or per post - off by default until you turn it on
 
 **Learn how to use and extend the plugin at [docs.archivedpoststat.us](https://docs.archivedpoststat.us/)**
 
@@ -74,6 +76,42 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 8. Viewing archived content on the front end, with the "Archived" label on the title. By default only users with Editor or higher roles can see archived content.
 
 == Changelog ==
+
+= 0.5.0 - Unreleased =
+
+The feature this plugin has been asked for the longest: automatic archiving. Schedule an exact date for a single post, or set up rules that archive content on their own after a period you choose - per network, per site, per category, or per post. **None of this changes anything on an existing site by itself** - scheduling a post is deliberate, and rule-based auto-archive is off until you turn it on.
+
+**Added**
+
+- **Schedule an exact archive date** - a date/time picker in both the block editor (an "Auto archive" panel) and the classic editor (a metabox field). The post archives itself when that time comes; clearing the date cancels it.
+- **Automatic archiving by rule (the cascade)** - turn on "Auto archive" and matching content archives itself a chosen number of days after it was published or last modified. Rules can be set at four levels, each overriding the levels above it: Network (multisite, when network-activated), Site (`Settings > Archived Post Status`), Category (or any taxonomy you opt in, on the term's own edit screen), and Post (an override on the individual post). A more specific level wins over a more general one, and a parent level can lock its value read-only for the levels below it, or hide the control from them entirely. **Off by default** - see the Upgrade Notice below.
+- **A grace period protects old content.** Turning on a rule over years of back-catalogue does not archive it all on the next run - anything already overdue is scheduled about a week out instead (`auto_archive_grace_days`, default 7, or per post via `aps_auto_archive_grace_period`) and shows up in the new "Scheduled" column first.
+- **An editor's own date always wins**, even over a rule a network or site admin has locked (`aps_schedule_absolute_date_wins` flips this). The one exception is a post explicitly exempted from a rule, which stays exempt even if the rule later changes.
+- **A due post that's no longer archivable is skipped, not silently dropped** - the sweep clears its schedule by default (`aps_schedule_stale_action`, default `'clear'`). A failed attempt retries up to 3 times (`aps_schedule_max_attempts`) before being exempted (`aps_schedule_abandon_action`, default `'exempt'`). Filtering `aps_schedule_stale_action` to `'keep'` is a per-post escape hatch only - it has no attempts counter by design, and leaving it on too many posts will wedge the sweep queue behind them.
+- **"Scheduled" column** on the posts list, sortable, showing the pending date and how it was set.
+- **Quick Edit and Bulk Edit** gain schedule controls. Bulk Edit defaults to "No change," a genuine no-op, so bulk-editing posts for something unrelated never touches an existing schedule. This is not the 0.3.x status dropdown returning to Quick Edit - 0.4.0 removed that on purpose and it is still gone; this is future-dated scheduling of an archive that has not happened yet.
+- **Settings screens** - the existing site screen at `Settings > Archived Post Status` gains the new scheduling and cascade options, and a network-activated multisite install gets a matching Network Admin screen.
+- **WP-CLI**: `wp post schedule-archive <id>... --at=<datetime>`, `wp post unschedule-archive <id>...`, `wp post archive-rule <id>` (prints the resolved cascade for a post), `wp aps settings list|get|update [--network]`, and `wp aps queue run <sweep|stamp> [--all]` to drain a backlog immediately instead of waiting on cron.
+- **New `aps_*` functions**: `aps_schedule_archive()`, `aps_unschedule_archive()`, `aps_get_scheduled_archive_time()`, `aps_get_auto_archive_rule()`, `aps_current_user_can_manage_settings()`, and `aps_current_user_can_manage_network_settings()`.
+- **A cron health check** on the settings screen - if the sweep that archives due posts hasn't run in a while, you're told, rather than posts just never archiving with no explanation.
+- **A pluggable queue.** Archiving and rule-stamping both run in small, resumable batches, so a tight `max_execution_time` or `memory_limit` never times out mid-run. The `aps_queue_runner` filter lets a site swap the built-in runner for a different scheduler, such as Action Scheduler - see readme.md for a complete example.
+- **`aps_archived_post` now also fires for scheduled and rule-archived posts**, not only manual ones - anything already hooked onto it, including a notification email, keeps working unchanged.
+- Many more filters throughout - grace period, stale/retry/abandon handling, the absolute-date override, batch sizes, term-level tie-breaking, and every default above. See readme.md and the [documentation site](https://docs.archivedpoststat.us/) for the full reference.
+
+**Changed**
+
+- The plugin's short description now mentions scheduled and automatic archiving. The `Settings > Archived Post Status` screen has more on it than the single read-only toggle 0.4.0 shipped; that setting itself is unchanged.
+
+**The cascade, worked** - the table that decides what actually happens:
+
+1. Site 12 days (Open), category "News" 3 days (Open), post override 6 days, walked 12 -> 3 -> 6: result **6 days** - the most specific level with a value wins.
+2. Site 12 days (Open), category "News" 3 days (Open), no post override, walked 12 -> 3: result **3 days**.
+3. Site 12 days (Open), category "News" 3 days (**Locked**), post override 6 days, walked 12 -> 3, then frozen: result **3 days** - the lock holds; the post override is ignored.
+4. Network 365 days (**Locked**), site 12 days, walked 365, then frozen: result **365 days** - the site's own value is read-only.
+5. Network 365 days (**Off**), site controls hidden entirely, walked 365, then frozen: result **365 days** - the site never even sees the field.
+6. Site 12 days (Open), no category rule, no post override, walked 12: result **12 days**.
+
+The one case worth calling out: a post filed in two categories - "News" (6 days, Locked) and "Features" (3 days, Open) - resolves to **3 days, and frozen**. The soonest value among a post's categories wins, and the strictest lock among them wins, independently of each other and independently of which category supplied which - stricter than either category states alone, and the one place someone who configured every individual rule correctly can still be surprised. Both halves are filterable (`aps_auto_archive_term_rule_days`, `aps_auto_archive_term_rule_child_mode`) if your site needs different behavior.
 
 = 0.4.0 - July 25, 2026 =
 
@@ -254,6 +292,10 @@ Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com
 Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
+
+= 0.5.0 =
+
+Adds scheduled and automatic archiving. Nothing changes for existing sites on upgrade: per-post scheduling is opt-in per post, and rule-based auto-archive ships off and stays off until you turn it on in Settings. New: two recurring cron events and a resumable batch queue; deactivating the plugin clears both. See the changelog for the full cascade behavior before enabling a rule.
 
 = 0.4.0 =
 

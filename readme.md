@@ -41,6 +41,183 @@ Whatever the reason, incorporating the 'Archive' status can be a useful addition
 * Compatible with posts, pages, and public custom post types
 * Ideal for sites where certain kinds of content is not meant to be evergreen
 * Archive content is hidden from public view, only users with Editor or higher roles can see archived content.
+* Schedule an exact archive date on a single post, or set up rules that archive matching content automatically after a period you choose
+
+## New in 0.5.0
+
+Automatic archiving - the plugin's oldest feature request. Schedule an exact date for a single post, or set up rules that archive content on their own after a period you choose: per network, per site, per category, or per post, with each level able to override the ones above it. **Nothing changes on an existing site by itself** - per-post scheduling is opt-in per post, and rule-based auto-archive ships off and stays off until you turn it on.
+
+* **Schedule an exact date** - a date/time picker in the block editor (an "Auto archive" panel) and the classic editor (a metabox field). Clearing the date cancels the schedule.
+* **Automatic archiving by rule (the cascade)** - four levels, most specific wins: Network (multisite, when network-activated) -> Site (`Settings > Archived Post Status`) -> Category (or any taxonomy you opt in) -> Post. A parent level can lock its value read-only for the levels below it, or hide the control from them entirely (`Open` / `Locked` / `Off`).
+* **A grace period protects old content** - enabling a rule over years of back-catalogue schedules overdue posts about a week out (`auto_archive_grace_days`, default 7, or per post via `aps_auto_archive_grace_period`) instead of archiving them all on the next run, and shows them in the "Scheduled" column first.
+* **An editor's own date always wins**, even over a `Locked` ancestor rule - picking a date is a direct instruction. The one exception is a post explicitly exempted from a rule, which stays exempt even if the rule changes later. A site that wants a `Locked` rule to override an editor's own date instead can flip that with `aps_schedule_absolute_date_wins`.
+* **A due post that's no longer archivable is skipped, not silently dropped** - the sweep clears its schedule by default (`aps_schedule_stale_action`, default `'clear'`). A failed archive attempt retries up to 3 times (`aps_schedule_max_attempts`) before being abandoned - exempted from future auto-archiving by default (`aps_schedule_abandon_action`, default `'exempt'`). **Filtering `aps_schedule_stale_action` to `'keep'` is a per-post escape hatch, not a blanket policy**: it deliberately has no attempts counter, so leaving too many posts in that state piles them up at the front of the sweep queue and blocks everything behind them from ever being reached.
+* **"Scheduled" column, Quick Edit, and Bulk Edit** - a sortable list-table column, inline editing in Quick Edit, and a "No change" / Set / Clear control in Bulk Edit that defaults to a genuine no-op. This is **not** the 0.3.x status dropdown returning to Quick Edit (0.4.0 removed that on purpose); it's future-dated scheduling of an archive that hasn't happened yet.
+* **WP-CLI** - `wp post schedule-archive <id>... --at=<datetime>`, `wp post unschedule-archive <id>...`, `wp post archive-rule <id>` (prints the resolved cascade for a post, level by level), `wp aps settings list|get|update [--network]`, and `wp aps queue run <sweep|stamp> [--all]` to drain a backlog immediately instead of waiting on cron.
+* **`aps_get_auto_archive_rule()` / `aps_schedule_archive()` / `aps_unschedule_archive()` / `aps_get_scheduled_archive_time()`** - new API functions, plus `aps_current_user_can_manage_settings()` and `aps_current_user_can_manage_network_settings()`.
+* **A cron health check** on the settings screen, and **a pluggable queue** - both the sweep (archiving due posts) and the stamp (applying rules) run in small, resumable batches so a tight `max_execution_time` or `memory_limit` never times out mid-run. Swap the built-in WP-Cron-driven runner for a different scheduler with the `aps_queue_runner` filter - see [Extending the queue](#extending-the-queue-driving-it-with-action-scheduler) below for a complete Action Scheduler example.
+* **`aps_archived_post` now also fires for scheduled and rule-archived posts**, not only manual ones - a notification email is still two lines away, not a default:
+  ```php
+  add_action( 'aps_archived_post', function ( $post_id ) {
+      wp_mail( get_option( 'admin_email' ), 'Post archived', get_the_title( $post_id ) . ' was just archived.' );
+  } );
+  ```
+
+### The cascade, worked
+
+The table that decides what actually happens, reproduced in full - the same table is in readme.txt.
+
+| Scenario | Walk (general → specific) | Result |
+|---|---|---|
+| Site 12d (Open), Category "News" 3d (Open), post override 6d | 12 → 3 → 6 | **6 days** — the most specific level with a value wins |
+| Site 12d (Open), Category "News" 3d (Open), no post override | 12 → 3 | **3 days** |
+| Site 12d (Open), Category "News" 3d (**Locked**), post override 6d | 12 → 3, then frozen | **3 days** — the lock holds; the post override is ignored |
+| Network 365d (**Locked**), site 12d | 365, then frozen | **365 days** — the site's own value is read-only |
+| Network 365d (**Off**), site controls hidden entirely | 365, then frozen | **365 days** — the site never even sees the field |
+| Site 12d (Open), no category rule, no post override | 12 | **12 days** |
+
+**The one case worth calling out:** a post filed in two categories - "News" (6 days, Locked) and "Features" (3 days, Open) - resolves to **3 days, and frozen**. The soonest value among the post's categories wins, and the strictest lock among them wins, independently of each other and independently of which category supplied which. That is stricter than either category states on its own, and it is the one place someone who configured every individual rule correctly can still be surprised by the result. Both halves are filterable (`aps_auto_archive_term_rule_days`, `aps_auto_archive_term_rule_child_mode`) if your site needs different behavior.
+
+An absolute date set directly on a post always short-circuits this whole table - the cascade is only ever consulted for a post with no manual date and no exemption.
+
+### Extending the queue: driving it with Action Scheduler
+
+The plugin owns "process one bounded chunk of work"; a *runner* owns "keep calling that until the queue is dry." The built-in runner drives both queues (`sweep`, which archives due posts, and `stamp`, which applies auto-archive rules to newly-matching content) from WP-Cron plus a self-scheduled continuation. Swapping in a different scheduler - Action Scheduler, for example - is one filter, applied once per queue:
+
+```php
+add_filter( 'aps_queue_runner', function ( $default_runner, $processor ) {
+    return new My_Action_Scheduler_Queue_Runner( $processor );
+}, 10, 2 );
+```
+
+`$processor` is a `Sweeper` or a `RuleStamper`, but the runner never needs to know which - it only ever talks to `BatchProcessorInterface`. Both interfaces live in `ArchivedPostStatus\Schedule\Queue` and are exactly this small:
+
+```php
+interface BatchProcessorInterface {
+    public function queue_name(): string;                       // 'sweep' or 'stamp'
+    public function process_batch( Budget $budget ): BatchResult;
+}
+
+interface QueueRunnerInterface {
+    public function dispatch( BatchProcessorInterface $processor ): void;
+}
+```
+
+A complete, drop-in adapter - this is real, working code against the shipped 0.5.0 interfaces, not pseudocode. Put it in a small companion plugin or an mu-plugin:
+
+```php
+<?php
+/**
+ * Plugin Name: Archived Post Status - Action Scheduler Queue Runner
+ * Description: Drives the sweep and stamp queues from Action Scheduler instead of WP-Cron.
+ */
+
+use ArchivedPostStatus\Schedule\Queue\BatchProcessorInterface;
+use ArchivedPostStatus\Schedule\Queue\BudgetFactory;
+use ArchivedPostStatus\Schedule\Queue\QueueLock;
+use ArchivedPostStatus\Schedule\Queue\QueueRunnerInterface;
+
+final class My_Action_Scheduler_Queue_Runner implements QueueRunnerInterface {
+
+    private const GROUP        = 'archived-post-status';
+    private const INTERVAL     = 5 * MINUTE_IN_SECONDS; // match aps_schedule_sweep_interval if you filter it.
+    private const LOCK_MARGIN  = 30; // same margin CronQueueRunner adds to its own lock TTL.
+
+    public function __construct( private readonly BatchProcessorInterface $processor ) {
+        // Self-repairing, the same way CronRegistrar schedules its own cron
+        // events on init: if the recurring action is ever lost, this puts
+        // it back rather than requiring a reactivation.
+        add_action( 'init', array( $this, 'maybe_schedule' ) );
+
+        // Action Scheduler callbacks are plain hook callbacks with no way to
+        // hand $this->processor back in, so both hooks bounce through a
+        // zero-arg method that already has it.
+        add_action( $this->recurring_hook(), array( $this, 'dispatch_self' ) );
+        add_action( $this->continue_hook(), array( $this, 'dispatch_self' ) );
+    }
+
+    public function maybe_schedule(): void {
+        if ( false === as_next_scheduled_action( $this->recurring_hook(), array(), self::GROUP ) ) {
+            as_schedule_recurring_action( time(), self::INTERVAL, $this->recurring_hook(), array(), self::GROUP );
+        }
+    }
+
+    public function dispatch_self(): void {
+        $this->dispatch( $this->processor );
+    }
+
+    public function dispatch( BatchProcessorInterface $processor ): void {
+        $queue = $processor->queue_name();
+
+        // The queue lock is what stops this worker and a WP-Cron tick (or a
+        // `wp aps queue run` CLI invocation) from processing the same due
+        // items twice. BudgetFactory::build() reuses the site's own
+        // aps_queue_time_limit / aps_queue_memory_percent filters, so this
+        // adapter honors whatever budget the site has already configured.
+        do {
+            $lock   = new QueueLock( $queue );
+            $budget = BudgetFactory::build( time() );
+
+            if ( ! $lock->acquire( $budget->time_limit + self::LOCK_MARGIN ) ) {
+                return; // another run already holds this queue; try again next tick.
+            }
+
+            try {
+                $result = $processor->process_batch( $budget );
+            } finally {
+                $lock->release();
+            }
+
+            // Mirrors CronQueueRunner::run_batch()'s own bookkeeping. Neither
+            // of these is automatic for a replacement runner - see the note
+            // below - so a runner that wants the settings screen's cron
+            // health notice and the queue observability hooks to keep working
+            // has to reproduce them itself.
+            do_action( 'aps_queue_batch_completed', $result, $queue );
+            update_option( "aps_last_{$queue}", time(), false );
+
+            // should_continue_now(): true only when work remains AND this
+            // batch did not hit its budget. An Action Scheduler worker
+            // already has its own execution allowance to spend, so it is
+            // cheap to keep looping in the SAME worker rather than paying for
+            // another dispatch - unlike a WP-Cron tick, which has none to
+            // spare.
+        } while ( $result->should_continue_now() );
+
+        if ( $result->has_more_work() ) {
+            // Budget ran out with work still queued: get another worker on
+            // it right away rather than waiting for the next recurring tick.
+            as_enqueue_async_action( $this->continue_hook(), array(), self::GROUP );
+        }
+
+        // Otherwise the queue is dry; do_action( 'aps_queue_drained', $queue )
+        // if your own monitoring needs that signal too - CronQueueRunner
+        // fires it in the equivalent branch, and this adapter has already
+        // established the pattern above for staying compatible with it.
+    }
+
+    private function recurring_hook(): string {
+        return 'aps_as_run_' . $this->processor->queue_name();
+    }
+
+    private function continue_hook(): string {
+        return 'aps_as_continue_' . $this->processor->queue_name();
+    }
+}
+
+add_filter(
+    'aps_queue_runner',
+    static function ( $default_runner, BatchProcessorInterface $processor ) {
+        return new My_Action_Scheduler_Queue_Runner( $processor );
+    },
+    10,
+    2
+);
+```
+
+**A finding worth knowing before you build on this, not just a footnote:** `aps_queue_batch_completed`, `aps_queue_drained`, and the `aps_last_sweep` / `aps_last_stamp` option updates that the settings screen's cron health notice reads are all implemented inside `CronQueueRunner` itself, not inside `Sweeper`, `RuleStamper`, `Budget`, or `BatchResult`. `QueueRunnerInterface` and `BatchProcessorInterface` are genuinely sufficient to write a correct, working replacement runner without touching a single shipped class - the adapter above is proof, and everything in the plugin that consumes a processor (the cron tick, `wp aps queue run`) goes through the interface, nothing concrete. But a replacement runner that skips the two `do_action()` calls and the `update_option()` line loses the cron health notice (it will report the sweep queue as stale forever, even while Action Scheduler is actively draining it) and any monitoring hooked onto the two observability actions, silently - nothing errors, the archiving itself keeps working correctly, only the diagnostics go dark. There is no reusable helper for this bookkeeping to call instead of copying it; the adapter above copies it inline for exactly that reason.
+
+`Plugin::build_queue_runner()` only adds the returned runner to the plugin's own hook registration when it implements `HookableInterface`; a runner driven entirely by an external scheduler, like the one above, is free to implement neither that interface nor any cron hook of its own; the CLI's `wp aps queue run` command bypasses the runner layer entirely and always drives `Sweeper`/`RuleStamper` directly, so it keeps working unmodified regardless of which runner is filtered in.
 
 ## New in 0.4.0
 

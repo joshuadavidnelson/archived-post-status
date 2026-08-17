@@ -154,16 +154,8 @@ final class CronQueueRunner implements HookableInterface, QueueRunnerInterface {
 		try {
 			$result = $processor->process_batch( $budget );
 
-			/**
-			 * Fires once a queue batch finishes processing, successful or not.
-			 *
-			 * @since 0.5.0
-			 * @param BatchResult $result The batch that just completed.
-			 * @param string      $queue  The queue name.
-			 */
-			do_action( 'aps_queue_batch_completed', $result, $queue );
+			QueueTelemetry::batch_completed( $result, $queue );
 
-			update_option( "aps_last_{$queue}", time(), false );
 			$this->maybe_continue( $result, $queue, $batch_index );
 		} finally {
 			$lock->release();
@@ -179,17 +171,13 @@ final class CronQueueRunner implements HookableInterface, QueueRunnerInterface {
 	 * @param int         $batch_index This batch's index, for the next
 	 *                                 continuation's varying arg.
 	 * @return void
+	 *
+	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical queue-telemetry facade.
 	 */
 	private function maybe_continue( BatchResult $result, string $queue, int $batch_index ): void {
 		if ( ! $result->has_more_work() ) {
 
-			/**
-			 * Fires when a queue run leaves nothing left to process.
-			 *
-			 * @since 0.5.0
-			 * @param string $queue The queue name.
-			 */
-			do_action( 'aps_queue_drained', $queue );
+			QueueTelemetry::drained( $queue );
 			return;
 		}
 
