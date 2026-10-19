@@ -1,6 +1,12 @@
 # Archived Post Status Changelog
 ---
 
+## 0.3.13 - Oct 18, 2026
+
+- Tested up to WordPress 7.1.3
+- Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts
+- Upgrade `@wordpress/env` to v11 and the PHPStan WordPress stubs to 7.1
+
 ## 0.3.12 - Feb 16, 2026
 
 - Tested up to WordPress 6.9.1
