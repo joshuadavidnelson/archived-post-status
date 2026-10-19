@@ -4,6 +4,7 @@
 ## 0.3.13 - Oct 18, 2026
 
 - Tested up to WordPress 7.1.3
+- Tested up to PHP 8.5
 - Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts
 - Upgrade `@wordpress/env` to v11 and the PHPStan WordPress stubs to 7.1
 
