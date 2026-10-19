@@ -47,6 +47,16 @@ class FunctionsTest extends TestCase {
 	}
 
 	/**
+	 * Tear down the test.
+	 *
+	 * @since 0.3.13
+	 */
+	public function tearDown(): void {
+		$_GET = array();
+		parent::tearDown();
+	}
+
+	/**
 	 * Test the aps_archived_label_string() function.
 	 *
 	 * @since 0.3.9
@@ -500,6 +510,187 @@ class FunctionsTest extends TestCase {
 
 		$this->assertEquals( 'closed', $mock_post->comment_status );
 		$this->assertEquals( 'closed', $mock_post->ping_status );
+
+	}
+
+	/**
+	 * Test aps_load_post_screen() blocks editing an Archived post.
+	 *
+	 * Regression test: the post ID has to come from the request, because
+	 * get_query_var() is never populated on load-post.php.
+	 *
+	 * @since 0.3.13
+	 */
+	public function test_aps_load_post_screen_blocks_edit() {
+
+		$mock_post = $this->mock_post;
+
+		$_GET = array(
+			'post'   => (string) $mock_post->ID,
+			'action' => 'edit',
+		);
+
+		// On load-post.php the query vars are empty; the handler must not rely on them.
+		\WP_Mock::userFunction(
+			'get_query_var', array(
+				'return' => '',
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'get_post', array(
+				'times'  => 1,
+				'args'   => array( $mock_post->ID ),
+				'return' => $mock_post,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'sanitize_key', array(
+				'return_arg' => 0,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'esc_html', array(
+				'return_arg' => 0,
+			)
+		);
+
+		// The save redirect must not fire on a plain edit request.
+		\WP_Mock::userFunction(
+			'wp_safe_redirect', array(
+				'times' => 0,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'wp_die', array(
+				'times'  => 1,
+				'return' => function() {
+					throw new \RuntimeException( 'wp_die' );
+				},
+			)
+		);
+
+		$this->expectException( \RuntimeException::class );
+		$this->expectExceptionMessage( 'wp_die' );
+
+		aps_load_post_screen();
+
+	}
+
+	/**
+	 * Test aps_load_post_screen() redirects to the list table after saving as Archived.
+	 *
+	 * @since 0.3.13
+	 */
+	public function test_aps_load_post_screen_redirects_after_save() {
+
+		$mock_post = $this->mock_post;
+		$edit_url  = 'https://example.org/wp-admin/edit.php';
+
+		$_GET = array(
+			'post'    => (string) $mock_post->ID,
+			'action'  => 'edit',
+			'message' => '1',
+		);
+
+		\WP_Mock::userFunction(
+			'get_post', array(
+				'times'  => 1,
+				'args'   => array( $mock_post->ID ),
+				'return' => $mock_post,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'sanitize_key', array(
+				'return_arg' => 0,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'self_admin_url', array(
+				'times'  => 1,
+				'args'   => array( 'edit.php' ),
+				'return' => $edit_url,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'add_query_arg', array(
+				'times'  => 1,
+				'args'   => array( 'post_type', $mock_post->post_type, $edit_url ),
+				'return' => $edit_url . '?post_type=post',
+			)
+		);
+
+		// Throw to stop before the exit that follows wp_safe_redirect().
+		\WP_Mock::userFunction(
+			'wp_safe_redirect', array(
+				'times'  => 1,
+				'args'   => array( $edit_url . '?post_type=post', 302 ),
+				'return' => function() {
+					throw new \RuntimeException( 'redirected' );
+				},
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'wp_die', array(
+				'times' => 0,
+			)
+		);
+
+		$this->expectException( \RuntimeException::class );
+		$this->expectExceptionMessage( 'redirected' );
+
+		aps_load_post_screen();
+
+	}
+
+	/**
+	 * Test aps_load_post_screen() lets non-editor actions like trash through.
+	 *
+	 * @since 0.3.13
+	 */
+	public function test_aps_load_post_screen_allows_trash() {
+
+		$mock_post = $this->mock_post;
+
+		$_GET = array(
+			'post'   => (string) $mock_post->ID,
+			'action' => 'trash',
+		);
+
+		\WP_Mock::userFunction(
+			'get_post', array(
+				'times'  => 1,
+				'args'   => array( $mock_post->ID ),
+				'return' => $mock_post,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'sanitize_key', array(
+				'return_arg' => 0,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'wp_safe_redirect', array(
+				'times' => 0,
+			)
+		);
+
+		\WP_Mock::userFunction(
+			'wp_die', array(
+				'times' => 0,
+			)
+		);
+
+		$this->assertNull( aps_load_post_screen() );
 
 	}
 }

@@ -1,6 +1,10 @@
 # Archived Post Status Changelog
 ---
 
+## Unreleased
+
+- Fix the Archived edit lock and post-save redirect on `post.php` not firing since 0.3.9. The handler now reads the post ID and action from the request instead of `get_query_var()`, which is always empty on `load-post.php`. Trash and other non-editor actions still pass through to core (#35). Backported from 0.4.0.
+
 ## 0.3.12 - Feb 16, 2026
 
 - Tested up to WordPress 6.9.1
