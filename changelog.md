@@ -1,7 +1,7 @@
 # Archived Post Status Changelog
 ---
 
-## 0.3.13 - Oct 18, 2026
+## 0.3.13 - Oct 20, 2026
 
 - Tested up to WordPress 7.1.3
 - Tested up to PHP 8.5
