@@ -174,6 +174,7 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 == Changelog ==
 
 = 0.3.13 - Oct 20, 2026 =
+- Fix the Archived edit lock and post-save redirect on post.php not firing since 0.3.9 (backported from 0.4.0)
 - Tested up to WordPress 7.1.3
 - Tested up to PHP 8.5
 - Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts
@@ -288,6 +289,7 @@ Props [fjarrett](https://github.com/fjarrett)
 == Upgrade Notice ==
 
 = 0.3.13 - Oct 20, 2026 =
+- Fix the Archived edit lock and post-save redirect on post.php not firing since 0.3.9 (backported from 0.4.0)
 - Tested up to WordPress 7.1.3
 - Tested up to PHP 8.5
 - Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts
