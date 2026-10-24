@@ -363,7 +363,8 @@ function aps_load_post_screen() {
 		return;
 	}
 
-	$post_id = absint( get_query_var( 'post' ) );
+	// Read the request directly: get_query_var() is always empty on load-post.php.
+	$post_id = absint( $_GET['post'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$post    = get_post( $post_id );
 
 	if ( is_null( $post )
@@ -372,8 +373,8 @@ function aps_load_post_screen() {
 			return;
 	}
 
-	$action  = esc_attr( get_query_var( 'action' ) );
-	$message = absint( get_query_var( 'message' ) );
+	$action  = sanitize_key( $_GET['action'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$message = absint( $_GET['message'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 	// Redirect to list table after saving as Archived
 	if ( 'edit' === $action && 1 === $message ) {
@@ -389,6 +390,11 @@ function aps_load_post_screen() {
 
 		exit;
 
+	}
+
+	// Only the editor is locked; trash, untrash, delete and other post.php actions pass through to core.
+	if ( '' !== $action && 'edit' !== $action ) {
+		return;
 	}
 
 	// translators: Error message when trying to edit an Archived post.
