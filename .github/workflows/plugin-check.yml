@@ -22,7 +22,7 @@ jobs:
 
     # wp_function_not_compatible_with_requires_wp is ignored because it reads
     # function calls without seeing the guards around them. The plugin supports
-    # WordPress 5.9 and reaches newer core functions the way core itself
+    # WordPress 6.1 and reaches newer core functions the way core itself
     # recommends — behind function_exists(), with a fallback — so a call to a
     # 6.4 function inside `if ( function_exists( 'wp_admin_notice' ) )` is
     # reported as an incompatibility that cannot actually occur. See
