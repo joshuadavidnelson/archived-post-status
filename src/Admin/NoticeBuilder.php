@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) { die; } // phpcs:ignore
  * translation-ready notice strings.
  *
  * The URL's `skipped=N` aggregate is not read here — skips are reported one
- * notice per reason bucket ({@see bucket_names()}).
+ * notice per reason bucket ({@see self::BUCKET_NAMES}).
  *
  * Bucket determination never happens here: the `denied` count arrives
  * pre-computed from {@see BulkActionHandler}. The one capability check in this
@@ -28,22 +28,15 @@ final class NoticeBuilder {
 	 * The reason-skip buckets emitted by {@see build_notices()}, in render
 	 * order. Drives the dispatcher in {@see format_bucket_notice()}.
 	 *
-	 * A method rather than a `const`: an enum case's `->value` fetch is not
-	 * a valid constant expression on this plugin's 8.1 floor.
-	 *
 	 * @since 0.4.0
-	 * @return string[]
-	 *
-	 * @SuppressWarnings("PHPMD.StaticAccess") -- canonical query-arg-name source.
+	 * @var string[]
 	 */
-	private static function bucket_names(): array {
-		return array(
-			NoticeQueryArg::Locked->value,
-			NoticeQueryArg::Denied->value,
-			NoticeQueryArg::NotFound->value,
-			NoticeQueryArg::WrongStatus->value,
-		);
-	}
+	private const BUCKET_NAMES = array(
+		NoticeQueryArg::Locked->value,
+		NoticeQueryArg::Denied->value,
+		NoticeQueryArg::NotFound->value,
+		NoticeQueryArg::WrongStatus->value,
+	);
 
 	/**
 	 * Label of the undo link appended to the archive success notice.
@@ -79,7 +72,7 @@ final class NoticeBuilder {
 			$notices[] = $this->build_unarchive_notice( absint( $unarchived ), $this->parse_ids( $ids ) );
 		}
 
-		foreach ( self::bucket_names() as $bucket ) {
+		foreach ( self::BUCKET_NAMES as $bucket ) {
 			$count = (int) get_query_var( $bucket, false );
 			if ( $count <= 0 ) {
 				continue;
@@ -98,7 +91,7 @@ final class NoticeBuilder {
 	 *
 	 * @since 0.4.0
 	 *
-	 * @param string $bucket Bucket name (must be one of {@see bucket_names()}).
+	 * @param string $bucket Bucket name (must be one of {@see self::BUCKET_NAMES}).
 	 * @param int    $count  Non-zero post count for this bucket.
 	 * @return string The translation-ready notice line.
 	 */
@@ -116,7 +109,7 @@ final class NoticeBuilder {
 			'wrong_status' =>
 				/* translators: %s: Number of posts skipped because their status disqualifies them */
 				_n( '%s post skipped: its status is not eligible for this action.', '%s posts skipped: their status is not eligible for this action.', $count, 'archived-post-status' ),
-			// Unreachable — callers iterate bucket_names(). Present for phpstan.
+			// Unreachable: callers iterate BUCKET_NAMES. Present for phpstan.
 			default => '',
 		};
 
