@@ -266,7 +266,7 @@ Props [fjarrett](https://github.com/fjarrett)
 
 = 0.4.0 =
 
-Major rewrite: PHP 8.2+ and WordPress 6.1+ are now required, eleven 0.3.x global functions were removed, and archived posts no longer appear in the default "All" list. See the changelog for the full list of changes, including the migration note for sites using the `aps_post_status_slug` filter.
+Major rewrite: PHP 8.2+ and WordPress 6.1+ are now required, eleven 0.3.x global functions were removed, and archived posts no longer appear in the default "All" list. See the changelog for all changes, including the migration note for sites using the `aps_post_status_slug` filter.
 
 = 0.3.13 - Oct 20, 2026 =
 - Fix the Archived edit lock and post-save redirect on post.php not firing since 0.3.9 (backported from 0.4.0)
