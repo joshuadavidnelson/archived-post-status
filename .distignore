@@ -28,5 +28,8 @@ phpunit.xml.dist
 phpstan.neon
 phpstan.neon.dist
 README.md
+readme.md
+changelog.md
+.phpcs.xml.dist
 tests
 cypress.config.js
