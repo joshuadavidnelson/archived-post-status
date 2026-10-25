@@ -29,7 +29,7 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - Archived posts are now kept out of the default "All" view on the posts list, the same way Trash is. Use the "Archived" filter link to see them.
 - Archiving is now restricted to `public` post types. 0.3.x allowed archiving any post type that wasn't explicitly excluded via `aps_excluded_post_types`, including non-public ones; 0.4.0 starts from the public post types and subtracts the excluded set (`aps_get_supported_post_types()` returns the resulting list). If you need to archive a non-public custom post type, add it back with the `aps_supported_post_types` filter.
 - Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
-- Tested up to WordPress 7.0.
+- Tested up to WordPress 7.1.3.
 
 ### Removed
 
@@ -87,6 +87,14 @@ UPDATE wp_posts SET post_status = 'your-custom-slug' WHERE post_status = 'archiv
 ```
 
 Do not run that query if you are not filtering the slug - it would rename your archived posts to a status the plugin does not recognize.
+
+## 0.3.13 - Oct 20, 2026
+
+- Fix the Archived edit lock and post-save redirect on `post.php` not firing since 0.3.9. The handler now reads the post ID and action from the request instead of `get_query_var()`, which is always empty on `load-post.php`. Trash and other non-editor actions still pass through to core (#35). Backported from 0.4.0.
+- Tested up to WordPress 7.1.3
+- Tested up to PHP 8.5
+- Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts
+- Upgrade `@wordpress/env` to v11 and the PHPStan WordPress stubs to 7.1
 
 ## 0.3.12 - Feb 16, 2026
 

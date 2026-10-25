@@ -6,7 +6,6 @@
 	"port": 8888,
 	"testsPort": 8889,
 	"phpVersion": "8.3",
-	"testsEnvironment": false,
 	"plugins": [
 		"."
 	]

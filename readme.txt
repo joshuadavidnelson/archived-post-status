@@ -4,7 +4,7 @@ Donate link:       https://joshuadnelson.com/donate/
 Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
-Tested up to:      7.0
+Tested up to:      7.1
 Stable tag:        0.4.0
 License:           GPL-2.0+
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -103,7 +103,7 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - Archived posts are now kept out of the default "All" view on the posts list, the same way Trash is. Use the "Archived" filter link to see them.
 - Archiving is now restricted to `public` post types. 0.3.x allowed archiving any post type that wasn't explicitly excluded via `aps_excluded_post_types`, including non-public ones; 0.4.0 starts from the public post types and subtracts the excluded set (`aps_get_supported_post_types()` returns the resulting list). If you need to archive a non-public custom post type, add it back with the `aps_supported_post_types` filter.
 - Added PHPUnit and Jest test suites, static analysis, and coding standards checks to the project.
-- Tested up to WordPress 7.0.
+- Tested up to WordPress 7.1.3.
 
 **Removed**
 
@@ -145,6 +145,13 @@ This only applies if you changed the status slug with the `aps_post_status_slug`
 The status slug is still `archive`, exactly as in 0.3.x. Nothing to do here unless your site adds an `aps_post_status_slug` filter to rename it - if you have never used that filter, skip this section and update normally.
 
 What changed is where the filter is honored. 0.3.x applied it only when registering the status and then saved the literal `archive` to the database regardless, so a site that renamed the slug ends up with rows the plugin no longer matches once 0.4.0 honors the custom name everywhere. If that is your site: back up your database first, then run `UPDATE wp_posts SET post_status = 'your-custom-slug' WHERE post_status = 'archive';` - substituting your own slug for "your-custom-slug" and your own table prefix for `wp_`. Do not run that query if you are not filtering the slug; it would rename your archived posts to a status the plugin does not recognize.
+
+= 0.3.13 - Oct 20, 2026 =
+- Fix the Archived edit lock and post-save redirect on post.php not firing since 0.3.9 (backported from 0.4.0)
+- Tested up to WordPress 7.1.3
+- Tested up to PHP 8.5
+- Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts
+- Upgrade `@wordpress/env` to v11 and the PHPStan WordPress stubs to 7.1
 
 = 0.3.12 - Feb 16, 2026 =
 
@@ -258,6 +265,13 @@ Props [fjarrett](https://github.com/fjarrett)
 = 0.4.0 =
 
 Major rewrite: PHP 8.1+ is now required, eleven 0.3.x global functions were removed, and archived posts no longer appear in the default "All" list. See the changelog for the full list of changes, including the migration note for sites using the `aps_post_status_slug` filter.
+
+= 0.3.13 - Oct 20, 2026 =
+- Fix the Archived edit lock and post-save redirect on post.php not firing since 0.3.9 (backported from 0.4.0)
+- Tested up to WordPress 7.1.3
+- Tested up to PHP 8.5
+- Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts
+- Upgrade `@wordpress/env` to v11 and the PHPStan WordPress stubs to 7.1
 
 = 0.3.12 - Feb 16, 2026 =
 

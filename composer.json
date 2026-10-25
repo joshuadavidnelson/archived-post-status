@@ -73,7 +73,7 @@
     "sirbrillig/phpcs-variable-analysis": "^2.12",
     "automattic/vipwpcs": "^3.0",
     "doctrine/instantiator": "^1.5",
-    "php-stubs/wordpress-stubs": "^6.9",
+    "php-stubs/wordpress-stubs": "^7.1",
     "johnbillion/wp-compat": "^1.4",
     "phpmd/phpmd": "^2.15",
     "phpmetrics/phpmetrics": "^2.8",

@@ -11,7 +11,7 @@
 **Minimum PHP version supported:** 8.1  
 **Tested up to PHP version:** 8.4  
 **Minimum WP Version supported:** 5.9  
-**Tested up to WP version:** 7.0  
+**Tested up to WP version:** 7.1.3  
 **Stable tag:** 0.4.0  
 **License:** [GPL-2.0+](https://www.gnu.org/licenses/gpl-2.0.html)  
 
