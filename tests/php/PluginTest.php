@@ -69,7 +69,6 @@ class PluginTest extends TestCase {
 	 */
 	private function invoke_hookables(): array {
 		$method = new ReflectionMethod( ArchivedPostStatus\Plugin::class, 'hookables' );
-		$method->setAccessible( true );
 		return $method->invoke( $this->plugin );
 	}
 
@@ -147,7 +146,6 @@ class PluginTest extends TestCase {
 		$this->assertNotNull( $notices, 'Notices must appear in hookables()' );
 
 		$property = new ReflectionProperty( ArchivedPostStatus\Admin\Notices::class, 'builder' );
-		$property->setAccessible( true );
 
 		$this->assertInstanceOf(
 			ArchivedPostStatus\Admin\NoticeBuilder::class,
@@ -248,7 +246,6 @@ class PluginTest extends TestCase {
 		$this->assertNotNull( $post_list, 'PostList must appear in hookables() when is_admin is true' );
 
 		$property = new ReflectionProperty( ArchivedPostStatus\Admin\PostList::class, 'bulk_handler' );
-		$property->setAccessible( true );
 
 		$this->assertInstanceOf(
 			ArchivedPostStatus\Admin\BulkActionHandler::class,
@@ -294,10 +291,8 @@ class PluginTest extends TestCase {
 		$this->assertNotNull( $post_action_handler, 'PostActionHandler must appear in hookables() when is_admin is true' );
 
 		$post_list_property = new ReflectionProperty( ArchivedPostStatus\Admin\PostList::class, 'bulk_handler' );
-		$post_list_property->setAccessible( true );
 
 		$post_action_handler_property = new ReflectionProperty( ArchivedPostStatus\Admin\PostActionHandler::class, 'bulk_handler' );
-		$post_action_handler_property->setAccessible( true );
 
 		$this->assertSame(
 			$post_list_property->getValue( $post_list ),
@@ -354,7 +349,6 @@ class PluginTest extends TestCase {
 		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
 
 		$method = new ReflectionMethod( ArchivedPostStatus\Plugin::class, 'hookables' );
-		$method->setAccessible( true );
 		$hookables = $method->invoke( new ArchivedPostStatus\Plugin( '0.4.0' ) );
 		$names     = array_map( static fn( $h ) => $h::class, $hookables );
 
@@ -383,7 +377,6 @@ class PluginTest extends TestCase {
 		\WP_Mock::userFunction( 'is_admin' )->andReturn( false );
 
 		$method = new ReflectionMethod( ArchivedPostStatus\Plugin::class, 'hookables' );
-		$method->setAccessible( true );
 		$hookables = $method->invoke( new ArchivedPostStatus\Plugin( '0.4.0' ) );
 
 		$cli = null;
@@ -397,7 +390,6 @@ class PluginTest extends TestCase {
 		$this->assertNotNull( $cli, 'CLI must appear in hookables() when WP_CLI is defined' );
 
 		$runner_prop = new ReflectionProperty( ArchivedPostStatus\CLI\Registrar::class, 'runner' );
-		$runner_prop->setAccessible( true );
 		$this->assertInstanceOf(
 			ArchivedPostStatus\CLI\CommandRunner::class,
 			$runner_prop->getValue( $cli ),
@@ -405,7 +397,6 @@ class PluginTest extends TestCase {
 		);
 
 		$archive_prop = new ReflectionProperty( ArchivedPostStatus\CLI\Registrar::class, 'archive_command' );
-		$archive_prop->setAccessible( true );
 		$this->assertInstanceOf(
 			ArchivedPostStatus\CLI\ArchiveCommand::class,
 			$archive_prop->getValue( $cli ),
@@ -413,7 +404,6 @@ class PluginTest extends TestCase {
 		);
 
 		$unarchive_prop = new ReflectionProperty( ArchivedPostStatus\CLI\Registrar::class, 'unarchive_command' );
-		$unarchive_prop->setAccessible( true );
 		$this->assertInstanceOf(
 			ArchivedPostStatus\CLI\UnarchiveCommand::class,
 			$unarchive_prop->getValue( $cli ),

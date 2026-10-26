@@ -89,7 +89,6 @@ class LoaderTest extends TestCase {
 	private function isolated_loader(): Loader {
 		$ref         = new ReflectionClass( Loader::class );
 		$constructor = $ref->getConstructor();
-		$constructor->setAccessible( true );
 		$loader = $ref->newInstanceWithoutConstructor();
 		$constructor->invoke( $loader );
 		return $loader;
@@ -104,7 +103,6 @@ class LoaderTest extends TestCase {
 	 */
 	private function add_namespace_via_reflection( Loader $loader, string $prefix, string $base_dir ): void {
 		$method = new ReflectionMethod( Loader::class, 'add_namespace' );
-		$method->setAccessible( true );
 		$method->invoke( $loader, $prefix, $base_dir );
 	}
 

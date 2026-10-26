@@ -40,7 +40,6 @@ class PluginHookablesParityTest extends TestCase {
 
 		$plugin = new ArchivedPostStatus\Plugin( '0.4.0' );
 		$method = new ReflectionMethod( ArchivedPostStatus\Plugin::class, 'hookables' );
-		$method->setAccessible( true );
 
 		return $method->invoke( $plugin );
 	}

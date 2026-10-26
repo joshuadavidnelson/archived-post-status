@@ -325,7 +325,6 @@ class PostStatusGuardTest extends TestCase {
 		\WP_Mock::userFunction( 'remove_action' )->never();
 
 		$flag = new \ReflectionProperty( ArchivedPostStatus\Archive\ArchiveOperation::class, 'in_flight' );
-		$flag->setAccessible( true );
 		$flag->setValue( null, true );
 
 		try {
@@ -613,7 +612,6 @@ class PostStatusGuardTest extends TestCase {
 		\WP_Mock::userFunction( 'delete_post_meta' )->never();
 
 		$flag = new \ReflectionProperty( ArchivedPostStatus\Archive\UnarchiveOperation::class, 'in_flight' );
-		$flag->setAccessible( true );
 		$flag->setValue( null, true );
 
 		try {

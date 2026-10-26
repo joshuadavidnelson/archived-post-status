@@ -122,7 +122,6 @@ namespace {
 			$this->assertSame( 'Unarchiving', $this->cmd->progress_label() );
 
 			$action = new \ReflectionMethod( $this->cmd, 'action' );
-			$action->setAccessible( true );
 			$this->assertSame(
 				\ArchivedPostStatus\Archive\ArchiveAction::Unarchive,
 				$action->invoke( $this->cmd )

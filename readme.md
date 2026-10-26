@@ -9,7 +9,7 @@
 
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
 **Minimum PHP version supported:** 8.2  
-**Tested up to PHP version:** 8.4  
+**Tested up to PHP version:** 8.5  
 **Minimum WP Version supported:** 6.1  
 **Tested up to WP version:** 7.1.3  
 **Stable tag:** 0.4.0  

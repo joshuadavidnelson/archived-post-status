@@ -445,7 +445,6 @@ class NoticesTest extends TestCase {
 	 */
 	private function invoke_should_show_notices(): bool {
 		$method = new ReflectionMethod( ArchivedPostStatus\Admin\Notices::class, 'should_show_notices' );
-		$method->setAccessible( true );
 		return (bool) $method->invoke( $this->notices );
 	}
 

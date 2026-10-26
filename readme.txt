@@ -106,6 +106,7 @@ New documentation site at [docs.archivedpoststat.us](https://docs.archivedpostst
 - Increase minimum supported PHP to 8.2, as 8.1 is end of life.
 - Increase minimum WordPress version to 6.1, to align with the PHP version.
 - Tested up to WordPress 7.1.3.
+- Tested up to PHP 8.5.
 
 **Removed**
 
