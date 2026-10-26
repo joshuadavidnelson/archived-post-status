@@ -122,7 +122,6 @@ namespace {
 			// from that layer's cached HookedCallback object instead.
 			$hooked_callback    = \WP_Mock::onFilterAdded( 'aps_unarchive_post_status' );
 			$callback_property  = new \ReflectionProperty( $hooked_callback, 'callback' );
-			$callback_property->setAccessible( true );
 			$added_callback = $callback_property->getValue( $hooked_callback );
 
 			$this->assertSame( 'aps_unarchive_post_status', $removed_hook );

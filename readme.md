@@ -8,9 +8,9 @@
 [![WP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/wp-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest) [![PHP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/php-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest)
 
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
-**Minimum PHP version supported:** 8.1  
-**Tested up to PHP version:** 8.4  
-**Minimum WP Version supported:** 5.9  
+**Minimum PHP version supported:** 8.2  
+**Tested up to PHP version:** 8.5  
+**Minimum WP Version supported:** 6.1  
 **Tested up to WP version:** 7.1.3  
 **Stable tag:** 0.4.0  
 **License:** [GPL-2.0+](https://www.gnu.org/licenses/gpl-2.0.html)  

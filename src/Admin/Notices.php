@@ -100,11 +100,9 @@ final class Notices implements HookableInterface {
 	private function render_notices( array $notices ): void {
 		$combined_message = implode( ' ', $notices );
 
-		// wp_admin_notice() landed in WordPress 6.4. The plugin supports 5.9,
-		// so the guard is what keeps that support real — plugin-check reports
-		// the call as incompatible because it cannot see the guard, and that
-		// check is ignored in .github/workflows/plugin-check.yml for exactly
-		// this reason.
+		// wp_admin_notice() landed in WordPress 6.4, and this plugin still
+		// supports older versions. Plugin Check can't see this guard; see
+		// .github/workflows/plugin-check.yml.
 		if ( function_exists( 'wp_admin_notice' ) ) {
 			wp_admin_notice(
 				$combined_message,

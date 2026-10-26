@@ -27,9 +27,9 @@ runs:
       uses: "actions/cache@v4"
       with:
         path: vendor
-        # composer.json pins config.platform.php to 8.1, so the resolved
-        # tree is identical whatever PHP the job runs — the matrix legs
-        # share one cache entry rather than writing four copies of it.
+        # composer.json pins config.platform.php, so the resolved
+        # tree is identical whatever PHP the job runs, and the matrix legs
+        # share one cache entry rather than writing multiple copies of it.
         key: composer-${{ hashFiles('composer.lock') }}
         restore-keys: composer-
 

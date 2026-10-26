@@ -24,7 +24,7 @@
 	<arg name="parallel" value="8"/>
 
 	<!-- Rules: Check PHP version compatibility -->
-	<config name="testVersion" value="8.1-"/>
+	<config name="testVersion" value="8.2-"/>
 
 	<!-- https://github.com/PHPCompatibility/PHPCompatibilityWP -->
 	<rule ref="PHPCompatibilityWP">
@@ -34,7 +34,7 @@
 	</rule>
 
 	<!-- Rules: VIP Coding Standards -->
-	<config name="minimum_supported_wp_version" value="5.9"/>
+	<config name="minimum_supported_wp_version" value="6.1"/>
 	<rule ref="WordPress-VIP-Go">
 		<!-- Exclude overly strict prefix rules that don't recognize aps_ as valid -->
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
