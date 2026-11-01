@@ -23,5 +23,12 @@
       "avgEfferentCoupling": 4
     },
     "gate": [ "critical", "error" ]
+  },
+  "js": {
+    "_comment": "Per-function ceilings for the shipped JS in assets/js, enforced by eslint.config.js (complexity and sonarjs/cognitive-complexity). Current maxima are 5 cyclomatic and 4 cognitive.",
+    "complexity": {
+      "cyclomatic": 7,
+      "cognitive": 6
+    }
   }
 }
