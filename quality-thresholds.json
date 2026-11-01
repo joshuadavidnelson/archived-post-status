@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for coverage floors and code-metric ceilings. Read by jest.config.js, the CI coverage check and the PR report renderer, so a number changes in one place. Floors sit a few points below current values: enough slack for changes that legitimately add uncovered lines, tight enough that a real regression fails. The PR report shows the delta against the base branch, so a fractional dip is visible to a reviewer without failing the build.",
+  "_comment": "Single source of truth for coverage floors and code-metric ceilings. Read by jest.config.js, eslint.config.js and the shared CI (joshuadavidnelson/ci), so a number changes in one place. Floors sit a few points below current values: enough slack for changes that legitimately add uncovered lines, tight enough that a real regression fails. The PR report shows the delta against the base branch, so a fractional dip is visible to a reviewer without failing the build.",
   "coverage": {
     "php": {
       "lines": 90,

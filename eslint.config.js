@@ -7,9 +7,14 @@ const { js } = require( './quality-thresholds.json' );
 const { cyclomatic, cognitive } = js.complexity;
 
 module.exports = [
+	// A global ignore, not one scoped to the block below: CI adds its own
+	// --rule overrides for every linted file, and a test file reaching them
+	// without sonarjs registered would abort the whole run.
+	{
+		ignores: [ 'assets/js/**/*.test.js' ],
+	},
 	{
 		files: [ 'assets/js/**/*.js' ],
-		ignores: [ 'assets/js/**/*.test.js' ],
 		languageOptions: {
 			ecmaVersion: 2022,
 			sourceType: 'script',

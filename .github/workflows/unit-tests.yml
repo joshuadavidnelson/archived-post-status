@@ -26,9 +26,9 @@ jobs:
       uses: "actions/checkout@v7"
 
     - name: "Set up PHP and Composer"
-      # No coverage driver: these legs exist to prove the suite runs on every
-      # supported PHP, and the coverage job below owns measurement.
-      uses: "./.github/actions/setup-php-composer"
+      # No coverage driver: these legs prove the suite runs on every
+      # supported PHP. Integrate's php job measures coverage on 8.4 only.
+      uses: "joshuadavidnelson/ci/actions/setup-php@v1"
       with:
         php-version: ${{ matrix.php-versions }}
 
@@ -56,9 +56,4 @@ jobs:
 
     - name: "Run Jest tests"
       run: "npm test"
-
-    - name: "Run workflow script tests"
-      # Separate config and suite from the shipped assets/js code above —
-      # sharing the job only to reuse the node_modules already installed.
-      run: "npm run test:workflows"
 

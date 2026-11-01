@@ -38,7 +38,6 @@
     "test": "jest --verbose --runInBand --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:workflows": "jest --config .github/scripts/jest.config.js",
     "lint:complexity": "eslint assets/js"
   },
   "devDependencies": {

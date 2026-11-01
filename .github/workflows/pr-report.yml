@@ -1,0 +1,18 @@
+name: "PR Report"
+
+# Posts the single sticky CI report comment for a pull request. It runs
+# from workflow_run, so it never checks out PR code and works for forks.
+# workflow_run only fires from the default branch, so this takes effect
+# once it is on stable.
+on:
+  workflow_run:
+    workflows: [Integrate]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+
+jobs:
+  report:
+    uses: joshuadavidnelson/ci/.github/workflows/pr-report.yml@v1

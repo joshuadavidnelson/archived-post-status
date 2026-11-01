@@ -1,4 +1,4 @@
-name: Plugin asset/readme update
+name: "Plugin asset/readme update"
 
 # Syncs readme.txt and .wordpress-org assets to the plugin's SVN trunk.
 # Scoped to the files it actually ships so ordinary code commits to
@@ -19,16 +19,9 @@ concurrency:
 
 jobs:
   trunk:
-    name: Push to trunk
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v7
-
-      - name: WordPress.org plugin asset/readme update
-        uses: 10up/action-wordpress-plugin-asset-update@2.2.0
-        env:
-          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-          IGNORE_OTHER_FILES: true
-          SLUG: archived-post-status
+    uses: joshuadavidnelson/ci/.github/workflows/wp-readme-deploy.yml@v1
+    with:
+      slug: "archived-post-status"
+    secrets:
+      SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
