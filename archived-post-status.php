@@ -14,7 +14,7 @@
  * @wordpress-plugin
  * Plugin Name: Archived Post Status
  * Description: Allows posts and pages to be archived so you can unpublish content without having to trash it.
- * Version:     0.3.13
+ * Version:     0.3.14
  * Requires at least: 5.9
  * Requires PHP:      8.1
  * Author:      Joshua David Nelson
@@ -37,7 +37,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Define plugin constants.
  */
-define( 'ARCHIVED_POST_STATUS_VERSION', '0.3.13' );
+define( 'ARCHIVED_POST_STATUS_VERSION', '0.3.14' );
 define( 'ARCHIVED_POST_STATUS_PLUGIN', plugin_basename( __FILE__ ) );
 define( 'ARCHIVED_POST_STATUS_DIR', __DIR__ );
 define( 'ARCHIVED_POST_STATUS_URL', plugins_url( '/', __FILE__ ) );
