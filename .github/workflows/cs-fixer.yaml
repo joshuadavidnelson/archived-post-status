@@ -11,20 +11,24 @@ jobs:
   fix:
     name: "Fix"
     runs-on: "ubuntu-latest"
+    env:
+      PHP_VERSION: "8.4"
     steps:
     - name: "Checkout repository"
       uses: "actions/checkout@v6"
-    - name: "Install PHPCS"
-      run: |
-        composer require --no-plugins --dev wp-coding-standards/wpcs
-        composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-        composer run post-install-cmd
+    - name: "Install PHP"
+      uses: "shivammathur/setup-php@v2"
+      with:
+        php-version: ${{ env.PHP_VERSION }}
+        tools: composer:v2
+    - name: "Install Composer dependencies"
+      run: "composer install --no-interaction --prefer-dist"
     - name: "Fix violations"
       run: |
-        # phpcbf exists with 1 on success
-        vendor/bin/phpcbf --standard=WordPress-Core *.php includes/ || true
+        # phpcbf reads .phpcs.xml.dist and exits with 1 when it fixed something
+        composer phpcbf || true
         # Complex errors need a second run
-        vendor/bin/phpcbf --standard=WordPress-Core *.php includes/ || true
+        composer phpcbf || true
     - name: "Check difference to repository"
       id: "list_diff"
       run: |
