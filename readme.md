@@ -15,7 +15,7 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Minimum WP Version supported:** 5.9  
 **Tested up to WP version:** 7.1  
 **Stable tag:** 0.3.13  
-**License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
+**License:** [GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.html)  
 
 ## Description
 
