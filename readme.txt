@@ -4,8 +4,8 @@ Tags:              archive, archived, status, post status
 Requires at least: 5.9
 Requires PHP:      8.1
 Tested up to:      7.1
-Stable tag:        0.3.13
-License:           GPL-2.0
+Stable tag:        0.3.14
+License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
 Use an "Archived" status to unpublish content without having to trash it.
@@ -173,6 +173,14 @@ Please reach out on the [Github Issues](https://github.com/joshuadavidnelson/arc
 
 == Changelog ==
 
+= 0.3.14 - Nov 1, 2026 =
+- Tested up to WordPress 7.1.4
+- Add Requires at least and Requires PHP to the plugin header; declare the license as GPLv2 or later in the header and readme
+- Stop shipping readme.md, changelog.md and .phpcs.xml.dist in the WordPress.org zip
+- Update development dependencies (Composer and npm) to resolve all open GitHub Dependabot security alerts; upgrade `@wordpress/env` to v12
+- Fix the Coding Standards workflow, pin GitHub Actions, add Dependabot configuration and an npm audit check
+- Add issue forms, a pull request template and a Security section in the readme
+
 = 0.3.13 - Oct 20, 2026 =
 - Fix the Archived edit lock and post-save redirect on post.php not firing since 0.3.9 (backported from 0.4.0)
 - Tested up to WordPress 7.1.3
@@ -287,6 +295,9 @@ Props [fjarrett](https://github.com/fjarrett), [pollyplummer](https://github.com
 Props [fjarrett](https://github.com/fjarrett)
 
 == Upgrade Notice ==
+
+= 0.3.14 - Nov 1, 2026 =
+Maintenance release: plugin header metadata, GPLv2 or later license wording, development dependency updates and a leaner WordPress.org zip. Tested up to WordPress 7.1.4.
 
 = 0.3.13 - Oct 20, 2026 =
 - Fix the Archived edit lock and post-save redirect on post.php not firing since 0.3.9 (backported from 0.4.0)

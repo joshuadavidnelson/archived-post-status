@@ -13,9 +13,9 @@ Allows posts and pages to be archived so you can unpublish content without havin
 **Minimum PHP version supported:** 8.1  
 **Tested up to PHP version:** 8.5  
 **Minimum WP Version supported:** 5.9  
-**Tested up to WP version:** 7.1  
-**Stable tag:** 0.3.13  
-**License:** [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)  
+**Tested up to WP version:** 7.1.4  
+**Stable tag:** 0.3.14  
+**License:** [GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.html)  
 
 ## Description
 
@@ -177,6 +177,10 @@ If you no longer need the plugin but want to retain your archived content:
 ### Publish metabox controls.
 
 ![Publish metabox controls.](.wordpress-org/screenshot-3.png)
+
+## Security
+
+Security fixes are released against the latest version, published on [WordPress.org](https://wordpress.org/plugins/archived-post-status/) and in this repository. Please report vulnerabilities privately using **Report a vulnerability** on the [Security tab](https://github.com/joshuadavidnelson/archived-post-status/security/advisories/new), not through public issues or the support forum. See the [general security policy](https://github.com/joshuadavidnelson/.github/blob/main/.github/SECURITY.md) for response times. If the plugin appears abandoned or unresponsive, the [WordPress.org plugin review team](https://developer.wordpress.org/plugins/wordpress-org/plugin-security/reporting-plugin-security-issues/) can be contacted at plugins@wordpress.org.
 
 ## Contributing
 

@@ -1,6 +1,15 @@
 # Archived Post Status Changelog
 ---
 
+## 0.3.14 - Nov 1, 2026
+
+- Tested up to WordPress 7.1.4
+- Add `Requires at least` and `Requires PHP` to the plugin header, matching `readme.txt`, and declare the license as GPLv2 or later (SPDX `GPL-2.0-or-later` in the header)
+- Stop shipping `readme.md`, `changelog.md` and `.phpcs.xml.dist` in the WordPress.org zip: `.distignore` is anchored to the plugin root and `.gitattributes` export-ignore matches it (#56)
+- Update development dependencies to resolve all open GitHub Dependabot security alerts: upgrade `@wordpress/env` to v12, override `glob` to 14, move `dealerdirect/phpcodesniffer-composer-installer` to 1.x; `package.json` now declares the Node 24.18 and npm 11.16 floor the locked tree needs
+- Fix the Coding Standards workflow to run `phpcbf` through `.phpcs.xml.dist`, pin `actions/checkout` in the deploy workflows, add a Dependabot configuration and an npm audit job
+- Add YAML issue forms, a pull request template and a Security section in the readme (#47)
+
 ## 0.3.13 - Oct 20, 2026
 
 - Fix the Archived edit lock and post-save redirect on `post.php` not firing since 0.3.9. The handler now reads the post ID and action from the request instead of `get_query_var()`, which is always empty on `load-post.php`. Trash and other non-editor actions still pass through to core (#35). Backported from 0.4.0.

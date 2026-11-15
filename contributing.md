@@ -4,7 +4,7 @@ Thank you for considering contributing to the on-going development of this plugi
 
 - **Sponsoring** - [Donate](https://joshuadnelson.com/donate/) to help support plugin development hours.
 
-- **Bug reporting** - [Submit an issue](https://github.com/joshuadavidnelson/archived-post-status/issues/) on the Github repo or [WordPress.org Support forum](https://wordpress.org/support/plugin/archived-post-status/), _knowing_ about an issue is the first step to fixing it! Bug reports are a vital way to help make the plugin better for you and for others. **If you have found a security vulnerability, please [contact the developer directly](mailto:josh@joshuadnelson.com).**
+- **Bug reporting** - [Submit an issue](https://github.com/joshuadavidnelson/archived-post-status/issues/) on the Github repo or [WordPress.org Support forum](https://wordpress.org/support/plugin/archived-post-status/), _knowing_ about an issue is the first step to fixing it! Bug reports are a vital way to help make the plugin better for you and for others. **If you have found a security vulnerability, please do not open a public issue or forum post. [Report it privately](https://github.com/joshuadavidnelson/archived-post-status/security/advisories/new) instead (see [Security](readme.md#security)).**
 
 - **Translations** - The effort to localize strings on the plugin is entirely a volunteer effort, and these contributions have a huge impact on the plugin's accessibility. Thank you to our translators! Learn more about how you can contribute [here](https://make.wordpress.org/polyglots/teams/).
 
