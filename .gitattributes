@@ -1,4 +1,5 @@
 /.wordpress-org export-ignore
+/design export-ignore
 /.github export-ignore
 /tests/ export-ignore
 /.gitattributes export-ignore

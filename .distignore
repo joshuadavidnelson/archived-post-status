@@ -1,4 +1,5 @@
 /tests/
+/design/
 .editorconfig
 .gitignore
 .gitattributes
