@@ -5,8 +5,6 @@
 
 [![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/archived-post-status)](https://wordpress.org/plugins/archived-post-status/) ![Downloads](https://img.shields.io/wordpress/plugin/dt/archived-post-status.svg) ![Rating](https://img.shields.io/wordpress/plugin/r/archived-post-status.svg)
 
-[![WP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/wp-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest) [![PHP compatibility](https://plugintests.com/plugins/wporg/archived-post-status/php-badge.svg)](https://plugintests.com/plugins/wporg/archived-post-status/latest)
-
 Allows posts and pages to be archived so you can unpublish content without having to trash it.
 
 **Contributors:** [joshuadavidnelson](https://github.com/joshuadavidnelson), [fjarrett](https://profiles.wordpress.org/fjarrett)  
